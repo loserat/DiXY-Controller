@@ -1,0 +1,254 @@
+# DiXY RDWC Lovelace Dashboard
+# Kopiere in ~/.homeassistant/dashboards/dixy_rdwc_monitor.yaml
+# Oder über UI: Dashboards → Neues Dashboard → Code-Editor → hier einfügen
+
+title: DiXY RDWC Monitor
+path: dixy-rdwc
+icon: mdi:water-circle
+layout:
+  type: masonry
+  columns: 3
+
+views:
+  - title: "🏠 Übersicht"
+    path: overview
+    cards:
+      - type: glance
+        title: "🟢 System Status"
+        entities:
+          - entity: binary_sensor.hydroknoten_online
+            name: "Hydro"
+          - entity: binary_sensor.dosierung_online
+            name: "Dosier"
+          - entity: binary_sensor.zeltsensor_online
+            name: "Zelt"
+        columns: 3
+
+      # EC/pH Gauges
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            entity: sensor.hydroknoten_ec_wert
+            min: 0
+            max: 3
+            unit: mS/cm
+            severity:
+              green: 1.2
+              yellow: 1.0
+              red: 0.8
+            title: "EC Wert"
+
+          - type: gauge
+            entity: sensor.hydroknoten_ph_wert
+            min: 4.5
+            max: 8
+            unit: pH
+            severity:
+              green: 6.0
+              yellow: 5.8
+              red: 5.5
+            title: "pH Wert"
+
+      # Temperatur + RH
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            entity: sensor.zeltsensor_lufttemperatur
+            unit: "°C"
+            min: 15
+            max: 35
+            severity:
+              green: 25
+              yellow: 28
+              red: 32
+
+          - type: gauge
+            entity: sensor.zeltsensor_luftfeuchte
+            unit: "%"
+            min: 20
+            max: 90
+            severity:
+              green: 60
+              yellow: 75
+              red: 85
+
+      # VPD + Taupunkt
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            entity: sensor.zeltsensor_vpd
+            min: 0.2
+            max: 2.0
+            unit: kPa
+            severity:
+              green: 0.85
+              yellow: 1.2
+              red: 1.6
+            title: "VPD"
+
+          - type: gauge
+            entity: sensor.zeltsensor_taupunkt
+            unit: "°C"
+            title: "Taupunkt"
+
+      # PPFD + DLI
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            entity: sensor.zeltsensor_ppfd
+            min: 0
+            max: 1500
+            unit: µmol/m²/s
+            severity:
+              green: 800
+              yellow: 500
+              red: 200
+            title: "PPFD"
+
+          - type: gauge
+            entity: sensor.zeltsensor_dli
+            min: 0
+            max: 40
+            unit: mol/m²/d
+            severity:
+              green: 15
+              yellow: 12
+              red: 8
+
+      # Nährstoff Ziele
+      - type: entities
+        title: "⚙️ Ziele"
+        entities:
+          - entity: input_number.ec_target
+            name: "EC Soll"
+          - entity: input_number.ph_target
+            name: "pH Soll"
+          - entity: input_number.rdwc_system_liters
+            name: "System-Volumen (L)"
+
+      # Wasserstand
+      - type: entities
+        title: "💧 Wasserstand"
+        entities:
+          - entity: binary_sensor.hydroknoten_tank1_wasserstand
+            name: "Tank 1"
+          - entity: binary_sensor.hydroknoten_tank2_wasserstand
+            name: "Tank 2"
+          - entity: binary_sensor.hydroknoten_tank3_wasserstand
+            name: "Tank 3"
+          - entity: binary_sensor.hydroknoten_tank4_wasserstand
+            name: "Tank 4"
+          - entity: binary_sensor.hydroknoten_tank5_wasserstand
+            name: "Tank 5"
+          - entity: binary_sensor.hydroknoten_tank6_wasserstand
+            name: "Tank 6"
+
+  # TAB 2: Dosierung
+  - title: "💊 Dosierung"
+    path: dosing
+    icon: mdi:water-pump
+    cards:
+      - type: entities
+        title: "Rührzeit-Status"
+        entities:
+          - entity: sensor.dosierung_zeit_seit_dosierung
+            name: "Zeit seit Dosierung"
+          - entity: binary_sensor.dosierung_ruehrzeit_ok
+            name: "Rührzeit OK"
+
+      # Pumpen Manual
+      - type: horizontal-stack
+        cards:
+          - type: entities
+            title: "Pumpe A (EC)"
+            entities:
+              - entity: switch.dosierung_pumpe_a
+              - entity: number.dosierung_pumpe_a_flow_rate
+
+          - type: entities
+            title: "Pumpe B (pH Down)"
+            entities:
+              - entity: switch.dosierung_pumpe_b
+
+          - type: entities
+            title: "Pumpe C (pH Up)"
+            entities:
+              - entity: switch.dosierung_pumpe_c
+
+  # TAB 3: Kalibrierung
+  - title: "🔧 Kalibrierung"
+    path: calibration
+    icon: mdi:tools
+    cards:
+      - type: entities
+        title: "⏰ Kalibrierungs-Timestamps"
+        entities:
+          - entity: text_sensor.hydroknoten_ec_kalibrierung_zuletzt
+            name: "EC Kalibrierung"
+          - entity: text_sensor.hydroknoten_ph_kalibrierung_zuletzt
+            name: "pH Kalibrierung"
+          - entity: button.hydroknoten_ec_kalibrierung_markieren
+          - entity: button.hydroknoten_ph_kalibrierung_markieren
+
+      - type: entities
+        title: "EC Kalibrierpunkte"
+        entities:
+          - entity: number.hydroknoten_ec_kalibrierpunkt_1413
+            name: "Low (1.413)"
+          - entity: number.hydroknoten_ec_kalibrierpunkt_12_88
+            name: "High (12.88)"
+
+      - type: entities
+        title: "pH Kalibrierpunkte"
+        entities:
+          - entity: number.hydroknoten_ph_kalibrierpunkt_7_0
+            name: "pH 7.0"
+          - entity: number.hydroknoten_ph_kalibrierpunkt_4_0
+            name: "pH 4.0"
+
+  # TAB 4: Diagnose
+  - title: "🏥 Diagnose"
+    path: diagnostics
+    icon: mdi:hospital-box
+    cards:
+      - type: entities
+        title: "Hydroknoten Health"
+        entities:
+          - entity: binary_sensor.hydroknoten_ads1115_fehler
+            name: "ADS1115 Fehler"
+          - entity: binary_sensor.hydroknoten_temperatursensoren_fehler
+            name: "DS18B20 Fehler"
+          - entity: sensor.hydroknoten_wifi_signal
+            name: "WiFi Signal (dBm)"
+          - entity: sensor.hydroknoten_uptime
+            name: "Uptime (h)"
+
+      - type: entities
+        title: "Dosierknoten Health"
+        entities:
+          - entity: binary_sensor.dosierung_online
+            name: "Online"
+          - entity: sensor.dosierung_wifi_signal
+            name: "WiFi Signal"
+          - entity: sensor.dosierung_uptime
+            name: "Uptime"
+
+      - type: entities
+        title: "Zeltsensor Health"
+        entities:
+          - entity: binary_sensor.zeltsensor_sht31_fehler
+            name: "SHT31 Fehler"
+          - entity: binary_sensor.zeltsensor_as7341_fehler
+            name: "AS7341 Fehler"
+          - entity: binary_sensor.zeltsensor_bmp280_fehler
+            name: "BMP280 Fehler"
+
+      - type: entities
+        title: "🌐 WiFi-Adressen"
+        entities:
+          - entity: text_sensor.hydroknoten_ip_adresse
+            name: "Hydro IP"
+          - entity: text_sensor.dosierung_ip_adresse
+            name: "Dosier IP"
+          - entity: text_sensor.zeltsensor_ip_adresse
+            name: "Zelt IP"

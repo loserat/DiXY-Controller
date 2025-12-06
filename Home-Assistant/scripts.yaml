@@ -1,0 +1,309 @@
+# DiXY RDWC Automation Scripts
+# Diese Datei ergänzt automations.yaml mit Service-Definitionen
+# Kopiere in ~/.homeassistant/scripts.yaml oder mergen mit bestehenden Scripts
+
+# ===================================================================
+# EC AUTO-DOSING SERVICE
+# ===================================================================
+ec_auto_dose_script:
+  alias: "EC Auto Dosier"
+  description: "Berechnet EC-Differenz und dosiert automatisch EC-Nährstoffe"
+  sequence:
+    # 1. EC-Wert auslesen
+    - variables:
+        current_ec: "{{ states('sensor.hydroknoten_ec_wert') | float(default=0) }}"
+        target_ec: "{{ states('input_number.ec_target') | float(default=1.5) }}"
+        system_liters: "{{ states('input_number.rdwc_system_liters') | float(default=100) }}"
+        
+        # 2. EC-Differenz berechnen
+        ec_diff: "{{ (target_ec - current_ec) | float(default=0) }}"
+        
+        # 3. Dosismenge berechnen (vereinfacht: 1mL pro 0.1 EC-Differenz pro 100L)
+        dose_volume_ml: "{{ ((ec_diff / 0.1) * (system_liters / 100)) | round(2) }}"
+
+    # 4. Sicherheitsprüfungen
+    - condition: and
+      conditions:
+        # Nur dosieren wenn EC zu niedrig ist
+        - condition: template
+          value_template: "{{ ec_diff > 0.1 }}"
+        # Max 50mL pro Dosierung
+        - condition: template
+          value_template: "{{ dose_volume_ml < 50 }}"
+        # Nur wenn Rührzeit erfüllt (mind. 30min seit letzter Dosierung)
+        - condition: state
+          entity_id: binary_sensor.dosierung_ruehrzeit_ok
+          state: "on"
+        # Nicht wenn System fault hat
+        - condition: state
+          entity_id: binary_sensor.hydroknoten_ads1115_fehler
+          state: "off"
+
+    # 5. Dosieren
+    - service: number.set_value
+      target:
+        entity_id: number.dosierung_pumpe_a_flow_rate
+      data:
+        value: "{{ dose_volume_ml }}"
+
+    - service: switch.turn_on
+      target:
+        entity_id: switch.dosierung_pumpe_a
+
+    # 6. Rührzeit starten
+    - delay:
+        minutes: 5
+
+    - service: switch.turn_off
+      target:
+        entity_id: switch.dosierung_pumpe_a
+
+    # 7. Benachrichtigung
+    - service: notify.telegram
+      data:
+        message: |
+          💊 EC Auto-Dosiert
+          EC: {{ current_ec }}/{{ target_ec }} mS/cm
+          Dosis: {{ dose_volume_ml }} mL
+
+
+# ===================================================================
+# pH AUTO-DOSING SERVICE
+# ===================================================================
+ph_auto_dose_script:
+  alias: "pH Auto Dosier"
+  description: "Berechnet pH-Differenz und dosiert automatisch pH-Lösung"
+  sequence:
+    # 1. pH-Wert auslesen
+    - variables:
+        current_ph: "{{ states('sensor.hydroknoten_ph_wert') | float(default=6.0) }}"
+        target_ph: "{{ states('input_number.ph_target') | float(default=5.8) }}"
+        system_liters: "{{ states('input_number.rdwc_system_liters') | float(default=100) }}"
+        
+        # 2. pH-Differenz berechnen
+        ph_diff: "{{ (current_ph - target_ph) | float(default=0) }}"
+        
+        # 3. Dosismenge berechnen (vereinfacht: 0.5mL pro 0.1 pH-Differenz pro 100L)
+        dose_volume_ml: "{{ ((ph_diff / 0.1) * 0.5 * (system_liters / 100)) | round(2) }}"
+        
+        # 4. Pumpe wählen (pH Down wenn zu hoch, pH Up wenn zu niedrig)
+        pump_entity: "{% if ph_diff > 0 %}switch.dosierung_pumpe_b{% else %}switch.dosierung_pumpe_c{% endif %}"
+
+    # 5. Sicherheitsprüfungen
+    - condition: and
+      conditions:
+        # Nur dosieren wenn pH außerhalb Toleranz
+        - condition: template
+          value_template: "{{ ph_diff | abs > 0.1 }}"
+        # Max 30mL pro Dosierung
+        - condition: template
+          value_template: "{{ dose_volume_ml < 30 }}"
+        # Nur wenn Rührzeit erfüllt
+        - condition: state
+          entity_id: binary_sensor.dosierung_ruehrzeit_ok
+          state: "on"
+        # Nicht wenn System fault hat
+        - condition: state
+          entity_id: binary_sensor.hydroknoten_ads1115_fehler
+          state: "off"
+
+    # 6. Dosieren
+    - service: number.set_value
+      target:
+        entity_id: number.dosierung_pumpe_a_flow_rate
+      data:
+        value: "{{ dose_volume_ml }}"
+
+    - service: switch.turn_on
+      target:
+        entity_id: "{{ pump_entity }}"
+
+    # 7. Rührzeit starten
+    - delay:
+        minutes: 5
+
+    - service: switch.turn_off
+      target:
+        entity_id: "{{ pump_entity }}"
+
+    # 8. Benachrichtigung
+    - service: notify.telegram
+      data:
+        message: |
+          💊 pH Auto-Dosiert
+          pH: {{ current_ph }}/{{ target_ph }}
+          Dosis: {{ dose_volume_ml }} mL
+          Richtung: {% if ph_diff > 0 %}Down{% else %}Up{% endif %}
+
+
+# ===================================================================
+# VPD FAN CONTROL SERVICE
+# ===================================================================
+vpd_fan_control_script:
+  alias: "VPD Lüfter-Steuerung"
+  description: "Steuert Lüfter basierend auf VPD-Wert"
+  sequence:
+    - variables:
+        vpd_value: "{{ states('sensor.zeltsensor_vpd') | float(default=1.0) }}"
+        
+        # Fan PWM berechnen: linear von 30% (VPD=0.5) bis 100% (VPD=1.5)
+        fan_pwm: >
+          {% if vpd_value < 0.5 %}
+            30
+          {% elif vpd_value > 1.5 %}
+            100
+          {% else %}
+            {{ ((vpd_value - 0.5) / 1.0 * 70 + 30) | round(0) | int }}
+          {% endif %}
+
+    - service: fan.set_percentage
+      target:
+        entity_id: fan.zeltsensor_luefter
+      data:
+        percentage: "{{ fan_pwm }}"
+
+    # Logging
+    - service: logger.log
+      data:
+        message: "VPD Fan Control: VPD={{ vpd_value }} → PWM={{ fan_pwm }}%"
+        level: "DEBUG"
+
+
+# ===================================================================
+# DAILY RESET SERVICE
+# ===================================================================
+daily_reset_script:
+  alias: "Täglicher Reset"
+  description: "Setzt tägliche Zähler zurück, archiviert Logs"
+  sequence:
+    # 1. Tägliche EC-Dosierung zurücksetzen
+    - service: counter.reset
+      target:
+        entity_id: counter.daily_ec_doses
+
+    # 2. Tägliche pH-Dosierung zurücksetzen
+    - service: counter.reset
+      target:
+        entity_id: counter.daily_ph_doses
+
+    # 3. Letzten Fehler löschen
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.last_system_error
+      data:
+        value: "Keine Fehler"
+
+    # 4. Benachrichtigung
+    - service: notify.telegram
+      data:
+        message: |
+          🌅 Täglicher Reset durchgeführt
+          Zeit: {{ now().strftime('%H:%M:%S') }}
+          System läuft fehlerfrei
+
+
+# ===================================================================
+# WATER CHANGE HELPER SERVICE
+# ===================================================================
+water_change_prep_script:
+  alias: "Wasserwechsel Vorbereitung"
+  description: "Schaltet alle Pumpen aus und bereitet System vor"
+  sequence:
+    # Alle Pumpen stoppen
+    - service: switch.turn_off
+      target:
+        entity_id:
+          - switch.dosierung_pumpe_a
+          - switch.dosierung_pumpe_b
+          - switch.dosierung_pumpe_c
+
+    # Lüfter auf Standby
+    - service: fan.turn_on
+      target:
+        entity_id: fan.zeltsensor_luefter
+      data:
+        percentage: 30
+
+    # Benachrichtigung
+    - service: notify.telegram
+      data:
+        message: |
+          🌊 Wasserwechsel Modus aktiviert
+          ⚠️ Alle Pumpen ausgeschaltet
+          ℹ️ System bereit zum Wasserwechsel
+
+    # Optional: Snapshot vor Wasserwechsel
+    - service: camera.snapshot
+      target:
+        entity_id: camera.kameraknoten_canopy
+      data:
+        filename: "/config/snapshots/pre_water_change_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg"
+
+
+# ===================================================================
+# SENSOR HEALTH CHECK SERVICE
+# ===================================================================
+sensor_health_check_script:
+  alias: "Sensor-Gesundheitsprüfung"
+  description: "Überprüft alle Sensoren auf Fehler und meldet Probleme"
+  sequence:
+    - variables:
+        errors_list: >
+          {% set errors = [] %}
+          {% if states('binary_sensor.hydroknoten_ads1115_fehler') == 'on' %}
+            {% set _ = errors.append('❌ ADS1115 Fehler (Hydroknoten)') %}
+          {% endif %}
+          {% if states('binary_sensor.hydroknoten_temperatursensoren_fehler') == 'on' %}
+            {% set _ = errors.append('❌ DS18B20 Fehler (Hydroknoten)') %}
+          {% endif %}
+          {% if states('binary_sensor.zeltsensor_sht31_fehler') == 'on' %}
+            {% set _ = errors.append('❌ SHT31 Fehler (Zeltsensor)') %}
+          {% endif %}
+          {% if states('binary_sensor.zeltsensor_as7341_fehler') == 'on' %}
+            {% set _ = errors.append('❌ AS7341 Fehler (Zeltsensor)') %}
+          {% endif %}
+          {% if states('binary_sensor.zeltsensor_bmp280_fehler') == 'on' %}
+            {% set _ = errors.append('❌ BMP280 Fehler (Zeltsensor)') %}
+          {% endif %}
+          {{ errors | join('\n') }}
+
+    # Nur benachrichtigen wenn Fehler vorhanden
+    - condition: template
+      value_template: "{{ errors_list != '' }}"
+
+    - service: notify.telegram
+      data:
+        message: |
+          🏥 Sensor-Fehler erkannt
+          {{ errors_list }}
+          
+          Bitte überprüfen und Knoten neustarten
+
+
+# ===================================================================
+# PHOTO PERIOD SCHEDULER SERVICE
+# ===================================================================
+photoperiod_script:
+  alias: "Lichtzyklus steuern"
+  description: "Steuert Lichtzyklus basierend auf Einstellung"
+  sequence:
+    - variables:
+        photoperiod_hours: "{{ states('input_number.photoperiode_stunden') | float(default=18) }}"
+        current_hour: "{{ now().hour }}"
+        
+        # Beispiel: 18h Licht ab 06:00 Uhr
+        lights_on_hour: 6
+        lights_off_hour: "{{ (lights_on_hour + photoperiod_hours) | int }}"
+        lights_should_be_on: "{{ current_hour >= lights_on_hour and current_hour < lights_off_hour }}"
+
+    # Schalte Wachstumslicht ein/aus
+    - service: "light.{% if lights_should_be_on %}turn_on{% else %}turn_off{% endif %}"
+      target:
+        entity_id: light.zeltsensor_wachstumslicht
+      data:
+        transition: 60
+
+    - service: logger.log
+      data:
+        message: "Lichtzyklus: {{ photoperiod_hours }}h ({{ lights_on_hour }}:00 - {{ lights_off_hour }}:00)"
+        level: "INFO"

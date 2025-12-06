@@ -1,0 +1,134 @@
+# timelapse_automation.yaml
+# Home Assistant Automationen für automatisches Foto-Management
+
+automation:
+  # ═══════════════════════════════════════════════════════════
+  # 1. Stündliche Canopy-Snapshots
+  # ═══════════════════════════════════════════════════════════
+  - alias: "Timelapse: Stündliche Canopy-Snapshots"
+    description: "Erstellt jede Stunde ein Canopy-Foto für Timelapse"
+    trigger:
+      - platform: time_pattern
+        hours: "/1"
+    action:
+      - service: camera.snapshot
+        target:
+          entity_id: camera.canopy_camera
+        data:
+          filename: /config/www/timelapse/canopy/{{ now().strftime('%Y%m%d_%H%M%S') }}_canopy.jpg
+
+  # ═══════════════════════════════════════════════════════════
+  # 2. 4x tägliche Detail-Snapshots
+  # ═══════════════════════════════════════════════════════════
+  - alias: "Timelapse: Detail-Snapshot 08:00"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    action:
+      - service: camera.snapshot
+        target:
+          entity_id: camera.detail_camera
+        data:
+          filename: /config/www/timelapse/detail/{{ now().strftime('%Y%m%d') }}_0800_detail.jpg
+
+  - alias: "Timelapse: Detail-Snapshot 14:00"
+    trigger:
+      - platform: time
+        at: "14:00:00"
+    action:
+      - service: camera.snapshot
+        target:
+          entity_id: camera.detail_camera
+        data:
+          filename: /config/www/timelapse/detail/{{ now().strftime('%Y%m%d') }}_1400_detail.jpg
+
+  - alias: "Timelapse: Detail-Snapshot 20:00"
+    trigger:
+      - platform: time
+        at: "20:00:00"
+    action:
+      - service: camera.snapshot
+        target:
+          entity_id: camera.detail_camera
+        data:
+          filename: /config/www/timelapse/detail/{{ now().strftime('%Y%m%d') }}_2000_detail.jpg
+
+  - alias: "Timelapse: Detail-Snapshot 02:00 (mit Flash)"
+    trigger:
+      - platform: time
+        at: "02:00:00"
+    action:
+      - service: light.turn_on
+        target:
+          entity_id: light.detail_camera_flash
+      - delay:
+          milliseconds: 500
+      - service: camera.snapshot
+        target:
+          entity_id: camera.detail_camera
+        data:
+          filename: /config/www/timelapse/detail/{{ now().strftime('%Y%m%d') }}_0200_detail.jpg
+      - service: light.turn_off
+        target:
+          entity_id: light.detail_camera_flash
+
+  # ═══════════════════════════════════════════════════════════
+  # 3. Manuelle Snapshot-Trigger
+  # ═══════════════════════════════════════════════════════════
+  - alias: "Timelapse: Manueller Canopy-Snapshot"
+    trigger:
+      - platform: state
+        entity_id: input_boolean.manual_canopy_snapshot
+        to: "on"
+    action:
+      - service: camera.snapshot
+        target:
+          entity_id: camera.canopy_camera
+        data:
+          filename: /config/www/timelapse/canopy/manual_{{ now().strftime('%Y%m%d_%H%M%S') }}_canopy.jpg
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.manual_canopy_snapshot
+
+  - alias: "Timelapse: Manueller Detail-Snapshot"
+    trigger:
+      - platform: state
+        entity_id: input_boolean.manual_detail_snapshot
+        to: "on"
+    action:
+      - service: camera.snapshot
+        target:
+          entity_id: camera.detail_camera
+        data:
+          filename: /config/www/timelapse/detail/manual_{{ now().strftime('%Y%m%d_%H%M%S') }}_detail.jpg
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.manual_detail_snapshot
+
+  # ═══════════════════════════════════════════════════════════
+  # 4. Wöchentliche Video-Generierung
+  # ═══════════════════════════════════════════════════════════
+  - alias: "Timelapse: Wöchentliche Video-Generierung"
+    description: "Erstellt jeden Sonntag um Mitternacht Timelapse-Video"
+    trigger:
+      - platform: time
+        at: "00:00:00"
+    condition:
+      - condition: template
+        value_template: "{{ now().weekday() == 6 }}"  # Sonntag = 6
+    action:
+      - service: shell_command.generate_timelapse_video
+
+  # ═══════════════════════════════════════════════════════════
+  # 5. Monatliches Cleanup (30+ Tage alte Fotos)
+  # ═══════════════════════════════════════════════════════════
+  - alias: "Timelapse: Monatliches Cleanup"
+    description: "Löscht Fotos älter als 30 Tage"
+    trigger:
+      - platform: time
+        at: "03:00:00"
+    condition:
+      - condition: template
+        value_template: "{{ now().day == 1 }}"  # 1. des Monats
+    action:
+      - service: shell_command.cleanup_old_timelapse_photos

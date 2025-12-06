@@ -1,0 +1,33 @@
+DiXY RDWC Controller
+Version: 0.2-beta
+Release Date: 2025-12-06
+
+=== Component Versions ===
+ESP32 Nodes: v0.2-beta
+  - Hydroknoten: v0.2-beta
+  - Dosierknoten: v0.2-beta
+  - Zeltsensor: v0.2-beta
+  - Klimaknoten: v0.2-beta
+  - Kameraknoten (Canopy): v0.2-beta
+  - Kameraknoten (Detail): v0.2-beta
+
+Home Assistant Integration: v0.2-beta
+  - Automations: 15+ automation rules
+  - Scripts: 7+ service definitions
+  - Dashboard: 4-tab Lovelace UI
+  - Input Numbers: EC/pH/Volume/Photoperiode sliders
+
+Documentation: Complete
+  - Hardware wiring guides
+  - Implementation roadmap (6 weeks)
+  - Sensor calibration specs
+  - HA integration setup
+
+=== Setup Checklist ===
+[ ] ESP32 nodes flashed with ESPHome v0.2-beta
+[ ] Home Assistant with pre-installed YAML templates
+[ ] secrets.yaml configured with WiFi/Telegram
+[ ] Sensors calibrated (EC, pH, Temperature)
+[ ] HA automations enabled
+[ ] Dashboard loaded
+[ ] Telegram notifications tested

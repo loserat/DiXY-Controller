@@ -1,0 +1,118 @@
+################################################################################
+# DiXY RDWC Controller - Kameraknoten Detail v0.2-beta
+# 
+# Funktion: Blattfarben-Analyse + Schädlings-Erkennung (Macro Side-View)
+# Hardware: ESP32-CAM AI-Thinker (OV2640 2MP)
+# 
+# GPIO PINOUT (ESP32-CAM AI-Thinker):
+# ├─ Kamera OV2640:
+# │  ├─ GPIO26/27: I2C (SDA/SCL) für Kamera-Config
+# │  ├─ GPIO5/18/19/21/36/39/34/35: Data Pins (D0-D7)
+# │  ├─ GPIO25: VSYNC
+# │  ├─ GPIO23: HREF
+# │  ├─ GPIO22: PCLK (Pixel Clock)
+# │  ├─ GPIO32: PWDN (Power Down)
+# │  └─ Reset: -1 (nicht verwendet)
+# ├─ Flashlight:
+# │  └─ GPIO4: White LED (für Nacht-Snapshots 02:00)
+# ├─ Onboard LED:
+# │  └─ GPIO33: Status LED
+# └─ Boot Button:
+#    └─ GPIO0: Flash Mode (beim Upload)
+# 
+# Features:
+# - 4x tägliche Snapshots (08:00/14:00/20:00/02:00)
+# - HSV-Farb-Analyse (Grün/Gelb/Braun für Stress-Detektion)
+# - Quality 5 (Maximum Detail für Blattoberflächen-Analyse)
+# - Automatische Nacht-Beleuchtung (Flash @02:00)
+################################################################################
+
+substitutions:
+  device_name: kameraknoten-detail
+  friendly_name: "Kamera Detail"
+  device_description: "Blattfarben-Analyse (Macro)"
+  project_version: "0.2-beta"
+
+esphome:
+  name: kameraknoten-detail
+  friendly_name: "Detail Kamera (Side-View)"
+  comment: "DiXY Kamera Detail v0.2-beta – Blattanalyse + WiFi Diagnostics + Health"
+  platform: ESP32
+  board: esp32cam
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  
+  manual_ip:
+    static_ip: !secret detail_cam_ip
+    gateway: !secret gateway_ip
+    subnet: !secret subnet_mask
+
+  ap:
+    ssid: !secret detail_cam_ap_ssid
+    password: !secret detail_cam_ap_password
+
+ota:
+  password: !secret camera_ota_password
+
+api:
+  encryption:
+    key: "REPLACE_WITH_GENERATED_KEY"
+
+logger:
+  level: INFO
+
+web_server:
+  port: 80
+  auth:
+    username: !secret web_username
+    password: !secret web_password
+
+time:
+  - platform: homeassistant
+    id: ha_time
+
+esp32_camera:
+  id: detail_camera
+  name: "Detail Camera"
+  
+  # Pin-Konfiguration (ESP32-CAM AI-Thinker)
+  data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
+  vsync_pin: GPIO25
+  href_pin: GPIO23
+  pixel_clock_pin: GPIO22
+  power_down_pin: GPIO32
+  reset_pin: -1
+  
+  # I2C für Kamera-Config
+  sda: GPIO26
+  scl: GPIO27
+  
+  # Kamera-Parameter (High Quality für Macro)
+  resolution: "800x600"
+  jpeg_quality: 5
+  max_framerate: "1 fps"
+  vertical_flip: false
+  horizontal_mirror: false
+  saturation: 0
+  brightness: 0
+  contrast: 0
+  special_effect: NONE
+  auto_white_balance: true
+  white_balance_mode: AUTO
+
+light:
+  # Flashlight für Nacht-Snapshots (02:00)
+  - platform: gpio
+    pin: GPIO4
+    name: "Detail Flash"
+    id: detail_flash
+
+output:
+  - platform: gpio
+    pin: GPIO33
+    id: detail_status_led
+
+status_led:
+  pin: GPIO33

@@ -1,0 +1,501 @@
+################################################################################
+# DiXY RDWC Controller - Zeltsensor v0.2-beta
+# 
+# Funktion: Multispektral-Lichtmessung + Klima-Monitoring + Lüftersteuerung
+# Hardware: ESP32-DevKit
+# 
+# GPIO PINOUT:
+# ├─ I2C Bus (SDA=21, SCL=22):
+# │  ├─ AS7341 (0x39): 11-Kanal Spektralsensor (PPFD/PAR/Lux/CCT)
+# │  ├─ SHT31 (0x44): Lufttemperatur + Luftfeuchtigkeit
+# │  └─ BMP280 (0x76): Luftdruck + Höhe
+# └─ PWM Outputs (Optional Hardware):
+#    ├─ GPIO 25: Inline-Lüfter PWM (25kHz, 0-100%)
+#    └─ GPIO 26: Lüfter Tacho-Signal (RPM-Messung)
+# 
+# Features:
+# - PPFD-Messung (Photosynthetic Photon Flux Density)
+# - PAR-Spektralanalyse (400-700nm für Photosynthese)
+# - DLI-Berechnung (Daily Light Integral)
+# - VPD-Berechnung (Vapor Pressure Deficit) via Magnus-Formel
+# - Spektral-Ratios (R:FR, Blue:Red)
+# - Taupunkt-Berechnung (Schimmel-Prävention)
+# - Inline-Lüfter Auto-Steuerung (VPD + Temp basiert)
+# - WiFi-Diagnostics & Status-Monitoring
+################################################################################
+
+substitutions:
+  device_name: zeltsensor
+  friendly_name: "Zeltsensor"
+  device_description: "Spektral-Licht + Klima Monitoring"
+  project_version: "0.2-beta"
+  
+  # === PIN MAPPING ===
+  i2c_sda_pin: "21"
+  i2c_scl_pin: "22"
+  
+  # Optional Hardware (auskommentiert bis angeschlossen)
+  fan_pwm_pin: "25"
+  fan_tacho_pin: "26"
+  
+  # === I2C ADRESSEN ===
+  as7341_address: "0x39"
+  sht31_address: "0x44"
+  bmp280_address: "0x76"
+  
+  # === KALIBRIERUNG ===
+  ppfd_cal_factor: "0.003415"  # Via Apogee Quantum Sensor ermittelt
+  photoperiod_default: "18"     # Stunden (wird von HA überschrieben)
+
+esphome:
+  name: zeltsensor
+  friendly_name: Zeltsensor
+  comment: "DiXY Zeltsensor v0.2-beta – AS7341 + SHT31 + BMP280 + PPFD + VPD + Lüfter"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: WARN
+  baud_rate: 115200
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: !secret zeltsensor_ap_ssid
+    password: !secret zeltsensor_ap_password
+
+api:
+  reboot_timeout: 0s
+
+ota:
+  platform: esphome
+  password: !secret zeltsensor_ota_password
+
+web_server:
+  port: 80
+
+time:
+  - platform: homeassistant
+    id: ha_time
+
+i2c:
+  sda: ${i2c_sda_pin}
+  scl: ${i2c_scl_pin}
+  scan: true
+  frequency: 400kHz
+
+sensor:
+  # ============================================================================
+  # HARDWARE SENSOREN
+  # ============================================================================
+  
+  # SHT31 - Lufttemperatur + Luftfeuchte
+  - platform: sht3xd
+    temperature:
+      name: "Lufttemperatur"
+      id: air_temp
+    humidity:
+      name: "Luftfeuchte"
+      id: air_humidity
+    address: ${sht31_address}
+    update_interval: 30s
+
+  # BMP280 - Luftdruck
+  - platform: bmp280
+    temperature:
+      name: "BMP280 Temperatur"
+      internal: true
+    pressure:
+      name: "Luftdruck"
+      id: air_pressure
+    address: ${bmp280_address}
+    update_interval: 30s
+
+  # AS7341 - Spektralsensor (11-Kanal)
+  - platform: as7341
+    address: ${as7341_address}
+    atime: 29
+    astep: 599
+    gain: "X8"
+    update_interval: 60s
+    
+    # Spektrale Kanäle (405-880nm)
+    f1:
+      name: "Violet (405nm)"
+      id: violet
+    f2:
+      name: "Blue (470nm)"
+      id: blue
+    f3:
+      name: "Cyan (505nm)"
+      id: cyan
+    f4:
+      name: "Green (545nm)"
+      id: green
+    f5:
+      name: "Yellow (580nm)"
+      id: yellow
+    f6:
+      name: "Orange (610nm)"
+      id: orange
+    f7:
+      name: "Red (670nm)"
+      id: red
+    f8:
+      name: "Near Infrared (880nm)"
+      id: nir
+    nir:
+      name: "Brightness"
+      id: brightness
+
+  # ============================================================================
+  # WIFI & SYSTEM DIAGNOSTICS
+  # ============================================================================
+  
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+  
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 60s
+
+  # ============================================================================
+  # BERECHNETE KLIMAWERTE
+  # ============================================================================
+  
+  # VPD (Vapor Pressure Deficit) - Magnus-Formel
+  - platform: template
+    name: "VPD"
+    id: vpd
+    unit_of_measurement: "kPa"
+    device_class: pressure
+    accuracy_decimals: 2
+    lambda: |-
+      float temp = id(air_temp).state;
+      float rh = id(air_humidity).state;
+      
+      // Magnus-Formel: SVP = 0.6108 * exp((17.27*T)/(T+237.3))
+      float svp = 0.6108 * exp((17.27 * temp) / (temp + 237.3));
+      
+      // VPD = SVP * (1 - RH/100)
+      float vpd = svp * (1.0 - rh / 100.0);
+      
+      return vpd;
+    update_interval: 10s
+  
+  # Taupunkt (Dew Point) - Schimmelgefahr-Indikator
+  - platform: template
+    name: "Taupunkt"
+    id: dew_point
+    unit_of_measurement: "°C"
+    device_class: temperature
+    accuracy_decimals: 1
+    lambda: |-
+      float temp = id(air_temp).state;
+      float rh = id(air_humidity).state;
+      
+      float a = 17.27;
+      float b = 237.3;
+      float gamma = (a * temp) / (b + temp) + log(rh / 100.0);
+      float dew = (b * gamma) / (a - gamma);
+      
+      return dew;
+    update_interval: 60s
+  
+  # Absolute Luftfeuchtigkeit (g/m³)
+  - platform: template
+    name: "Absolute Luftfeuchtigkeit"
+    unit_of_measurement: "g/m³"
+    accuracy_decimals: 1
+    lambda: |-
+      float temp = id(air_temp).state;
+      float rh = id(air_humidity).state;
+      
+      // Absolute Humidity = (6.112 * exp((17.67*T)/(T+243.5)) * rh * 2.1674) / (273.15+T)
+      float abs_humidity = (6.112 * exp((17.67 * temp) / (temp + 243.5)) * rh * 2.1674) / (273.15 + temp);
+      
+      return abs_humidity;
+    update_interval: 60s
+
+  # ============================================================================
+  # LICHT-ANALYSEN (PPFD, DLI, Spektral-Ratios)
+  # ============================================================================
+  
+  # PPFD (Photosynthetic Photon Flux Density)
+  - platform: template
+    name: "PPFD"
+    id: ppfd
+    unit_of_measurement: "µmol/m²/s"
+    icon: "mdi:white-balance-sunny"
+    accuracy_decimals: 0
+    lambda: |-
+      // Gewichtete Summe aller PAR-Kanäle (400-700nm)
+      float par = 0.75 * id(violet).state +   // F1: 405nm
+                  1.00 * id(blue).state +     // F2: 470nm (Chlorophyll-Peak)
+                  0.95 * id(cyan).state +     // F3: 505nm
+                  0.85 * id(green).state +    // F4: 545nm
+                  0.70 * id(yellow).state +   // F5: 580nm (Green Gap)
+                  0.85 * id(orange).state +   // F6: 610nm
+                  1.00 * id(red).state +      // F7: 670nm (Chlorophyll-Peak)
+                  0.95 * id(nir).state;       // F8: 880nm (Far-Red)
+      
+      // Kalibrierfaktor (via Apogee Quantum Sensor ermittelt)
+      float cal_factor = ${ppfd_cal_factor};
+      
+      return par * cal_factor;
+    update_interval: 60s
+  
+  # DLI (Daily Light Integral)
+  - platform: template
+    name: "DLI"
+    id: dli
+    unit_of_measurement: "mol/m²/d"
+    icon: "mdi:chart-bell-curve-cumulative"
+    accuracy_decimals: 2
+    lambda: |-
+      float ppfd = id(ppfd).state;
+      float photoperiod = ${photoperiod_default};  // Stunden
+      
+      // DLI = (PPFD * Photoperiode * 3600) / 1,000,000
+      float dli = (ppfd * photoperiod * 3600.0) / 1000000.0;
+      
+      return dli;
+    update_interval: 60s
+  
+  # Red:Far-Red Ratio (Streckung vs. kompaktes Wachstum)
+  - platform: template
+    name: "R:FR Ratio"
+    id: r_fr_ratio
+    icon: "mdi:creation"
+    accuracy_decimals: 2
+    lambda: |-
+      float red = id(red).state;       // F7: 670nm
+      float far_red = id(nir).state;   // F8: 880nm
+      
+      if (far_red > 0) {
+        return red / far_red;
+      }
+      return 0;
+    update_interval: 60s
+  
+  # Blue:Red Ratio (Photomorphogenese)
+  - platform: template
+    name: "Blue:Red Ratio"
+    id: b_r_ratio
+    icon: "mdi:palette"
+    accuracy_decimals: 2
+    lambda: |-
+      float blue = id(blue).state + id(cyan).state;  // F2 + F3
+      float red = id(red).state + id(nir).state;     // F7 + F8
+      
+      if (red > 0) {
+        return blue / red;
+      }
+      return 0;
+    update_interval: 60s
+
+  # ============================================================================
+  # [OPTIONAL HARDWARE] LÜFTER-TACHO (RPM-Messung)
+  # ============================================================================
+  # Aktivieren wenn Hardware angeschlossen:
+  # - platform: pulse_counter
+  #   pin: ${fan_tacho_pin}
+  #   name: "Lüfter RPM"
+  #   id: fan_rpm
+  #   unit_of_measurement: "RPM"
+  #   filters:
+  #     - multiply: 0.5  # 2 Pulse pro Umdrehung = Faktor 0.5
+  #   update_interval: 10s
+
+# ==============================================================================
+# TEXT SENSORS (WiFi Info, Versionen)
+# ==============================================================================
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Adresse"
+    ssid:
+      name: "WiFi SSID"
+    mac_address:
+      name: "MAC Adresse"
+  
+  - platform: version
+    name: "ESPHome Version"
+    hide_timestamp: false
+  
+  - platform: template
+    name: "Project Version"
+    lambda: 'return {"${project_version}"};'
+    update_interval: never
+
+# ==============================================================================
+# BINARY SENSORS (Status & Alarme)
+# ==============================================================================
+binary_sensor:
+  # ============================================================================
+  # ONLINE-STATUS
+  # ============================================================================
+  - platform: status
+    name: "Status"
+  
+  # ============================================================================
+  # SENSOR HEALTH-CHECKS (I2C)
+  # ============================================================================
+  - platform: template
+    name: "SHT31 Status"
+    id: sht31_status
+    device_class: connectivity
+    lambda: |-
+      return !isnan(id(air_temp).state) && !isnan(id(air_humidity).state);
+  
+  - platform: template
+    name: "AS7341 Status"
+    id: as7341_status
+    device_class: connectivity
+    lambda: |-
+      return !isnan(id(violet).state);
+  
+  - platform: template
+    name: "BMP280 Status"
+    id: bmp280_status
+    device_class: connectivity
+    lambda: |-
+      return !isnan(id(air_pressure).state);
+  
+  # ============================================================================
+  # PPFD-ALARME
+  # ============================================================================
+  - platform: template
+    name: "PPFD zu niedrig"
+    id: ppfd_too_low
+    device_class: problem
+    lambda: |-
+      float ppfd = id(ppfd).state;
+      auto t = id(ha_time).now();
+      // Nur Alarm zwischen 6-22 Uhr (Photoperiode)
+      if (t.is_valid() && t.hour >= 6 && t.hour < 22) {
+        return ppfd < 300;  // Alarm bei < 300 µmol/m²/s
+      }
+      return false;  // Nachts kein Alarm
+  
+  - platform: template
+    name: "PPFD zu hoch"
+    id: ppfd_too_high
+    device_class: problem
+    lambda: |-
+      float ppfd = id(ppfd).state;
+      return ppfd > 1200;  // Alarm bei > 1200 µmol/m²/s (Licht-Stress)
+  
+  # ============================================================================
+  # VPD-ALARME
+  # ============================================================================
+  - platform: template
+    name: "VPD kritisch"
+    id: vpd_critical
+    device_class: problem
+    lambda: |-
+      float vpd = id(vpd).state;
+      // Kritisch wenn außerhalb 0.4-1.6 kPa
+      return (vpd < 0.4 || vpd > 1.6);
+
+# ==============================================================================
+# BUTTONS (Fernsteuerung)
+# ==============================================================================
+button:
+  - platform: restart
+    name: "Restart"
+  
+  - platform: safe_mode
+    name: "Safe Mode Boot"
+
+# ==============================================================================
+# NUMBER INPUTS (Konfigurierbare Parameter)
+# ==============================================================================
+number:
+  - platform: template
+    name: "PPFD Kalibrierfaktor"
+    id: ppfd_calibration_factor
+    min_value: 0.001
+    max_value: 0.01
+    step: 0.0001
+    initial_value: ${ppfd_cal_factor}
+    optimistic: true
+    restore_value: true
+    mode: box
+
+# ==============================================================================
+# [OPTIONAL HARDWARE] INLINE-LÜFTER STEUERUNG
+# ==============================================================================
+# Aktivieren wenn Hardware angeschlossen (GPIO 25):
+#
+# output:
+#   - platform: ledc
+#     pin: ${fan_pwm_pin}
+#     id: inline_fan_pwm
+#     frequency: 25000Hz  # 25kHz für leisen Betrieb
+#
+# fan:
+#   - platform: speed
+#     output: inline_fan_pwm
+#     name: "Inline Abluft"
+#     id: inline_fan
+#
+# switch:
+#   - platform: template
+#     name: "Lüfter Auto-Modus"
+#     id: fan_auto_mode
+#     optimistic: true
+#     restore_mode: RESTORE_DEFAULT_ON
+#
+# script:
+#   - id: auto_fan_control
+#     then:
+#       - lambda: |-
+#           // Nur wenn Auto-Modus aktiv
+#           if (!id(fan_auto_mode).state) return;
+#           
+#           float vpd = id(vpd).state;
+#           float temp = id(air_temp).state;
+#           
+#           // Temperatur-Override (bei Hitze immer voll)
+#           if (temp > 28) {
+#             auto call = id(inline_fan).turn_on();
+#             call.set_speed(100);
+#             call.perform();
+#             return;
+#           }
+#           
+#           // VPD-basierte Regelung
+#           if (vpd > 1.5) {
+#             // Zu trocken → Lüfter runter
+#             auto call = id(inline_fan).turn_on();
+#             call.set_speed(25);
+#             call.perform();
+#           } else if (vpd > 1.3) {
+#             auto call = id(inline_fan).turn_on();
+#             call.set_speed(50);
+#             call.perform();
+#           } else if (vpd > 1.0) {
+#             auto call = id(inline_fan).turn_on();
+#             call.set_speed(75);
+#             call.perform();
+#           } else if (vpd > 0.8) {
+#             auto call = id(inline_fan).turn_on();
+#             call.set_speed(100);
+#             call.perform();
+#           } else {
+#             // Zu feucht → Lüfter voll
+#             auto call = id(inline_fan).turn_on();
+#             call.set_speed(100);
+#             call.perform();
+#           }
+#
+# interval:
+#   - interval: 30s
+#     then:
+#       - script.execute: auto_fan_control

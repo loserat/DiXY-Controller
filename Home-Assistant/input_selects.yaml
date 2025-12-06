@@ -1,0 +1,93 @@
+# input_selects.yaml
+# Home Assistant Input Selectors für Wachstumsstadien + Strategien
+
+input_select:
+  # ═══════════════════════════════════════════════════════════
+  # Growth Stage Selector
+  # ═══════════════════════════════════════════════════════════
+  growth_stage:
+    name: "Wachstumsstadium"
+    description: "Aktuelle Wachstumsphase (Auto oder manuell)"
+    options:
+      - "Auto"
+      - "Keimling (0-10 Tage)"
+      - "Vegetativ Woche 1"
+      - "Vegetativ Woche 2"
+      - "Vegetativ Woche 3"
+      - "Pre-Blüte"
+      - "Blüte Früh"
+      - "Blüte Spät"
+      - "Flush"
+      - "Ernte"
+    initial: "Auto"
+    icon: mdi:leaf-circle
+    # Automation kümmert sich um Auto-Erkennung basierend auf light_cycle
+
+  # ═══════════════════════════════════════════════════════════
+  # Light Cycle (beeinflusst Stage Auto-Detection)
+  # ═══════════════════════════════════════════════════════════
+  light_cycle:
+    name: "Lichtzyklus"
+    description: "Aktuelle Light/Dark Stunden"
+    options:
+      - "18/6 (Vegetativ)"
+      - "20/4 (Vegetativ+)"
+      - "12/12 (Blüte)"
+      - "24/0 (Continuous)"
+    initial: "18/6 (Vegetativ)"
+    icon: mdi:weather-sunny
+    # 18/6 oder 20/4 → Auto-Detect als Vegetativ
+    # 12/12 → Auto-Detect als Blüte
+
+  # ═══════════════════════════════════════════════════════════
+  # Nutrient Strategy (EC Target)
+  # ═══════════════════════════════════════════════════════════
+  nutrient_strategy:
+    name: "Nährstoff-Strategie"
+    description: "EC Target Ansatz (konservativ bis aggressiv)"
+    options:
+      - "Konservativ"
+      - "Standard"
+      - "Aggressiv"
+    initial: "Standard"
+    icon: mdi:test-tube
+    # Konservativ: -20% EC Target
+    # Standard: 100% EC Target (aus growth_stage)
+    # Aggressiv: +20% EC Target
+
+  # ═══════════════════════════════════════════════════════════
+  # VPD Strategy (Environmental Control)
+  # ═══════════════════════════════════════════════════════════
+  vpd_strategy:
+    name: "VPD-Strategie"
+    description: "Wie aggressiv VPD geregelt wird"
+    options:
+      - "Konservativ"
+      - "Standard"
+      - "Aggressiv"
+    initial: "Standard"
+    icon: mdi:water-opacity
+    # Konservativ: Größere Toleranz-Bandbreite
+    # Standard: Normale Toleranz
+    # Aggressiv: Enge Toleranz, schnelle Regelung
+
+input_boolean:
+  # ═══════════════════════════════════════════════════════════
+  # Timelapse Manual Triggers
+  # ═══════════════════════════════════════════════════════════
+  manual_canopy_snapshot:
+    name: "Manueller Canopy-Snapshot"
+    icon: mdi:camera
+
+  manual_detail_snapshot:
+    name: "Manueller Detail-Snapshot"
+    icon: mdi:camera-macro
+
+  # ═══════════════════════════════════════════════════════════
+  # KI Optimization Mode
+  # ═══════════════════════════════════════════════════════════
+  ki_learning_mode:
+    name: "KI Learning Mode"
+    description: "KI zeigt Tipps vor Auto-Optimierung"
+    icon: mdi:brain
+    initial: on

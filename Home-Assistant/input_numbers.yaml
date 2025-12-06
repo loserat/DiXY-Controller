@@ -1,0 +1,110 @@
+# Home Assistant Input Numbers für DiXY RDWC
+# Kopiere den Inhalt in ~/.homeassistant/input_numbers.yaml
+
+input_number:
+  ec_target:
+    name: "EC Soll (mS/cm)"
+    unit_of_measurement: mS/cm
+    min: 0.5
+    max: 3.0
+    step: 0.1
+    initial: 1.5
+    icon: mdi:water-circle
+    mode: slider
+
+  ph_target:
+    name: "pH Soll"
+    unit_of_measurement: pH
+    min: 5.0
+    max: 7.5
+    step: 0.1
+    initial: 6.0
+    icon: mdi:water-percent
+    mode: slider
+
+  rdwc_system_liters:
+    name: "RDWC System-Volumen (L)"
+    unit_of_measurement: L
+    min: 10
+    max: 500
+    step: 5
+    initial: 50
+    icon: mdi:water-alert
+    mode: slider
+
+  photoperiode_stunden:
+    name: "Photoperiode (Stunden)"
+    unit_of_measurement: h
+    min: 12
+    max: 24
+    step: 1
+    initial: 18
+    icon: mdi:weather-sunny
+    mode: slider
+
+
+# ═══════════════════════════════════════════════════════════
+# Input Selects für Wachstumsstadien + Strategien
+# ═══════════════════════════════════════════════════════════
+input_select:
+  growth_stage:
+    name: "Wachstumsstadium"
+    options:
+      - "Auto"
+      - "Keimling (0-10 Tage)"
+      - "Vegetativ Woche 1"
+      - "Vegetativ Woche 2"
+      - "Vegetativ Woche 3"
+      - "Pre-Blüte"
+      - "Blüte Früh"
+      - "Blüte Spät"
+      - "Flush"
+      - "Ernte"
+    initial: "Auto"
+    icon: mdi:leaf-circle
+
+  light_cycle:
+    name: "Lichtzyklus"
+    options:
+      - "18/6 (Vegetativ)"
+      - "20/4 (Vegetativ+)"
+      - "12/12 (Blüte)"
+      - "24/0 (Continuous)"
+    initial: "18/6 (Vegetativ)"
+    icon: mdi:weather-sunny
+
+  nutrient_strategy:
+    name: "Nährstoff-Strategie"
+    options:
+      - "Konservativ"
+      - "Standard"
+      - "Aggressiv"
+    initial: "Standard"
+    icon: mdi:test-tube
+
+  vpd_strategy:
+    name: "VPD-Strategie"
+    options:
+      - "Konservativ"
+      - "Standard"
+      - "Aggressiv"
+    initial: "Standard"
+    icon: mdi:water-opacity
+
+
+# ═══════════════════════════════════════════════════════════
+# Input Booleans für Timelapse + KI
+# ═══════════════════════════════════════════════════════════
+input_boolean:
+  manual_canopy_snapshot:
+    name: "Manueller Canopy-Snapshot"
+    icon: mdi:camera
+
+  manual_detail_snapshot:
+    name: "Manueller Detail-Snapshot"
+    icon: mdi:camera-macro
+
+  ki_learning_mode:
+    name: "KI Learning Mode"
+    icon: mdi:brain
+    initial: on

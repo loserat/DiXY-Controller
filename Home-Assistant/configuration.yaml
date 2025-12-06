@@ -1,0 +1,144 @@
+# configuration.yaml
+# DiXY RDWC Home Assistant Minimal Configuration
+# Kopiere diese Datei als ~/.homeassistant/configuration.yaml
+
+# ===================================================================
+# HOMEASSISTANT CORE
+# ===================================================================
+homeassistant:
+  name: DiXY RDWC
+  unit_system: metric
+  time_zone: Europe/Berlin
+  latitude: !secret latitude
+  longitude: !secret longitude
+  elevation: !secret elevation
+
+# ===================================================================
+# FRONTEND & LOVELACE
+# ===================================================================
+frontend:
+  development_mode: false
+
+lovelace:
+  mode: yaml
+  dashboards:
+    dixy_rdwc:
+      mode: yaml
+      filename: dashboards/dixy_rdwc_monitor.yaml
+      title: DiXY RDWC Monitor
+      icon: mdi:water-circle
+
+# ===================================================================
+# LOGGER & HISTORY
+# ===================================================================
+logger:
+  default: info
+  logs:
+    homeassistant.components.mqtt: debug
+    esphome: debug
+
+history:
+  purge_keep_days: 30
+  exclude:
+    entities:
+      - sensor.hydroknoten_uptime
+      - sensor.dosierung_uptime
+      - sensor.zeltsensor_uptime
+
+# ===================================================================
+# AUTOMATIONS & SCRIPTS
+# ===================================================================
+automation: !include automations.yaml
+script: !include scripts.yaml
+input_number: !include input_numbers.yaml
+input_select: !include input_selects.yaml
+
+# ===================================================================
+# MQTT (Optional - falls Node-RED verwendet)
+# ===================================================================
+# mqtt:
+#   broker: localhost
+#   port: 1883
+#   username: !secret mqtt_username
+#   password: !secret mqtt_password
+
+# ===================================================================
+# INFLUXDB (Optional - für Grafana)
+# ===================================================================
+# influxdb:
+#   host: !secret influxdb_host
+#   port: !secret influxdb_port
+#   database: !secret influxdb_database
+#   username: !secret influxdb_username
+#   password: !secret influxdb_password
+#   verify_ssl: false
+#   component_config_domain_glob:
+#     "sensor.*":
+#       override_measurement: "measurement"
+
+# ===================================================================
+# TELEGRAM NOTIFIER (Optional)
+# ===================================================================
+notify:
+  - platform: telegram
+    name: telegram
+    chat_id: !secret telegram_chat_id
+    api_key: !secret telegram_bot_token
+
+# ===================================================================
+# HTTP SETUP
+# ===================================================================
+http:
+  cors_allowed_origins:
+    - http://localhost:8123
+    - http://127.0.0.1:8123
+
+# ===================================================================
+# SYSTEM HEALTH
+# ===================================================================
+system_health:
+
+# ===================================================================
+# TEMPLATE ENTITIES (Optional - für berechnete Werte)
+# ===================================================================
+template:
+  - sensor:
+      - name: "DiXY System Status"
+        unique_id: dixy_system_status
+        state: >
+          {% if states('binary_sensor.hydroknoten_online') == 'on' and
+                states('binary_sensor.dosierung_online') == 'on' and
+                states('binary_sensor.zeltsensor_online') == 'on' %}
+            Online
+          {% else %}
+            Offline
+          {% endif %}
+        icon: mdi:water-circle
+
+      - name: "EC Status"
+        unique_id: ec_status
+        state: >
+          {% set ec = states('sensor.hydroknoten_ec_wert') | float(default=0) %}
+          {% set target = states('input_number.ec_target') | float(default=1.5) %}
+          {% if ec < (target - 0.2) %}
+            Zu niedrig
+          {% elif ec > (target + 0.2) %}
+            Zu hoch
+          {% else %}
+            OK
+          {% endif %}
+        icon: mdi:gauge
+
+      - name: "pH Status"
+        unique_id: ph_status
+        state: >
+          {% set ph = states('sensor.hydroknoten_ph_wert') | float(default=6.0) %}
+          {% set target = states('input_number.ph_target') | float(default=5.8) %}
+          {% if ph < (target - 0.2) %}
+            Zu niedrig
+          {% elif ph > (target + 0.2) %}
+            Zu hoch
+          {% else %}
+            OK
+          {% endif %}
+        icon: mdi:test-tube

@@ -1,0 +1,359 @@
+# Home Assistant Automations für DiXY RDWC
+# Kopiere in ~/.homeassistant/automations/dixy_rdwc_automations.yaml
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AUTO DOSIERUNG: EC-Nährstoff (alle 30 Min prüfen)
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Auto Dosierung EC"
+  description: "EC-Hauptdünger dosieren wenn zu niedrig (Pumpe A)"
+  trigger:
+    platform: time_pattern
+    minutes: "/30"
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.hydroknoten_ec_wert
+      below: 1.4  # input_number.ec_target (Standard 1.5, hier Hysterese)
+    - condition: state
+      entity_id: binary_sensor.dosierung_ruehrzeit_ok
+      state: "on"
+  action:
+    - service: switch.turn_on
+      target:
+        entity_id: switch.dosierung_pumpe_a
+    - delay:
+        seconds: 10
+    - service: switch.turn_off
+      target:
+        entity_id: switch.dosierung_pumpe_a
+    - service: notify.persistent_notification
+      data:
+        title: "✅ DiXY EC Dosierung"
+        message: "Pumpe A (EC) für 10s aktiviert. Neue EC: {{ states('sensor.hydroknoten_ec_wert') }} mS/cm"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AUTO DOSIERUNG: pH Correction (alle 30 Min)
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Auto Dosierung pH"
+  description: "pH Up/Down dosieren wenn außerhalb Range"
+  trigger:
+    platform: time_pattern
+    minutes: "/30"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.dosierung_ruehrzeit_ok
+      state: "on"
+  action:
+    - choose:
+        # pH zu niedrig → pH Up (Pumpe C)
+        - conditions:
+            - condition: numeric_state
+              entity_id: sensor.hydroknoten_ph_wert
+              below: 5.8
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: switch.dosierung_pumpe_c
+            - delay:
+                seconds: 5
+            - service: switch.turn_off
+              target:
+                entity_id: switch.dosierung_pumpe_c
+            - service: notify.persistent_notification
+              data:
+                title: "⬆️ DiXY pH UP"
+                message: "Pumpe C aktiviert (pH {{ states('sensor.hydroknoten_ph_wert') }})"
+        
+        # pH zu hoch → pH Down (Pumpe B)
+        - conditions:
+            - condition: numeric_state
+              entity_id: sensor.hydroknoten_ph_wert
+              above: 6.2
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: switch.dosierung_pumpe_b
+            - delay:
+                seconds: 5
+            - service: switch.turn_off
+              target:
+                entity_id: switch.dosierung_pumpe_b
+            - service: notify.persistent_notification
+              data:
+                title: "⬇️ DiXY pH DOWN"
+                message: "Pumpe B aktiviert (pH {{ states('sensor.hydroknoten_ph_wert') }})"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AUTO LÜFTER: VPD-basierte Steuerung
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Lüfter Auto VPD"
+  description: "Inline-Lüfter basierend auf VPD + Temperatur"
+  trigger:
+    - platform: state
+      entity_id: sensor.zeltsensor_vpd
+    - platform: state
+      entity_id: sensor.zeltsensor_lufttemperatur
+  action:
+    - service: number.set_value
+      target:
+        entity_id: number.dosierung_inline_luefter_pwm
+      data:
+        value: >
+          {% set vpd = states('sensor.zeltsensor_vpd') | float(0) %}
+          {% set air_temp = states('sensor.zeltsensor_lufttemperatur') | float(0) %}
+          
+          {# Temperatur-Override #}
+          {% if air_temp > 28 %}
+            {{ [((vpd - 0.4) / 0.8 * 100) | int(0), 50] | max }}
+          {% elif air_temp > 32 %}
+            100
+          
+          {# VPD-basiert #}
+          {% elif vpd > 1.2 %}
+            100
+          {% elif vpd < 0.4 %}
+            0
+          {% else %}
+            {{ ((vpd - 0.4) / 0.8 * 100) | int(0) }}
+          {% endif %}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# WARNUNG: EC/pH kritisch
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Alert EC/pH kritisch"
+  description: "Benachrichtigung wenn EC/pH außerhalb Bereich"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.hydroknoten_ec_wert
+      below: 0.8
+    - platform: numeric_state
+      entity_id: sensor.hydroknoten_ec_wert
+      above: 2.5
+    - platform: numeric_state
+      entity_id: sensor.hydroknoten_ph_wert
+      below: 5.5
+    - platform: numeric_state
+      entity_id: sensor.hydroknoten_ph_wert
+      above: 7.0
+  action:
+    - service: notify.persistent_notification
+      data:
+        title: "⚠️ DiXY RDWC – EC/pH ALARM"
+        message: >
+          EC: {{ states('sensor.hydroknoten_ec_wert') }} mS/cm
+          pH: {{ states('sensor.hydroknoten_ph_wert') }} pH
+          
+          Handeln erforderlich!
+
+# ═══════════════════════════════════════════════════════════════════════════
+# WARNUNG: Tank Leer
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Alert Tank leer"
+  description: "Kritischer Alarm wenn Tank leer"
+  trigger:
+    platform: state
+    entity_id: binary_sensor.hydroknoten_tank_leer
+    to: "on"
+  action:
+    - service: notify.persistent_notification
+      data:
+        title: "🚨 TANK LEER!"
+        message: "Mindestens einer der 6 Tanks ist leer. SOFORT NACHFÜLLEN!"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# WARNUNG: VPD kritisch
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Alert VPD kritisch"
+  description: "Warnung wenn VPD < 0.4 (Schimmel) oder > 1.6 (Stress)"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.zeltsensor_vpd
+      below: 0.4
+    - platform: numeric_state
+      entity_id: sensor.zeltsensor_vpd
+      above: 1.6
+  action:
+    - service: notify.persistent_notification
+      data:
+        title: "⚠️ VPD KRITISCH"
+        message: >
+          VPD: {{ states('sensor.zeltsensor_vpd') }} kPa
+          Lufttemp: {{ states('sensor.zeltsensor_lufttemperatur') }} °C
+          RH: {{ states('sensor.zeltsensor_luftfeuchte') }} %
+          
+          Lüfter/Befeuchter anpassen!
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SENSOR-FEHLER: ADS1115 (EC/pH ADC)
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Health Alert ADS1115 Fehler"
+  description: "Warnung wenn ADS1115 ADC Fehler"
+  trigger:
+    platform: state
+    entity_id: binary_sensor.hydroknoten_ads1115_fehler
+    to: "on"
+  action:
+    - service: notify.persistent_notification
+      data:
+        title: "🔴 ADS1115 Fehler"
+        message: "EC/pH Sensor antwortet nicht! I2C-Kabel + Spannungsversorgung prüfen."
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DAILY RESET: Tages-Counter
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Daily Reset Counter"
+  description: "Tages-Counter um 00:00 UTC zurücksetzen"
+  trigger:
+    platform: time
+    at: "00:00:00"
+  action:
+    - service: button.press
+      target:
+        entity_id: button.dosierung_daily_reset
+
+# ═══════════════════════════════════════════════════════════════════════════
+# KAMERA: Stündliche Canopy-Snapshots
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Canopy Snapshot Hourly"
+  description: "Stündliche Canopy-Snapshots für Timelapse"
+  trigger:
+    platform: time_pattern
+    hours: "*"
+    minutes: "0"
+  action:
+    - service: camera.snapshot
+      target:
+        entity_id: camera.canopy_camera
+      data:
+        filename: "/config/snapshots/canopy_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# KAMERA: 4x Daily Detail-Snapshots
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Detail Camera 4x Daily"
+  description: "Detail-Snapshots um 08:00, 14:00, 20:00, 02:00"
+  trigger:
+    - platform: time
+      at: "08:00:00"
+    - platform: time
+      at: "14:00:00"
+    - platform: time
+      at: "20:00:00"
+    - platform: time
+      at: "02:00:00"
+  action:
+    - service: camera.snapshot
+      target:
+        entity_id: camera.detail_camera
+      data:
+        filename: "/config/snapshots/detail_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TIMELAPSE: Stündliche Canopy-Snapshots
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "Timelapse: Stündliche Canopy-Snapshots"
+  description: "Erstellt jede Stunde ein Canopy-Foto für Timelapse"
+  trigger:
+    - platform: time_pattern
+      hours: "/1"
+  action:
+    - service: camera.snapshot
+      target:
+        entity_id: camera.kameraknoten_canopy
+      data:
+        filename: /config/www/timelapse/canopy/{{ now().strftime('%Y%m%d_%H%M%S') }}_canopy.jpg
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TIMELAPSE: Detail-Snapshot 08:00
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "Timelapse: Detail-Snapshot 08:00"
+  trigger:
+    - platform: time
+      at: "08:00:00"
+  action:
+    - service: camera.snapshot
+      target:
+        entity_id: camera.kameraknoten_detail
+      data:
+        filename: /config/www/timelapse/detail/{{ now().strftime('%Y%m%d') }}_0800_detail.jpg
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TIMELAPSE: Detail-Snapshot 14:00
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "Timelapse: Detail-Snapshot 14:00"
+  trigger:
+    - platform: time
+      at: "14:00:00"
+  action:
+    - service: camera.snapshot
+      target:
+        entity_id: camera.kameraknoten_detail
+      data:
+        filename: /config/www/timelapse/detail/{{ now().strftime('%Y%m%d') }}_1400_detail.jpg
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TIMELAPSE: Detail-Snapshot 20:00
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "Timelapse: Detail-Snapshot 20:00"
+  trigger:
+    - platform: time
+      at: "20:00:00"
+  action:
+    - service: camera.snapshot
+      target:
+        entity_id: camera.kameraknoten_detail
+      data:
+        filename: /config/www/timelapse/detail/{{ now().strftime('%Y%m%d') }}_2000_detail.jpg
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TIMELAPSE: Monatliches Cleanup (30+ Tage alte Fotos)
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "Timelapse: Monatliches Cleanup"
+  description: "Löscht Fotos älter als 30 Tage am 1. des Monats"
+  trigger:
+    - platform: time
+      at: "03:00:00"
+  condition:
+    - condition: template
+      value_template: "{{ now().day == 1 }}"
+  action:
+    - service: notify.persistent_notification
+      data:
+        title: "🗑️ Timelapse Cleanup"
+        message: "Monatliches Cleanup läuft. Fotos älter als 30 Tage werden gelöscht."
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TIMELAPSE: Manuelle Snapshots
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "Timelapse: Manueller Canopy-Snapshot"
+  description: "Manueller Canopy-Snapshot via Trigger"
+  trigger:
+    - platform: state
+      entity_id: input_boolean.manual_canopy_snapshot
+      to: "on"
+  action:
+    - service: camera.snapshot
+      target:
+        entity_id: camera.kameraknoten_canopy
+      data:
+        filename: /config/www/timelapse/canopy/manual_{{ now().strftime('%Y%m%d_%H%M%S') }}_canopy.jpg
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.manual_canopy_snapshot
+
+- alias: "Timelapse: Manueller Detail-Snapshot"
+  description: "Manueller Detail-Snapshot via Trigger"
+  trigger:
+    - platform: state
+      entity_id: input_boolean.manual_detail_snapshot
+      to: "on"
+  action:
+    - service: camera.snapshot
+      target:
+        entity_id: camera.kameraknoten_detail
+      data:
+        filename: /config/www/timelapse/detail/manual_{{ now().strftime('%Y%m%d_%H%M%S') }}_detail.jpg
+    - service: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.manual_detail_snapshot
