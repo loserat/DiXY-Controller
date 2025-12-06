@@ -107,74 +107,74 @@ time:
   - platform: homeassistant
     id: ha_time
 
-  # ===============================================================
-  # GLOBALS – RÜHRZEIT & COUNTER MANAGEMENT
-  # ===============================================================
-  globals:
-    # Timestamp der letzten Dosierung (für Rührzeit-Check)
-    - id: last_dose_timestamp
-      type: unsigned long
-      initial_value: '0'
-      # Unix ms seit letzter Dosierung
-  
-    # Tages-Counter (Reset um Mitternacht)
-    - id: pump_a_total_today
-      type: float
-      initial_value: '0.0'
-  
-    - id: pump_b_total_today
-      type: float
-      initial_value: '0.0'
-  
-    - id: pump_c_total_today
-      type: float
-      initial_value: '0.0'
-  
-    - id: pump_d_total_today
-      type: float
-      initial_value: '0.0'
-  
-    # Lifetime Counter (persistent über Reboots)
-    - id: pump_a_lifetime_ml
-      type: float
-      initial_value: '0.0'
-      restore_value: yes
-  
-    - id: pump_b_lifetime_ml
-      type: float
-      initial_value: '0.0'
-      restore_value: yes
-  
-    - id: pump_c_lifetime_ml
-      type: float
-      initial_value: '0.0'
-      restore_value: yes
-  
-    - id: pump_d_lifetime_ml
-      type: float
-      initial_value: '0.0'
-      restore_value: yes
-  
-    # Dosier-Zyklen Counter
-    - id: pump_a_cycles
-      type: int
-      initial_value: '0'
-      restore_value: yes
-  
-    - id: pump_b_cycles
-      type: int
-      initial_value: '0'
-      restore_value: yes
-  
-    - id: pump_c_cycles
-      type: int
-      initial_value: '0'
-      restore_value: yes
-  
-    - id: pump_d_cycles
-      type: int
-      initial_value: '0'
-      restore_value: yes
+# ===============================================================
+# GLOBALS – RÜHRZEIT & COUNTER MANAGEMENT
+# ===============================================================
+globals:
+  # Timestamp der letzten Dosierung (für Rührzeit-Check)
+  - id: last_dose_timestamp
+    type: unsigned long
+    initial_value: '0'
+    # Unix ms seit letzter Dosierung
+
+  # Tages-Counter (Reset um Mitternacht)
+  - id: pump_a_total_today
+    type: float
+    initial_value: '0.0'
+
+  - id: pump_b_total_today
+    type: float
+    initial_value: '0.0'
+
+  - id: pump_c_total_today
+    type: float
+    initial_value: '0.0'
+
+  - id: pump_d_total_today
+    type: float
+    initial_value: '0.0'
+
+  # Lifetime Counter (persistent über Reboots)
+  - id: pump_a_lifetime_ml
+    type: float
+    initial_value: '0.0'
+    restore_value: yes
+
+  - id: pump_b_lifetime_ml
+    type: float
+    initial_value: '0.0'
+    restore_value: yes
+
+  - id: pump_c_lifetime_ml
+    type: float
+    initial_value: '0.0'
+    restore_value: yes
+
+  - id: pump_d_lifetime_ml
+    type: float
+    initial_value: '0.0'
+    restore_value: yes
+
+  # Dosier-Zyklen Counter
+  - id: pump_a_cycles
+    type: int
+    initial_value: '0'
+    restore_value: yes
+
+  - id: pump_b_cycles
+    type: int
+    initial_value: '0'
+    restore_value: yes
+
+  - id: pump_c_cycles
+    type: int
+    initial_value: '0'
+    restore_value: yes
+
+  - id: pump_d_cycles
+    type: int
+    initial_value: '0'
+    restore_value: yes
 
 # ===============================================================
 # SENSOREN: EC-Wert vom Hydroknoten (Home Assistant Integration)
@@ -190,13 +190,13 @@ sensor:
     id: ec_current
     entity_id: sensor.hydroknoten_ec_sensor
     accuracy_decimals: 2
-    
-    # pH vom Hydroknoten abrufen
-    - platform: homeassistant
-      name: "pH Aktuell (von Hydroknoten)"
-      id: ph_current
-      entity_id: sensor.hydroknoten_ph_sensor
-      accuracy_decimals: 2
+
+  # pH vom Hydroknoten abrufen
+  - platform: homeassistant
+    name: "pH Aktuell (von Hydroknoten)"
+    id: ph_current
+    entity_id: sensor.hydroknoten_ph_sensor
+    accuracy_decimals: 2
     
   # EC-Zielwert (von HA Input-Helper gesetzt)
   - platform: homeassistant
@@ -205,7 +205,7 @@ sensor:
     entity_id: input_number.ec_target
     accuracy_decimals: 2
 
-    # pH-Zielwert (von HA Input-Helper gesetzt)
+  # pH-Zielwert (von HA Input-Helper gesetzt)
   - platform: homeassistant
     name: "pH Zielwert"
     id: ph_target
@@ -944,75 +944,76 @@ text_sensor:
     update_interval: 5s
     # Zeigt den Zustand aller 4 Pumpen + Rührmotor: AN/AUS
 
-  # ===============================================================
-  # BINARY SENSOREN (HEALTH CHECKS, SAFETY ALARMS)
-  # ===============================================================
-  binary_sensor:
-    # Rührzeit Check (TRUE = Dosierung erlaubt)
-    - platform: template
-      name: "Rührzeit abgelaufen"
-      id: stir_time_elapsed
-      lambda: |-
-        float min_wait = id(min_stir_time_between_doses).state;
-        float time_passed = id(time_since_last_dose).state;
-        return time_passed >= min_wait;
-  
-    # Hydroknoten Online Check
-    - platform: template
-      name: "Hydroknoten Online"
-      id: hydroknoten_online
-      device_class: connectivity
-      lambda: |-
-        // Check ob EC-Wert aktualisiert wird (nicht NaN)
-        return !isnan(id(ec_current).state) && !isnan(id(ph_current).state);
-  
-    # Safety Limits (90% Warnung)
-    - platform: template
-      name: "Pumpe A – Safety Limit Warning"
-      lambda: |-
-        return id(pump_a_total_today) >= (id(pump_a_max_ml_day).state * 0.9);
-  
-    - platform: template
-      name: "Pumpe B – Safety Limit Warning"
-      lambda: |-
-        return id(pump_b_total_today) >= (id(pump_b_max_ml_day).state * 0.9);
-  
-    - platform: template
-      name: "Pumpe C – Safety Limit Warning"
-      lambda: |-
-        return id(pump_c_total_today) >= (id(pump_c_max_ml_day).state * 0.9);
-  
-    - platform: template
-      name: "Pumpe D – Safety Limit Warning"
-      lambda: |-
-        return id(pump_d_total_today) >= (id(pump_d_max_ml_day).state * 0.9);
-  
-    # Irgendeine Pumpe aktiv?
-    - platform: template
-      name: "Dosierung aktiv"
-      lambda: |-
+# ===============================================================
+# BINARY SENSOREN (HEALTH CHECKS, SAFETY ALARMS)
+# ===============================================================
+
+binary_sensor:
+  # Rührzeit Check (TRUE = Dosierung erlaubt)
+  - platform: template
+    name: "Rührzeit abgelaufen"
+    id: stir_time_elapsed
+    lambda: |-
+      float min_wait = id(min_stir_time_between_doses).state;
+      float time_passed = id(time_since_last_dose).state;
+      return time_passed >= min_wait;
+
+  # Hydroknoten Online Check
+  - platform: template
+    name: "Hydroknoten Online"
+    id: hydroknoten_online
+    device_class: connectivity
+    lambda: |-
+      // Check ob EC-Wert aktualisiert wird (nicht NaN)
+      return !isnan(id(ec_current).state) && !isnan(id(ph_current).state);
+
+  # Safety Limits (90% Warnung)
+  - platform: template
+    name: "Pumpe A – Safety Limit Warning"
+    lambda: |-
+      return id(pump_a_total_today) >= (id(pump_a_max_ml_day).state * 0.9);
+
+  - platform: template
+    name: "Pumpe B – Safety Limit Warning"
+    lambda: |-
+      return id(pump_b_total_today) >= (id(pump_b_max_ml_day).state * 0.9);
+
+  - platform: template
+    name: "Pumpe C – Safety Limit Warning"
+    lambda: |-
+      return id(pump_c_total_today) >= (id(pump_c_max_ml_day).state * 0.9);
+
+  - platform: template
+    name: "Pumpe D – Safety Limit Warning"
+    lambda: |-
+      return id(pump_d_total_today) >= (id(pump_d_max_ml_day).state * 0.9);
+
+  # Irgendeine Pumpe aktiv?
+  - platform: template
+    name: "Dosierung aktiv"
+    lambda: |-
         return id(pump1_switch).state || id(pump2_switch).state || 
                id(pump3_switch).state || id(pump4_switch).state;
 
-  # ===============================================================
-  # BUTTONS (RESTART, DAILY RESET)
-  # ===============================================================
-  button:
-    - platform: restart
-      name: "Dosierung – Restart"
-  
-    - platform: safe_mode
-      name: "Dosierung – Safe Mode"
-  
-    - platform: template
-      name: "Reset Tages-Counter"
-      on_press:
-        - logger.log: "🔄 Tages-Counter zurückgesetzt"
-        - lambda: |-
-            id(pump_a_total_today) = 0.0;
-            id(pump_b_total_today) = 0.0;
-            id(pump_c_total_today) = 0.0;
-            id(pump_d_total_today) = 0.0;
+# ===============================================================
+# BUTTONS (RESTART, DAILY RESET)
+# ===============================================================
+button:
+  - platform: restart
+    name: "Dosierung – Restart"
+
+  - platform: safe_mode
+    name: "Dosierung – Safe Mode"
+
+  - platform: template
+    name: "Reset Tages-Counter"
+    on_press:
+      - logger.log: "🔄 Tages-Counter zurückgesetzt"
+      - lambda: |-
+          id(pump_a_total_today) = 0.0;
+          id(pump_b_total_today) = 0.0;
+          id(pump_c_total_today) = 0.0;
+          id(pump_d_total_today) = 0.0;
 
 # ===============================================================
 # SCRIPTS (DOSIER-LOGIK, DAILY RESET)
@@ -1099,7 +1100,7 @@ script:
             if (speed_percent < 30.0) speed_percent = 30.0;
             uint8_t mcp_value = (uint8_t)(speed_percent * 2.55);
             id(mcp4131_stir).output_value(mcp_value);
-        - delay: !lambda 'return (int)(id(stir_time).state * 1000);'
+        - delay: !lambda 'return id(stir_time).state * 1000;'
         - lambda: 'id(mcp4131_stir).output_value(0);'
         - logger.log: "✓ EC-Dosierung + Rührvorgang abgeschlossen"
 
@@ -1191,7 +1192,6 @@ script:
 
             id(last_dose_timestamp) = millis();
             ESP_LOGI("dose_ph", "✓ Pumpe %d: %.1f ml dosiert", pump_id, ml_needed);
-
         # STEP 4: Rührmotor aktivieren
         - logger.log: "🌀 Rührmotor gestartet"
         - lambda: |-
@@ -1199,7 +1199,7 @@ script:
             if (speed_percent < 30.0) speed_percent = 30.0;
             uint8_t mcp_value = (uint8_t)(speed_percent * 2.55);
             id(mcp4131_stir).output_value(mcp_value);
-        - delay: !lambda "return (int)(id(stir_time).state * 1000);"
+        - delay: !lambda 'return id(stir_time).state * 1000;'
         - lambda: 'id(mcp4131_stir).output_value(0);'
         - logger.log: "✓ pH-Dosierung + Rührvorgang abgeschlossen"
 # ===============================================================
