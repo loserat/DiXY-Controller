@@ -8,6 +8,7 @@
 | **Dosierknoten** | v0.2-beta | 06.12.2025 | ✅ Updated |
 | **Klimaknoten** | v0.2-beta | 06.12.2025 | ✅ Updated |
 | **Zeltsensor** | v0.2-beta | 06.12.2025 | ✅ Updated |
+| **Zeltsensor v2** | v0.3-beta | 07.12.2025 | ✅ Released |
 | **Kameraknoten Canopy** | v0.2-beta | 06.12.2025 | ✅ Updated |
 | **Kameraknoten Detail** | v0.2-beta | 06.12.2025 | ✅ Updated |
 | **Plant Stress Detector** | v0.1-beta | 06.12.2025 | 🆕 New Beta |
@@ -15,7 +16,70 @@
 
 ---
 
+## 🚀 v0.3-beta (✅ Released) – Zeltsensor v2 Enhanced (07.12.2025)
+
+### 📦 Neu in v0.3-beta
+
+#### **Telemetrie & Diagnostik** 📊
+- ✅ Build Time Textsensor (Compiler-Zeitstempel)
+- ✅ IDF Version Textsensor (ESP-IDF Framework)
+- ✅ Chip Model Textsensor (ESP32-DevKit)
+- ✅ Enhanced Status Summary (WiFi-Qualität + Uptime)
+- ✅ Reset Grund Textsensor (poweron/ext/sw/panic/wdt/brownout/etc.)
+
+#### **Sensor Health Monitoring** 🏥
+- ✅ **8× Status-Sensoren** (AS7341, SHT31, BMP280, CO₂, MLX #1/#2, DS18B20, Tacho)
+- ✅ **8× Binary "Aktiv" Sensors** (device_class: connectivity)
+- ✅ **8× Uptime-Counter** (Format: "X d, Y h, Z m")
+
+#### **Notdimmung & Alarme** 🚨
+- ✅ **Temperatur-Notdimmung:** Temp > 30°C → Licht 10%, Lüfter 100%
+- ✅ **CO₂-Alarm:** CO₂ > 1000 ppm → Buzzer Pulse-Pattern
+- ✅ **2× Binary Alarm Sensors** (heat + problem)
+
+#### **Benutzersteuerung** 🎚️
+- ✅ **Licht Dimmen Button:** 100% → 70% → 40% → 10% → 100%
+- ✅ **Lüfter Dimmen Button:** 100% → 70% → 40% → 20% → 100%
+
+#### **Hardware-Bereinigung**
+- ✅ Heater-Relais entfernt (GPIO 13)
+
+### 📊 Entity-Übersicht v0.3-beta
+**~65+ Entities:** 30+ Sensoren | 10+ Binary | 12+ Text | 2 Numbers | 2 Buttons | 3 Switches | 4 Automationen
+
+### 🔮 Geplant für v0.4+
+- RTC Modul (DS3231)
+- Auto-Lüfterregelung basiert auf VPD
+- Sensor-Error-Recovery
+- Multi-Zelt-Logging
+
+---
+
 ## 🚀 v0.2-beta - Zeltsensor Major Update (06.12.2025)
+
+### 📦 Neu in v2 (Design-Stand)
+
+- **Sensorik erweitert:**
+  - CO₂ (MH-Z19B/C, UART)
+  - 2× MLX90614 Blatt-Temperatur (RJ12, Adressen 0x5A/0x5B)
+  - DS18B20 Wasser-Temp im Wurzelbehälter
+  - AS7341, SHT31, BMP280 weiterhin an I2C1
+- **Dimming/Steuerung:**
+  - 0–10 V Dimmer-Ausgänge (PWM → Wandler) für Inline-Fan und Beleuchtung (GPIO25/26)
+  - Fan-Tacho optional an GPIO23
+- **Berechnungen:**
+  - Taupunkt, Absolute Feuchte, VPD
+  - DLI (tagesbasiert, Reset Mitternacht)
+  - Blatt-Temp-Durchschnitt und Leaf-Air-Delta
+- **Outputs/Schalter:** Heater-Relais, Status-LED, Buzzer vorbereitet
+
+### ⚠️ Status & Nächste Schritte
+- Elektronik-Layout vorhanden, wird nach Beschaffung angepasst
+- PWM→0–10 V Wandler erforderlich (externes Modul)
+- MLX #2 muss auf 0x5B umadressiert sein
+- Automationen (VPD-/Temp-Regelung) werden in Home Assistant hinterlegt
+
+---
 
 ### 📦 Zeltsensor v0.1 → v0.2
 
