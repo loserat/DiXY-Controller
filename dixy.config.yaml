@@ -1,0 +1,329 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# DIXY Controller – Zentrale Konfiguration v0.2-beta
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Diese Datei enthält ALLE gemeinsamen Einstellungen und Konstanten
+# für das komplette DiXY RDWC Growing System
+#
+# ALLE PASSWÖRTER UND SECRETS sind ausgelagert in secrets.yaml
+# (secrets.yaml ist in .gitignore und wird NICHT in Git committet!)
+#
+# Benutzer können diese Datei als zentrale Referenz verwenden
+# und für ihr System anpassen.
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SYSTEM IDENTIFIERS
+# ═══════════════════════════════════════════════════════════════════════════
+system:
+  project_name: "DiXY-Controller"
+  project_version: "0.2-beta"
+  project_website: "https://github.com/loserat/DiXY-Controller"
+  project_description: "Fully Automated RDWC Hydroponic Growing System with AI Integration"
+  
+  # Hardware
+  platform: "ESP32-DevKit"
+  
+  # System specs
+  rdwc_volume_liters: 80  # Total system water volume
+  number_of_plants: 6
+  growing_area_m2: 4.0    # m² growing area
+  
+  # Environmental
+  location_latitude: 52.5200
+  location_longitude: 13.4050
+  location_elevation: 34
+  timezone: "Europe/Berlin"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CLIMATE CONTROL PARAMETERS
+# ═══════════════════════════════════════════════════════════════════════════
+climate:
+  # ───── VPD (Vapor Pressure Deficit) ─────
+  # Optimal ranges für Cannabis Indoor Growing
+  
+  # Vegetative Phase (0-3 Wochen)
+  vpd_vegetative_min_kpa: 0.6    # Minimum VPD
+  vpd_vegetative_max_kpa: 0.8    # Maximum VPD
+  vpd_vegetative_optimal_kpa: 0.7
+  
+  # Bloom Phase (Woche 3+)
+  vpd_bloom_min_kpa: 1.2
+  vpd_bloom_max_kpa: 1.6
+  vpd_bloom_optimal_kpa: 1.4
+  
+  # Critical Alarms
+  vpd_critical_low_kpa: 0.4   # Zu feucht (Schimmelrisiko)
+  vpd_critical_high_kpa: 1.6  # Zu trocken (Stress)
+  
+  # ───── Inline-Fan Control ─────
+  fan_speed_min_percent: 20    # Minimum PWM
+  fan_speed_max_percent: 100   # Maximum PWM
+  fan_pwm_frequency_hz: 1000   # PWM Frequency
+  
+  # ───── Stir Motor ─────
+  stir_motor_min_percent: 30   # Minimum (für Startup)
+  stir_motor_max_percent: 100
+  stir_motor_frequency_hz: 1000
+  
+  # ───── Temperature ─────
+  temperature_vegetative_optimal_c: 24
+  temperature_bloom_optimal_c: 22
+  temperature_alarm_low_c: 15
+  temperature_alarm_high_c: 28
+  
+  # ───── Humidity ─────
+  humidity_vegetative_optimal_percent: 65
+  humidity_bloom_optimal_percent: 50
+  humidity_alarm_low_percent: 30
+  humidity_alarm_high_percent: 85
+  
+  # ───── Water Temperature ─────
+  water_temperature_optimal_c: 18.5
+  water_temperature_alarm_high_c: 25.0
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DOSING SYSTEM – EC/pH REGULATION
+# ═══════════════════════════════════════════════════════════════════════════
+dosing:
+  # ───── Flow Rates (ml/s) ─────
+  # WICHTIG: Nach Hardware-Kalibrierung anpassen!
+  # Kalibrierung: 60 Sekunden pumpen, mL messen, / 60 = ml/s
+  
+  pump_a_flow_ml_per_sec: 2.5     # EC/Makronährstoffe (Flora Gro/Micro/Bloom)
+  pump_b_flow_ml_per_sec: 1.8     # pH Down (Phosphorsäure 40%)
+  pump_c_flow_ml_per_sec: 1.8     # pH Up (Kaliumhydroxid)
+  pump_d_flow_ml_per_sec: 2.0     # Additive (CalMag, Enzyme, Vitamine)
+  
+  # ───── EC (Electrical Conductivity) Effectiveness ─────
+  # mS/cm Änderung pro ml dosiert in 100L System
+  # WICHTIG: Nach Dünger-Kalibrierung anpassen!
+  
+  pump_a_ec_per_ml: 0.018  # Flora Series: ~1.8 mS/cm pro 1ml in 100L
+  pump_b_ec_per_ml: 0.0    # pH Down ändert EC nicht
+  pump_c_ec_per_ml: 0.0    # pH Up ändert EC nicht
+  pump_d_ec_per_ml: 0.008  # CalMag/Additive: ~0.8 mS/cm pro 1ml in 100L
+  
+  # ───── pH Effectiveness ─────
+  # pH Änderung pro ml dosiert in 100L System
+  
+  ph_down_per_ml: 0.15     # Phosphorsäure 40%: -0.15 pH pro ml/100L
+  ph_up_per_ml: 0.12       # Kaliumhydroxid: +0.12 pH pro ml/100L
+  
+  # ───── EC Target Values ─────
+  # Default EC Sollwerte nach Wachstumsphase
+  
+  ec_seedling_default: 0.8      # Keimling (0-10 Tage)
+  ec_vegetative_default: 1.2    # Vegetativ
+  ec_pre_bloom_default: 1.5     # Pre-Blüte
+  ec_bloom_default: 1.8         # Blüte
+  
+  ec_tolerance: 0.2             # Toleranzbereich (±mS/cm)
+  
+  # ───── pH Target Values ─────
+  
+  ph_default: 6.2               # Optimal für RDWC
+  ph_tolerance: 0.3             # Toleranzbereich (±pH)
+  
+  # ───── Safety Limits ─────
+  # Maximum Dosierung pro Zyklus und pro Tag
+  
+  max_dose_per_cycle_ml: 50     # Max 50ml pro Dosierung
+  
+  # Daily limits pro Pumpe
+  max_ml_per_day_pump_a: 200    # EC pump
+  max_ml_per_day_pump_b: 100    # pH Down
+  max_ml_per_day_pump_c: 100    # pH Up
+  max_ml_per_day_pump_d: 200    # Additive
+  
+  # ───── Timing ─────
+  # Rührzeit-Management für RDWC Durchmischung
+  
+  min_stir_time_between_doses_sec: 180  # Minimum 3 Minuten
+  full_system_mix_time_sec: 300         # 5 Minuten für komplette Durchmischung
+  stir_duration_sec: 90                 # Standard Rührmotor-Lauf nach Dosierung
+  
+  # ───── Dosing Strategies ─────
+  # Einstellbare Parameter für verschiedene Dünger-Strategien
+  
+  nutrient_strategy_conservative_multiplier: 0.8   # -20% der Zielwerte
+  nutrient_strategy_standard_multiplier: 1.0       # 100% der Zielwerte
+  nutrient_strategy_aggressive_multiplier: 1.2     # +20% der Zielwerte
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SENSOR MONITORING & ALARMS
+# ═══════════════════════════════════════════════════════════════════════════
+sensors:
+  # ───── EC (Conductivity) ─────
+  ec_setpoint_default: 1.2      # Default EC Sollwert (mS/cm)
+  ec_tolerance: 0.2
+  ec_alarm_low: 0.6             # Alarm wenn EC zu niedrig
+  ec_alarm_high: 2.5            # Alarm wenn EC zu hoch
+  
+  # ───── pH ─────
+  ph_setpoint_default: 6.2
+  ph_tolerance: 0.3
+  ph_alarm_low: 5.5
+  ph_alarm_high: 7.0
+  
+  # ───── Light ─────
+  # PPFD (Photosynthetic Photon Flux Density) µmol/m²/s
+  ppfd_low_alarm: 300
+  ppfd_high_alarm: 1200
+  
+  # ───── Temperature ─────
+  temp_min_alarm_c: 15
+  temp_max_alarm_c: 28
+  temp_update_interval_sec: 30
+  
+  # ───── Humidity ─────
+  humidity_min_alarm_percent: 30
+  humidity_max_alarm_percent: 85
+  
+  # ───── Water ─────
+  water_temp_optimal_c: 18.5
+  water_temp_alarm_high_c: 25.0
+  
+  # ───── WiFi ─────
+  wifi_signal_low_alarm_dbm: -80  # Weak signal
+  wifi_signal_update_interval_sec: 30
+  
+  # ───── RAM/Memory ─────
+  ram_critical_alarm_kb: 50  # Under 50KB = critical
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NODE IDENTIFIERS & HOSTNAMES
+# ═══════════════════════════════════════════════════════════════════════════
+nodes:
+  hydroknoten:
+    id: "hydroknoten"
+    hostname: "hydroknoten"
+    friendly_name: "Hydro Knoten"
+    description: "RDWC Water Management + EC/pH Sensing"
+    
+  dosierung:
+    id: "dosierung"
+    hostname: "dosierung"
+    friendly_name: "Dosierung"
+    description: "Intelligente Dünger-Dosierung + pH-Regelung + Rührmotor"
+    
+  zeltsensor:
+    id: "zeltsensor"
+    hostname: "zeltsensor"
+    friendly_name: "Zelt Sensor"
+    description: "Lichtsensor + Klima + VPD-Berechnung"
+    
+  klimaknoten:
+    id: "klimaknoten"
+    hostname: "klimaknoten"
+    friendly_name: "Klima Knoten"
+    description: "CO2 + Druck + Zusatz-Sensoren"
+    
+  kameraknoten_canopy:
+    id: "kameraknoten_canopy"
+    hostname: "canopy-cam"
+    friendly_name: "Canopy Camera"
+    description: "Top-View Timelapse für Wachstum-Tracking"
+    
+  kameraknoten_detail:
+    id: "kameraknoten_detail"
+    hostname: "detail-cam"
+    friendly_name: "Detail Camera"
+    description: "Blatt-Detail Monitoring für Defizienzen"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NETWORK & COMMUNICATION
+# ═══════════════════════════════════════════════════════════════════════════
+network:
+  # ───── mDNS / Bonjour ─────
+  mdns_enabled: true
+  
+  # ───── Home Assistant Integration ─────
+  homeassistant_api_port: 6053
+  homeassistant_api_encryption: true
+  
+  # ───── ESPHome Web Dashboard ─────
+  esphome_web_port: 6052
+  
+  # ───── Logging ─────
+  baud_rate: 115200
+  log_level: "INFO"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GPIO PIN MAPPING (Referenz nur)
+# ═══════════════════════════════════════════════════════════════════════════
+# Aktuell definiert in den einzelnen Node-YAML Dateien
+# Diese Sektion ist nur zur Dokumentation
+
+pins:
+  hydroknoten:
+    description: "EC/pH Sensor Node"
+    ec_sensor_pin: "GPIO36"
+    ph_sensor_pin: "GPIO39"
+    water_temp_pin: "GPIO4"
+    status_led: "GPIO2"
+    
+  dosierung:
+    description: "Dosing & Stir Motor Node"
+    pump_a_pin: "GPIO12"
+    pump_b_pin: "GPIO13"
+    pump_c_pin: "GPIO14"
+    pump_d_pin: "GPIO15"
+    mcp4131_sck: "GPIO2"
+    mcp4131_mosi: "GPIO3"
+    mcp4131_fan_cs: "GPIO1"
+    mcp4131_stir_cs: "GPIO4"
+    
+  zeltsensor:
+    description: "Light + Climate Sensor Node"
+    as7341_sda: "GPIO21"
+    as7341_scl: "GPIO22"
+    sht31_sda: "GPIO21"
+    sht31_scl: "GPIO22"
+    bmp280_sda: "GPIO21"
+    bmp280_scl: "GPIO22"
+    fan_pwm_pin: "GPIO25"
+    fan_tacho_pin: "GPIO26"
+    
+  klimaknoten:
+    description: "Extra Climate + CO2 Node"
+    dht22_pin: "GPIO4"
+    co2_sensor_rx: "GPIO16"
+    co2_sensor_tx: "GPIO17"
+    pressure_sda: "GPIO21"
+    pressure_scl: "GPIO22"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# UPDATE INTERVALS (Sensor Refresh Rates)
+# ═══════════════════════════════════════════════════════════════════════════
+update_intervals:
+  wifi_signal_sec: 30
+  sensor_default_sec: 10
+  vpd_calc_sec: 10
+  statistics_sec: 60
+  uptime_sec: 60
+  internal_temp_sec: 30
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AUTOMATION CONSTANTS
+# ═══════════════════════════════════════════════════════════════════════════
+automation:
+  # Daily reset time
+  daily_reset_hour: 0
+  daily_reset_minute: 0
+  timezone: "Europe/Berlin"
+  
+  # Safety check intervals
+  system_health_check_interval_sec: 300  # Every 5 minutes
+  
+  # Notification delays (prevent spam)
+  notification_cooldown_sec: 300  # 5 minute minimum between same alerts
+
+# ═══════════════════════════════════════════════════════════════════════════
+# END OF CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════
+# Diese Datei ist Teil des DiXY Controller GitHub Repository
+# und wird PUBLIC geteilt (KEINE SECRETS hier!)
+#
+# Alle Passwörter gehören in: secrets.yaml (in .gitignore)
+# ═══════════════════════════════════════════════════════════════════════════
