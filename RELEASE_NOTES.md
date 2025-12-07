@@ -4,15 +4,90 @@
 
 | Komponente | Version | Datum | Status |
 |-----------|---------|-------|--------|
-| **Hydroknoten** | v0.3-beta | 07.12.2025 | ✅ Updated |
-| **Dosierknoten** | v0.3-beta | 07.12.2025 | ✅ Updated |
-| **Klimaknoten** | v0.3-beta | 07.12.2025 | ✅ Updated |
-| **Zeltsensor** | v0.3-beta | 07.12.2025 | ✅ Updated |
-| **Zeltsensor v2** | v0.4-beta | 07.12.2025 | ✅ Released |
-| **Kameraknoten Canopy** | v0.3-beta | 07.12.2025 | ✅ Updated |
-| **Kameraknoten Detail** | v0.3-beta | 07.12.2025 | ✅ Updated |
+| **Hydroknoten** | v0.5-beta | 07.12.2025 | ✅ Updated |
+| **Dosierknoten** | v0.5-beta | 07.12.2025 | ✅ Updated |
+| **Klimaknoten** | v0.5-beta | 07.12.2025 | ✅ Updated |
+| **Zeltsensor** | v0.5-beta | 07.12.2025 | ✅ Updated |
+| **Zeltsensor v2** | v0.5-beta | 07.12.2025 | ✅ Released |
+| **Kameraknoten Canopy** | v0.5-beta | 07.12.2025 | ✅ Updated |
+| **Kameraknoten Detail** | v0.5-beta | 07.12.2025 | ✅ Updated |
 | **Plant Stress Detector** | v0.1-beta | 06.12.2025 | 🆕 New Beta |
 | **Home Assistant** | 2024.12.x | - | ✅ Required |
+
+---
+
+## 🚀 v0.5-beta (✅ Released) – Universal Health Monitoring V2 Rollout (07.12.2025)
+
+### 📦 Neu in v0.5-beta – Alle Knoten auf gleichem Feature-Level
+
+#### **Health Monitoring V2 (Production-Ready)** 🏥
+
+**Implementiert auf ALLEN Knoten:**
+- ✅ **Boot-Graceperiod (300s)**: Verhindert False-Positives während Startup/WiFi-Reconnect
+- ✅ **Flash-Persistente Failure Counter**: Überleben ESP32-Reboots (restore_value: true)
+- ✅ **Reset Grund Detection**: poweron/sw/panic/wdt/brownout/etc. für Diagnose
+- ✅ **Status Summary**: WiFi-Qualität + Uptime + Version kompakt
+- ✅ **Free Heap Monitoring**: RAM-Überwachung für Stabilitäts-Checks
+
+#### **Sensor Health pro Knoten:**
+
+**Zeltsensor v2 (8 Sensoren)**:
+- AS7341 PPFD, SHT31, BMP280, CO₂, MLX #1/#2, DS18B20, Tacho
+- 8× Failure Counter, 8× Health OK Binary, 8× Uptime Tracker
+
+**Klimaknoten (3 Sensoren)**:
+- SHT31, MLX90614, BMP280
+- 3× Failure Counter, 3× Health OK Binary, 3× Uptime Tracker
+
+**Hydroknoten (EC/pH/Temp/Level)**:
+- EC-Sensor, pH-Sensor, 2× DS18B20, 6× Waterlevel
+- Reset Grund, Free Heap, WiFi Diagnostics
+
+**Dosierknoten (4 Pumpen + Stirrer)**:
+- Reset Grund, Free Heap, Enhanced Status Summary
+- (Pumpen-Health via Runtime-Tracking bereits vorhanden)
+
+**Kameraknoten Canopy/Detail (OV2640)**:
+- Camera Failure Counter, WiFi/Uptime/MCU/Heap
+- Reset Grund, Status Summary
+
+#### **System-Sensoren (Standard auf allen Knoten):**
+- ✅ WiFi Signal (dBm)
+- ✅ Node Uptime (Stunden)
+- ✅ MCU Temperature (°C)
+- ✅ Free Heap (kB)
+- ✅ ESPHome Version
+- ✅ Projekt Version
+- ✅ Reset Grund (ESP32 Reboot Reason)
+- ✅ Status Summary (kompakt)
+
+#### **Home Assistant Integration:**
+- health_monitoring.yaml (Zeltsensor v2 Template Sensors)
+- Ready für Expansion: 5 weitere Knoten Template Sensors
+- Node Availability Filtering (online/offline Detection)
+
+### 🎯 Feature-Parität erreicht
+
+**ALLE Knoten haben jetzt:**
+1. ✅ Globals (Flash-persistent wo nötig)
+2. ✅ Health Monitoring V2 (Boot-Graceperiod + Failure Counter)
+3. ✅ System Diagnostics (WiFi, Uptime, Heap, MCU Temp)
+4. ✅ Reset Grund Detection
+5. ✅ Status Summary Text Sensor
+6. ✅ Binary Health OK Sensors (wo sinnvoll)
+
+### 📊 Entity-Übersicht v0.5-beta
+- **Zeltsensor v2:** ~75+ Entities
+- **Klimaknoten:** ~35+ Entities (neu: +15)
+- **Hydroknoten:** ~45+ Entities (neu: +1 Reset Grund)
+- **Dosierung:** ~65+ Entities (neu: +2 Free Heap + Reset Grund)
+- **Kameraknoten:** ~20+ Entities (neu: +12)
+
+### 🔮 Geplant für v0.6+
+- Health Monitoring Expansion auf Hydroknoten (EC/pH Health)
+- MTBF Prediction (Mean Time Between Failures)
+- Health Dashboard in Lovelace
+- Automationen für Sensor Failure Alerts
 
 ---
 

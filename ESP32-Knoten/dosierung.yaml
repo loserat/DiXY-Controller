@@ -31,7 +31,7 @@ substitutions:
   device_name: dosierung
   friendly_name: "Dosierung"
   device_description: "Intelligente Auto-Dosierung + Safety"
-  project_version: "0.3-beta"
+  project_version: "0.5-beta"
   
   # SPI Pins
   spi_clk_pin: "2"
@@ -253,6 +253,14 @@ sensor:
       return heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024.0;
     update_interval: 60s
     # Überwachung: unter 50 kB ist kritisch
+
+  - platform: template
+    name: "Dosierung – Free Heap"
+    unit_of_measurement: "kB"
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: 'return (float)esp_get_free_heap_size() / 1024.0f;'
+    # Alternative Free Heap Messung (kompatibel mit anderen Knoten)
 
   # --- PUMPEN-ZUSTAND SENSOREN ---
   # ═══ RÜHRZEIT-TRACKING ═══
@@ -943,6 +951,24 @@ text_sensor:
       return std::string(buffer);
     update_interval: 5s
     # Zeigt den Zustand aller 4 Pumpen + Rührmotor: AN/AUS
+
+  - platform: template
+    name: "Dosierung – Reset Grund"
+    icon: "mdi:restart-alert"
+    lambda: |-
+      switch (esp_reset_reason()) {
+        case ESP_RST_POWERON: return {"poweron"};
+        case ESP_RST_EXT: return {"ext"};
+        case ESP_RST_SW: return {"sw"};
+        case ESP_RST_PANIC: return {"panic"};
+        case ESP_RST_INT_WDT: return {"int_wdt"};
+        case ESP_RST_TASK_WDT: return {"task_wdt"};
+        case ESP_RST_WDT: return {"wdt"};
+        case ESP_RST_DEEPSLEEP: return {"deepsleep"};
+        case ESP_RST_BROWNOUT: return {"brownout"};
+        case ESP_RST_SDIO: return {"sdio"};
+        default: return {"unknown"};
+      }
 
 # ===============================================================
 # BINARY SENSOREN (HEALTH CHECKS, SAFETY ALARMS)

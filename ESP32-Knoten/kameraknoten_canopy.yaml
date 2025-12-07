@@ -31,7 +31,7 @@ substitutions:
   device_name: kameraknoten-canopy
   friendly_name: "Kamera Canopy"
   device_description: "Timelapse Übersicht (Top-Down)"
-  project_version: "0.3-beta"
+  project_version: "0.5-beta"
 
 esphome:
   name: kameraknoten-canopy
@@ -72,6 +72,109 @@ web_server:
 time:
   - platform: homeassistant
     id: ha_time
+
+# GLOBALS (Health Monitoring V2: Failure Counters mit Flash-Persistenz) ------
+globals:
+  - id: camera_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+
+sensor:
+  # SYSTEM-SENSOREN -----------------------------------------------------
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi Signal"
+    id: wifi_rssi
+    update_interval: 60s
+  
+  - platform: internal_temperature
+    name: "${friendly_name} MCU Temperatur"
+  
+  - platform: uptime
+    name: "${friendly_name} Uptime"
+    id: node_uptime
+    update_interval: 60s
+  
+  - platform: template
+    name: "${friendly_name} Free Heap"
+    unit_of_measurement: "kB"
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: 'return (float)esp_get_free_heap_size() / 1024.0f;'
+  
+  # CAMERA FAILURE COUNTER (mit Boot-Graceperiod + Flash-Persistenz)
+  - platform: template
+    name: "${friendly_name} Camera Failures Total"
+    id: camera_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(camera_failure_count);
+      }
+      // Camera health check wird via HA binary_sensor.canopy_camera_stream_active gemacht
+      return id(camera_failure_count);
+
+text_sensor:
+  - platform: version
+    name: "${friendly_name} ESPHome Version"
+  
+  - platform: wifi_info
+    ip_address:
+      name: "${friendly_name} IP"
+    ssid:
+      name: "${friendly_name} SSID"
+    bssid:
+      name: "${friendly_name} BSSID"
+  
+  - platform: template
+    name: "${friendly_name} Projekt"
+    icon: "mdi:identifier"
+    lambda: 'return {"DiXY RDWC Controller"};'
+  
+  - platform: template
+    name: "${friendly_name} Version"
+    icon: "mdi:tag"
+    lambda: 'return {"${project_version}"};'
+  
+  - platform: template
+    name: "${friendly_name} Status Summary"
+    icon: "mdi:information-outline"
+    update_interval: 30s
+    lambda: |-
+      char buffer[80];
+      float wifi = id(wifi_rssi).has_state() ? id(wifi_rssi).state : NAN;
+      float up_hours = id(node_uptime).has_state() ? id(node_uptime).state / 3600.0f : NAN;
+      const char *wifi_str = isnan(wifi) ? "n/a" : (wifi > -60 ? "strong" : (wifi > -75 ? "ok" : "weak"));
+      if (isnan(up_hours)) {
+        snprintf(buffer, sizeof(buffer), "ver %s | WiFi %s", "${project_version}", wifi_str);
+      } else {
+        snprintf(buffer, sizeof(buffer), "ver %s | WiFi %s | up %.1fh", "${project_version}", wifi_str, up_hours);
+      }
+      return {buffer};
+  
+  - platform: template
+    name: "${friendly_name} Reset Grund"
+    icon: "mdi:restart-alert"
+    lambda: |-
+      switch (esp_reset_reason()) {
+        case ESP_RST_POWERON: return {"poweron"};
+        case ESP_RST_EXT: return {"ext"};
+        case ESP_RST_SW: return {"sw"};
+        case ESP_RST_PANIC: return {"panic"};
+        case ESP_RST_INT_WDT: return {"int_wdt"};
+        case ESP_RST_TASK_WDT: return {"task_wdt"};
+        case ESP_RST_WDT: return {"wdt"};
+        case ESP_RST_DEEPSLEEP: return {"deepsleep"};
+        case ESP_RST_BROWNOUT: return {"brownout"};
+        case ESP_RST_SDIO: return {"sdio"};
+        default: return {"unknown"};
+      }
+
+binary_sensor:
+  - platform: status
+    name: "${friendly_name} Status"
 
 esp32_camera:
   id: canopy_camera

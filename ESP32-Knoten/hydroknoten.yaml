@@ -42,7 +42,7 @@ substitutions:
   device_name: hydroknoten
   friendly_name: "Hydroknoten"
   device_description: "Nährstoff + Wasserstand Monitoring"
-  project_version: "0.3-beta"
+  project_version: "0.5-beta"
   
   # I2C Pins
   i2c_sda_pin: "21"
@@ -791,6 +791,24 @@ text_sensor:
       strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M", localtime(&ts));
       return std::string(buf);
     update_interval: 60s
+
+  - platform: template
+    name: "${friendly_name} Reset Grund"
+    icon: "mdi:restart-alert"
+    lambda: |-
+      switch (esp_reset_reason()) {
+        case ESP_RST_POWERON: return {"poweron"};
+        case ESP_RST_EXT: return {"ext"};
+        case ESP_RST_SW: return {"sw"};
+        case ESP_RST_PANIC: return {"panic"};
+        case ESP_RST_INT_WDT: return {"int_wdt"};
+        case ESP_RST_TASK_WDT: return {"task_wdt"};
+        case ESP_RST_WDT: return {"wdt"};
+        case ESP_RST_DEEPSLEEP: return {"deepsleep"};
+        case ESP_RST_BROWNOUT: return {"brownout"};
+        case ESP_RST_SDIO: return {"sdio"};
+        default: return {"unknown"};
+      }
 
 # ===============================================================
 # NUMBER / OFFSETS / KALIBRIERUNG (nur 1 Block!)

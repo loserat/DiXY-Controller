@@ -2,7 +2,7 @@ substitutions:
   device_name: zeltsensor_v2
   friendly_name: "Zeltsensor v2"
   project_name: "DiXY Zeltsensor v2"
-  project_version: "0.4-beta"
+  project_version: "0.5-beta"
 
   # Pins
   i2c_sda_pin: "21"
