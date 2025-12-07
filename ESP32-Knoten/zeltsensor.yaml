@@ -28,7 +28,7 @@ substitutions:
   device_name: zeltsensor
   friendly_name: "Zeltsensor"
   device_description: "Spektral-Licht + Klima Monitoring"
-  project_version: "0.2-beta"
+  project_version: "0.3-beta"
   
   # === PIN MAPPING ===
   i2c_sda_pin: "21"

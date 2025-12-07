@@ -4,13 +4,13 @@
 
 | Komponente | Version | Datum | Status |
 |-----------|---------|-------|--------|
-| **Hydroknoten** | v0.2-beta | 06.12.2025 | ✅ Updated |
-| **Dosierknoten** | v0.2-beta | 06.12.2025 | ✅ Updated |
-| **Klimaknoten** | v0.2-beta | 06.12.2025 | ✅ Updated |
-| **Zeltsensor** | v0.2-beta | 06.12.2025 | ✅ Updated |
-| **Zeltsensor v2** | v0.3-beta | 07.12.2025 | ✅ Released |
-| **Kameraknoten Canopy** | v0.2-beta | 06.12.2025 | ✅ Updated |
-| **Kameraknoten Detail** | v0.2-beta | 06.12.2025 | ✅ Updated |
+| **Hydroknoten** | v0.3-beta | 07.12.2025 | ✅ Updated |
+| **Dosierknoten** | v0.3-beta | 07.12.2025 | ✅ Updated |
+| **Klimaknoten** | v0.3-beta | 07.12.2025 | ✅ Updated |
+| **Zeltsensor** | v0.3-beta | 07.12.2025 | ✅ Updated |
+| **Zeltsensor v2** | v0.4-beta | 07.12.2025 | ✅ Released |
+| **Kameraknoten Canopy** | v0.3-beta | 07.12.2025 | ✅ Updated |
+| **Kameraknoten Detail** | v0.3-beta | 07.12.2025 | ✅ Updated |
 | **Plant Stress Detector** | v0.1-beta | 06.12.2025 | 🆕 New Beta |
 | **Home Assistant** | 2024.12.x | - | ✅ Required |
 
@@ -55,9 +55,9 @@
 
 ---
 
-## 🚀 v0.4-beta (✅ In Development) – Light Control Advanced (07.12.2025)
+## 🚀 v0.4-beta (✅ Released) – Light Control Advanced + Health Monitoring V2 (07.12.2025)
 
-### 📦 Neu in v0.4-beta
+### 📦 Neu in v0.4-beta (Zeltsensor v2 ONLY)
 
 #### **3-Modus Licht-Steuerung** 💡
 - ✅ **Manuelmodus**: Feste Ein/Aus-Zeiten + feste Intensität (0-100%)
@@ -93,10 +93,39 @@
 **+15 neue Entities:** 8 input_numbers | 2 input_selects | 2 input_datetimes | 5 automations | 2 scripts
 
 ### 🔮 Geplant für v0.5+
+- **Health Monitoring V2**: Boot-Graceperiod + Failure Counter (Node-Offline vs. Sensor-Fehler unterscheiden)
+- **HA Sensor Health Dashboard**: Reliability %, Error Counters, MTBF Prediction
 - RGB Spektrum-Anpassung (echte Farb-Regelung)
 - VPD-basierte Light Intensity (wenn Stress erkannt)
 - Plant Stress Detector Integration
 - Light Efficiency Logging (DLI Historical)
+
+---
+
+## 🚀 v0.3-beta (✅ Released) – All Nodes Version Sync (07.12.2025)
+
+### 📦 Änderungen in v0.3-beta
+
+#### **Version-Synchronisierung** 🔄
+Alle ESP32-Knoten auf v0.3-beta synchronisiert zur Vorbereitung der **Health Monitoring V2 Architektur**:
+- ✅ Hydroknoten: v0.2 → v0.3
+- ✅ Dosierknoten: v0.2 → v0.3
+- ✅ Klimaknoten: v0.2 → v0.3
+- ✅ Zeltsensor (Legacy): v0.2 → v0.3
+- ✅ Kameraknoten Canopy: v0.2 → v0.3
+- ✅ Kameraknoten Detail: v0.2 → v0.3
+- ✅ DiXY-Controller (Global): v0.2 → v0.3
+
+#### **Geplante Features für v0.3** (noch nicht implementiert)
+- 🔮 Boot-Graceperiod (5min) für alle Sensoren
+- 🔮 Failure-Counter mit Flash-Persistenz
+- 🔮 Node-Offline vs. Sensor-Fehler Unterscheidung
+- 🔮 HA-seitige Health-Templates für intelligente Fehlerdiagnose
+
+### 📝 Notiz
+v0.3-beta ist primär ein **Versions-Alignment Release**. Die Health Monitoring V2 Features werden in kommenden Commits implementiert.
+
+---
 
 ## 🚀 v0.2-beta - Zeltsensor Major Update (06.12.2025)
 

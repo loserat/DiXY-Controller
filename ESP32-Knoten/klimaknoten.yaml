@@ -28,7 +28,7 @@ substitutions:
   device_name: klimaknoten
   friendly_name: "Klimaknoten"
   device_description: "VPD-Regelung für RDWC-Zelt"
-  project_version: "0.2-beta"
+  project_version: "0.3-beta"
 
 esphome:
   name: klimaknoten

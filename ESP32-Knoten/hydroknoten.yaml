@@ -42,7 +42,7 @@ substitutions:
   device_name: hydroknoten
   friendly_name: "Hydroknoten"
   device_description: "Nährstoff + Wasserstand Monitoring"
-  project_version: "0.2-beta"
+  project_version: "0.3-beta"
   
   # I2C Pins
   i2c_sda_pin: "21"

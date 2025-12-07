@@ -31,7 +31,7 @@ substitutions:
   device_name: kameraknoten-detail
   friendly_name: "Kamera Detail"
   device_description: "Blattfarben-Analyse (Macro)"
-  project_version: "0.2-beta"
+  project_version: "0.3-beta"
 
 esphome:
   name: kameraknoten-detail

@@ -31,7 +31,7 @@ substitutions:
   device_name: dosierung
   friendly_name: "Dosierung"
   device_description: "Intelligente Auto-Dosierung + Safety"
-  project_version: "0.2-beta"
+  project_version: "0.3-beta"
   
   # SPI Pins
   spi_clk_pin: "2"
