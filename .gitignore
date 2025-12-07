@@ -32,6 +32,7 @@ NodeRed/flows_backup*.json
 
 # 🔐 Secrets & Credentials (NICHT in Git!)
 secrets.yaml
+secrets_sim_local.yaml
 *.pem
 *.key
 *.encryption_key
