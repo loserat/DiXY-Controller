@@ -357,3 +357,136 @@
     - service: input_boolean.turn_off
       target:
         entity_id: input_boolean.manual_detail_snapshot
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LIGHT CONTROL: MANUAL MODE – ON
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Licht Manuell EIN"
+  description: "Schaltet Licht ein basierend auf Manuell-Zeit"
+  trigger:
+    - platform: time
+      at: input_datetime.light_manual_on_time
+  condition:
+    - condition: state
+      entity_id: input_select.light_mode
+      state: "Manuell"
+  action:
+    - service: script.fade_light_smooth
+      data:
+        target_intensity: "{{ states('input_number.light_manual_intensity') | int(default=80) }}"
+        fade_duration: "{{ states('input_number.light_fade_duration') | int(default=60) }}"
+    - service: notify.persistent_notification
+      data:
+        title: "💡 DiXY Licht (Manuell)"
+        message: "Licht eingeschaltet: {{ (states('input_number.light_manual_intensity') | int(default=80)) }}%"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LIGHT CONTROL: MANUAL MODE – OFF
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Licht Manuell AUS"
+  description: "Schaltet Licht aus basierend auf Manuell-Zeit"
+  trigger:
+    - platform: time
+      at: input_datetime.light_manual_off_time
+  condition:
+    - condition: state
+      entity_id: input_select.light_mode
+      state: "Manuell"
+  action:
+    - service: script.fade_light_smooth
+      data:
+        target_intensity: 0
+        fade_duration: "{{ states('input_number.light_fade_duration') | int(default=60) }}"
+    - service: notify.persistent_notification
+      data:
+        title: "💡 DiXY Licht (Manuell)"
+        message: "Licht ausgeschaltet"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LIGHT CONTROL: AUTO MODE – SUNRISE
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Licht Auto SONNENAUFGANG"
+  description: "Licht fade-in bei Sonnenaufgang (mit Offset)"
+  trigger:
+    - platform: sun
+      event: sunrise
+      offset: "00:{{ '%02d' | format((states('input_number.light_auto_sunrise_offset') | int(default=-30)) % 60) }}:00"
+  condition:
+    - condition: state
+      entity_id: input_select.light_mode
+      state: "Auto (Sonnenauf-/untergang)"
+  action:
+    - service: script.fade_light_smooth
+      data:
+        target_intensity: 100
+        fade_duration: "{{ states('input_number.light_fade_duration') | int(default=60) }}"
+    - service: notify.persistent_notification
+      data:
+        title: "🌅 DiXY Licht Auto"
+        message: "Licht fade-in: Sonnenaufgang {{ (states('input_number.light_auto_sunrise_offset') | int(default=-30)) }} Minuten"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LIGHT CONTROL: AUTO MODE – SUNSET
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Licht Auto SONNENUNTERGANG"
+  description: "Licht fade-out bei Sonnenuntergang (mit Offset)"
+  trigger:
+    - platform: sun
+      event: sunset
+      offset: "00:{{ '%02d' | format((states('input_number.light_auto_sunset_offset') | int(default=30)) % 60) }}:00"
+  condition:
+    - condition: state
+      entity_id: input_select.light_mode
+      state: "Auto (Sonnenauf-/untergang)"
+  action:
+    - service: script.fade_light_smooth
+      data:
+        target_intensity: 0
+        fade_duration: "{{ states('input_number.light_fade_duration') | int(default=60) }}"
+    - service: notify.persistent_notification
+      data:
+        title: "🌅 DiXY Licht Auto"
+        message: "Licht fade-out: Sonnenuntergang {{ (states('input_number.light_auto_sunset_offset') | int(default=30)) }} Minuten"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LIGHT CONTROL: PPFD MODE – CONTINUOUS REGULATION
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Licht PPFD Regelung"
+  description: "Kontinuierliche PPFD-basierte Licht-Anpassung"
+  trigger:
+    - platform: state
+      entity_id: sensor.zeltsensor_ppfd
+  condition:
+    - condition: state
+      entity_id: input_select.light_mode
+      state: "PPFD-Regelung"
+  action:
+    - service: script.adjust_light_ppfd
+    - service: notify.persistent_notification
+      data:
+        title: "📊 DiXY PPFD Regelung"
+        message: "PPFD: {{ states('sensor.zeltsensor_ppfd') }} → Licht: {{ states('number.dosierung_inline_luefter_pwm') }}%"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LIGHT CONTROL: TEMPERATURE FAILSAFE (Priority!)
+# ═══════════════════════════════════════════════════════════════════════════
+- alias: "DiXY – Licht NOTBREMSE Temperatur"
+  description: "Schaltet Licht auf 10% wenn Temp > 30°C (alle Modi)"
+  trigger:
+    - platform: state
+      entity_id: sensor.zeltsensor_lufttemperatur
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.zeltsensor_lufttemperatur
+      above: 30
+  action:
+    - service: number.set_value
+      target:
+        entity_id: number.zeltsensor_v2_light_intensity
+      data:
+        value: 10
+    - service: notify.persistent_notification
+      data:
+        title: "🔴 DiXY LICHT NOTBREMSE"
+        message: "Temperatur > 30°C! Licht auf 10% reduziert. Aktuelle Temp: {{ states('sensor.zeltsensor_lufttemperatur') }}°C"
+

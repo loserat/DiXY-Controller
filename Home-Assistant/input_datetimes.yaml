@@ -1,0 +1,51 @@
+# Home Assistant Input DateTime für DiXY RDWC
+# Zeit-Steuerung für Licht-Automationen
+
+input_datetime:
+  # ═══════════════════════════════════════════════════════════
+  # LIGHT CONTROL - MANUAL MODE TIMES
+  # ═══════════════════════════════════════════════════════════
+  light_manual_on_time:
+    name: "Licht Ein-Zeit (Manuell)"
+    description: "Uhrzeit zum Einschalten im Manuell-Modus"
+    has_date: false
+    has_time: true
+    icon: mdi:clock-outline
+
+  light_manual_off_time:
+    name: "Licht Aus-Zeit (Manuell)"
+    description: "Uhrzeit zum Ausschalten im Manuell-Modus"
+    has_date: false
+    has_time: true
+    icon: mdi:clock-outline
+
+  # ═══════════════════════════════════════════════════════════
+  # MAINTENANCE & LOGGING
+  # ═══════════════════════════════════════════════════════════
+  last_nutrient_change:
+    name: "Letzte Nährstoff-Änderung"
+    description: "Datum/Zeit der letzten EC/pH Anpassung"
+    has_date: true
+    has_time: true
+    icon: mdi:calendar-clock
+
+  last_water_change:
+    name: "Letzer Wasserwechsel"
+    description: "Datum/Zeit des letzten Tank-Wechsels"
+    has_date: true
+    has_time: true
+    icon: mdi:water-check
+
+  last_calibration_ec:
+    name: "Letzte EC-Kalibrierung"
+    description: "Datum/Zeit der letzten EC-Sensor Kalibrierung"
+    has_date: true
+    has_time: true
+    icon: mdi:format-align-center
+
+  last_calibration_ph:
+    name: "Letzte pH-Kalibrierung"
+    description: "Datum/Zeit der letzten pH-Sensor Kalibrierung"
+    has_date: true
+    has_time: true
+    icon: mdi:format-align-center

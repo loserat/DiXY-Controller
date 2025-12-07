@@ -55,6 +55,49 @@
 
 ---
 
+## 🚀 v0.4-beta (✅ In Development) – Light Control Advanced (07.12.2025)
+
+### 📦 Neu in v0.4-beta
+
+#### **3-Modus Licht-Steuerung** 💡
+- ✅ **Manuelmodus**: Feste Ein/Aus-Zeiten + feste Intensität (0-100%)
+- ✅ **Automatikmodus**: Sonnenauf-/untergang mit konfigurierbarem Offset (-120 bis +120 Min)
+- ✅ **PPFD-Regelung**: Kontinuierliche Anpassung der Licht-Intensität basierend auf gemessenem PPFD
+  - Target PPFD: 400-1200 µmol/m²/s konfigurierbar
+  - Hysterese: ±10-200 µmol/m²/s (verhindert Flackern)
+  - Min/Max Grenzen: 5-100% Intensität
+
+#### **Licht-Komfortfunktionen** 🎚️
+- ✅ **Sanfte Überblendung (Fade)**: 5-600 Sekunden konfigurierbar
+- ✅ **Spektrum-Profile**: Morgens/Tag/Abend (Vorbereitung für RGB-LEDs)
+- ✅ **Sonnen-Integration**: Automatische Anpassung nach Sonnenauf-/untergang
+
+#### **Sicherheit & Failsafe** 🚨
+- ✅ **Temperatur-Notbremse**: >30°C → sofort Licht auf 10% (überschreibt alle Modi)
+- ✅ **Hysterese & Flackerschutz**: Verhindert ständiges Umschalten bei PPFD-Regelung
+- ✅ **Priorisierung**: Notbremse > Manuelle Override > Automatikmodus > PPFD
+
+#### **Input-Entities (Home Assistant)**
+- 3× input_number (Offsets, Fade-Duration)
+- 8× input_number für PPFD-Regel (Target, Min%, Max%, Hysterese)
+- 1× input_select für Modus (Aus / Manuell / Auto / PPFD)
+- 1× input_select für Spektrum-Profil
+- 2× input_datetime für Manuell Ein/Aus-Zeiten
+
+#### **Automationen & Scripts**
+- 5× Automationen (Manual ON/OFF, Auto Sunrise/Sunset, PPFD Kontinuierlich, Temp Failsafe)
+- 2× Scripts (fade_light_smooth, adjust_light_ppfd)
+- Proportionale Regelung mit konfigurierbarem Gain (KP)
+
+### 📊 Entity-Übersicht v0.4-beta
+**+15 neue Entities:** 8 input_numbers | 2 input_selects | 2 input_datetimes | 5 automations | 2 scripts
+
+### 🔮 Geplant für v0.5+
+- RGB Spektrum-Anpassung (echte Farb-Regelung)
+- VPD-basierte Light Intensity (wenn Stress erkannt)
+- Plant Stress Detector Integration
+- Light Efficiency Logging (DLI Historical)
+
 ## 🚀 v0.2-beta - Zeltsensor Major Update (06.12.2025)
 
 ### 📦 Neu in v2 (Design-Stand)

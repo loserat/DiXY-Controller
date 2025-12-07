@@ -71,6 +71,34 @@ input_select:
     # Standard: Normale Toleranz
     # Aggressiv: Enge Toleranz, schnelle Regelung
 
+  # ═══════════════════════════════════════════════════════════
+  # LIGHT CONTROL - MODE SELECTOR
+  # ═══════════════════════════════════════════════════════════
+  light_mode:
+    name: "Licht Betriebsmodus"
+    description: "Manuelle / Automatische / PPFD-basiert / Aus"
+    options:
+      - "Aus"
+      - "Manuell"
+      - "Auto (Sonnenauf-/untergang)"
+      - "PPFD-Regelung"
+    initial: "Auto (Sonnenauf-/untergang)"
+    icon: mdi:lightbulb-on-outline
+
+  # ═══════════════════════════════════════════════════════════
+  # LIGHT CONTROL - SPECTRUM PROFILE (für Auto-Mode)
+  # ═══════════════════════════════════════════════════════════
+  light_spectrum_profile:
+    name: "Licht Spektrum-Profil"
+    description: "Spektrale Anpassung nach Tageszeit"
+    options:
+      - "Morgens (Rot+Blau Mix)"
+      - "Tag (Vollspektrum)"
+      - "Abend (Rot-Dominant)"
+      - "Nacht (Aus)"
+    initial: "Tag (Vollspektrum)"
+    icon: mdi:palette-advanced
+
 input_boolean:
   # ═══════════════════════════════════════════════════════════
   # Timelapse Manual Triggers

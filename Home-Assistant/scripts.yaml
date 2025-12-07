@@ -307,3 +307,91 @@ photoperiod_script:
       data:
         message: "Lichtzyklus: {{ photoperiod_hours }}h ({{ lights_on_hour }}:00 - {{ lights_off_hour }}:00)"
         level: "INFO"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LIGHT CONTROL: SMOOTH FADE SCRIPT
+# ═══════════════════════════════════════════════════════════════════════════
+fade_light_smooth:
+  alias: "Licht sanft dimmen/aufhellen"
+  description: "Sanfte Licht-Anpassung über konfigurierbaren Zeitraum"
+  fields:
+    target_intensity:
+      description: "Ziel-Intensität (0-100%)"
+      example: 80
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    fade_duration:
+      description: "Dauer der Überblendung in Sekunden"
+      example: 60
+      selector:
+        number:
+          min: 5
+          max: 600
+          unit_of_measurement: s
+  sequence:
+    - variables:
+        current_intensity: "{{ states('number.zeltsensor_v2_light_intensity') | int(default=0) }}"
+        target: "{{ target_intensity | int(default=0) }}"
+        steps: "{{ (fade_duration | int(default=60)) // 2 }}"  # 2-Sekunden-Schritte
+        step_size: "{{ ((target - current_intensity) / (steps | float)) | round(2) }}"
+    
+    - repeat:
+        count: "{{ steps }}"
+        sequence:
+          - service: number.set_value
+            target:
+              entity_id: number.zeltsensor_v2_light_intensity
+            data:
+              value: "{{ (current_intensity + (step_size * repeat.index)) | round(1) }}"
+          - delay:
+              seconds: 2
+    
+    - service: number.set_value
+      target:
+        entity_id: number.zeltsensor_v2_light_intensity
+      data:
+        value: "{{ target }}"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LIGHT CONTROL: PPFD-BASED REGULATION SCRIPT
+# ═══════════════════════════════════════════════════════════════════════════
+adjust_light_ppfd:
+  alias: "PPFD-basierte Licht-Anpassung"
+  description: "Passt Licht-Intensität basierend auf gemessenem PPFD an"
+  sequence:
+    - variables:
+        current_ppfd: "{{ states('sensor.zeltsensor_ppfd') | float(default=0) }}"
+        target_ppfd: "{{ states('input_number.light_ppfd_target') | float(default=800) }}"
+        hysteresis: "{{ states('input_number.light_ppfd_hysteresis') | float(default=50) }}"
+        current_intensity: "{{ states('number.zeltsensor_v2_light_intensity') | float(default=50) }}"
+        min_percent: "{{ states('input_number.light_ppfd_min_percent') | float(default=10) }}"
+        max_percent: "{{ states('input_number.light_ppfd_max_percent') | float(default=100) }}"
+        
+        # Proportionale Regelung: PPD Error → Intensität-Change
+        ppfd_error: "{{ target_ppfd - current_ppfd }}"
+        
+        # Proportional-Gain (1% Intensität pro 10 µmol/m²/s Fehler)
+        kp: 0.1
+        
+        # Neue Intensität berechnen
+        new_intensity: "{{ ((current_intensity + (ppfd_error * kp)) | float(default=50) | max(min_percent) | min(max_percent)) | round(1) }}"
+        
+        # Hysterese prüfen: nur ändern wenn Fehler > Hysterese
+        should_adjust: "{{ ppfd_error | abs > hysteresis }}"
+    
+    - if: "{{ should_adjust }}"
+      then:
+        - service: number.set_value
+          target:
+            entity_id: number.zeltsensor_v2_light_intensity
+          data:
+            value: "{{ new_intensity }}"
+        
+        - service: logger.log
+          data:
+            message: "PPFD Regelung: {{ current_ppfd | round(0) }} (Target {{ target_ppfd | round(0) }}) → Intensität {{ new_intensity }}%"
+            level: "DEBUG"
+

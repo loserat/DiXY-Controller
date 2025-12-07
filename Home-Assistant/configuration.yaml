@@ -52,6 +52,7 @@ automation: !include automations.yaml
 script: !include scripts.yaml
 input_number: !include input_numbers.yaml
 input_select: !include input_selects.yaml
+input_datetime: !include input_datetimes.yaml
 
 # ===================================================================
 # MQTT (Optional - falls Node-RED verwendet)
