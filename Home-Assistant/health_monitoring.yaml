@@ -1,0 +1,169 @@
+# ════════════════════════════════════════════════════════════════════════════
+# HEALTH MONITORING V2 - Intelligente Sensor-Fehlerdiagnose
+# ════════════════════════════════════════════════════════════════════════════
+# Unterscheidet zwischen:
+# - Knoten offline (WiFi/Strom weg) → KEINE Fehler-Alerts
+# - Sensor defekt (Knoten online, aber Sensor tot) → Fehler-Alert
+#
+# Verwendung: In configuration.yaml einbinden mit:
+#   template: !include health_monitoring.yaml
+# ════════════════════════════════════════════════════════════════════════════
+
+# ZELTSENSOR V2 HEALTH MONITORING ---------------------------------------------
+- binary_sensor:
+    # Node Availability Check (Master-Switch für alle Sensoren)
+    - name: "Zeltsensor v2 Node Available"
+      unique_id: zeltsensor_v2_node_available
+      state: "{{ states('binary_sensor.zeltsensor_v2_status') == 'on' }}"
+      device_class: connectivity
+      icon: mdi:lan-connect
+
+    # AS7341 Sensor Health (nur melden wenn Node online)
+    - name: "AS7341 Sensor Failed"
+      unique_id: as7341_sensor_failed
+      state: >
+        {% if is_state('binary_sensor.zeltsensor_v2_node_available', 'on') %}
+          {{ is_state('binary_sensor.zeltsensor_v2_as7341_health_ok', 'off') }}
+        {% else %}
+          false
+        {% endif %}
+      device_class: problem
+      icon: mdi:lightbulb-alert
+
+    # SHT31 Sensor Health
+    - name: "SHT31 Sensor Failed"
+      unique_id: sht31_sensor_failed
+      state: >
+        {% if is_state('binary_sensor.zeltsensor_v2_node_available', 'on') %}
+          {{ is_state('binary_sensor.zeltsensor_v2_sht31_health_ok', 'off') }}
+        {% else %}
+          false
+        {% endif %}
+      device_class: problem
+      icon: mdi:thermometer-alert
+
+    # BMP280 Sensor Health
+    - name: "BMP280 Sensor Failed"
+      unique_id: bmp280_sensor_failed
+      state: >
+        {% if is_state('binary_sensor.zeltsensor_v2_node_available', 'on') %}
+          {{ is_state('binary_sensor.zeltsensor_v2_bmp280_health_ok', 'off') }}
+        {% else %}
+          false
+        {% endif %}
+      device_class: problem
+      icon: mdi:gauge-alert
+
+    # CO2 Sensor Health
+    - name: "CO2 Sensor Failed"
+      unique_id: co2_sensor_failed
+      state: >
+        {% if is_state('binary_sensor.zeltsensor_v2_node_available', 'on') %}
+          {{ is_state('binary_sensor.zeltsensor_v2_co2_health_ok', 'off') }}
+        {% else %}
+          false
+        {% endif %}
+      device_class: problem
+      icon: mdi:molecule-co2
+
+    # MLX #1 Sensor Health
+    - name: "MLX #1 Sensor Failed"
+      unique_id: mlx1_sensor_failed
+      state: >
+        {% if is_state('binary_sensor.zeltsensor_v2_node_available', 'on') %}
+          {{ is_state('binary_sensor.zeltsensor_v2_mlx_1_health_ok', 'off') }}
+        {% else %}
+          false
+        {% endif %}
+      device_class: problem
+      icon: mdi:thermometer-probe-alert
+
+    # MLX #2 Sensor Health
+    - name: "MLX #2 Sensor Failed"
+      unique_id: mlx2_sensor_failed
+      state: >
+        {% if is_state('binary_sensor.zeltsensor_v2_node_available', 'on') %}
+          {{ is_state('binary_sensor.zeltsensor_v2_mlx_2_health_ok', 'off') }}
+        {% else %}
+          false
+        {% endif %}
+      device_class: problem
+      icon: mdi:thermometer-probe-alert
+
+    # DS18B20 Sensor Health
+    - name: "DS18B20 Sensor Failed"
+      unique_id: ds18b20_sensor_failed
+      state: >
+        {% if is_state('binary_sensor.zeltsensor_v2_node_available', 'on') %}
+          {{ is_state('binary_sensor.zeltsensor_v2_ds18b20_health_ok', 'off') }}
+        {% else %}
+          false
+        {% endif %}
+      device_class: problem
+      icon: mdi:water-thermometer-alert
+
+    # Tacho Sensor Health
+    - name: "Tacho Sensor Failed"
+      unique_id: tacho_sensor_failed
+      state: >
+        {% if is_state('binary_sensor.zeltsensor_v2_node_available', 'on') %}
+          {{ is_state('binary_sensor.zeltsensor_v2_tacho_health_ok', 'off') }}
+        {% else %}
+          false
+        {% endif %}
+      device_class: problem
+      icon: mdi:fan-alert
+
+# SENSOR RELIABILITY METRICS --------------------------------------------------
+- sensor:
+    # Node Uptime (in hours for easier reading)
+    - name: "Zeltsensor v2 Uptime Hours"
+      unique_id: zeltsensor_v2_uptime_hours
+      state: >
+        {% if states('sensor.zeltsensor_v2_uptime') not in ['unknown', 'unavailable'] %}
+          {{ (states('sensor.zeltsensor_v2_uptime') | float / 3600) | round(1) }}
+        {% else %}
+          0
+        {% endif %}
+      unit_of_measurement: "h"
+      icon: mdi:clock-outline
+
+    # Total Sensor Failures (Sum of all failure counters)
+    - name: "Zeltsensor v2 Total Sensor Failures"
+      unique_id: zeltsensor_v2_total_failures
+      state: >
+        {{
+          (states('sensor.zeltsensor_v2_as7341_failures_total') | int(0)) +
+          (states('sensor.zeltsensor_v2_sht31_failures_total') | int(0)) +
+          (states('sensor.zeltsensor_v2_bmp280_failures_total') | int(0)) +
+          (states('sensor.zeltsensor_v2_co2_failures_total') | int(0)) +
+          (states('sensor.zeltsensor_v2_mlx_1_failures_total') | int(0)) +
+          (states('sensor.zeltsensor_v2_mlx_2_failures_total') | int(0)) +
+          (states('sensor.zeltsensor_v2_ds18b20_failures_total') | int(0)) +
+          (states('sensor.zeltsensor_v2_tacho_failures_total') | int(0))
+        }}
+      unit_of_measurement: "failures"
+      icon: mdi:alert-circle-outline
+
+    # System Health Score (0-100%, 100% = alle Sensoren OK)
+    - name: "Zeltsensor v2 Health Score"
+      unique_id: zeltsensor_v2_health_score
+      state: >
+        {% set total_sensors = 8 %}
+        {% set failed_sensors = 
+          (1 if is_state('binary_sensor.as7341_sensor_failed', 'on') else 0) +
+          (1 if is_state('binary_sensor.sht31_sensor_failed', 'on') else 0) +
+          (1 if is_state('binary_sensor.bmp280_sensor_failed', 'on') else 0) +
+          (1 if is_state('binary_sensor.co2_sensor_failed', 'on') else 0) +
+          (1 if is_state('binary_sensor.mlx_1_sensor_failed', 'on') else 0) +
+          (1 if is_state('binary_sensor.mlx_2_sensor_failed', 'on') else 0) +
+          (1 if is_state('binary_sensor.ds18b20_sensor_failed', 'on') else 0) +
+          (1 if is_state('binary_sensor.tacho_sensor_failed', 'on') else 0)
+        %}
+        {% if is_state('binary_sensor.zeltsensor_v2_node_available', 'off') %}
+          0
+        {% else %}
+          {{ ((total_sensors - failed_sensors) / total_sensors * 100) | round(0) }}
+        {% endif %}
+      unit_of_measurement: "%"
+      icon: mdi:heart-pulse

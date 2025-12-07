@@ -92,6 +92,49 @@ one_wire:
   - platform: gpio
     pin: ${onewire_pin}
 
+# GLOBALS (Health Monitoring V2: Failure Counters mit Flash-Persistenz) ------
+globals:
+  # Failure Counter für jeden Sensor (überlebt Reboots)
+  - id: as7341_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: sht31_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: bmp280_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: co2_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: mlx1_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: mlx2_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: ds18b20_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: tacho_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+
 # OUTPUTS --------------------------------------------------------------------
 output:
   # 0-10V Dimmer: Fan (PWM zu 0-10V Wandler)
@@ -486,6 +529,152 @@ sensor:
       }
       return 0.0;  // 0 = OK
 
+# SENSOR FAILURE COUNTERS (mit Boot-Graceperiod + Flash-Persistenz) ----------
+  - platform: template
+    name: "${friendly_name} AS7341 Failures Total"
+    id: as7341_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      // NUR zählen wenn Node > 5min läuft (Boot-Grace-Period)
+      if (id(node_uptime).state < 300.0) {
+        return id(as7341_failure_count);
+      }
+      
+      if (!id(as7341_active).state) {
+        id(as7341_failure_count)++;
+        ESP_LOGW("health", "AS7341 failure detected! Count: %d", id(as7341_failure_count));
+      }
+      
+      return id(as7341_failure_count);
+
+  - platform: template
+    name: "${friendly_name} SHT31 Failures Total"
+    id: sht31_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(sht31_failure_count);
+      }
+      
+      if (!id(sht31_active).state) {
+        id(sht31_failure_count)++;
+        ESP_LOGW("health", "SHT31 failure detected! Count: %d", id(sht31_failure_count));
+      }
+      
+      return id(sht31_failure_count);
+
+  - platform: template
+    name: "${friendly_name} BMP280 Failures Total"
+    id: bmp280_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(bmp280_failure_count);
+      }
+      
+      if (!id(bmp280_active).state) {
+        id(bmp280_failure_count)++;
+        ESP_LOGW("health", "BMP280 failure detected! Count: %d", id(bmp280_failure_count));
+      }
+      
+      return id(bmp280_failure_count);
+
+  - platform: template
+    name: "${friendly_name} CO2 Failures Total"
+    id: co2_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(co2_failure_count);
+      }
+      
+      if (!id(co2_active).state) {
+        id(co2_failure_count)++;
+        ESP_LOGW("health", "CO2 failure detected! Count: %d", id(co2_failure_count));
+      }
+      
+      return id(co2_failure_count);
+
+  - platform: template
+    name: "${friendly_name} MLX #1 Failures Total"
+    id: mlx1_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(mlx1_failure_count);
+      }
+      
+      if (!id(mlx1_active).state) {
+        id(mlx1_failure_count)++;
+        ESP_LOGW("health", "MLX #1 failure detected! Count: %d", id(mlx1_failure_count));
+      }
+      
+      return id(mlx1_failure_count);
+
+  - platform: template
+    name: "${friendly_name} MLX #2 Failures Total"
+    id: mlx2_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(mlx2_failure_count);
+      }
+      
+      if (!id(mlx2_active).state) {
+        id(mlx2_failure_count)++;
+        ESP_LOGW("health", "MLX #2 failure detected! Count: %d", id(mlx2_failure_count));
+      }
+      
+      return id(mlx2_failure_count);
+
+  - platform: template
+    name: "${friendly_name} DS18B20 Failures Total"
+    id: ds18b20_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(ds18b20_failure_count);
+      }
+      
+      if (!id(ds18b20_active).state) {
+        id(ds18b20_failure_count)++;
+        ESP_LOGW("health", "DS18B20 failure detected! Count: %d", id(ds18b20_failure_count));
+      }
+      
+      return id(ds18b20_failure_count);
+
+  - platform: template
+    name: "${friendly_name} Tacho Failures Total"
+    id: tacho_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(tacho_failure_count);
+      }
+      
+      if (!id(tacho_active).state) {
+        id(tacho_failure_count)++;
+        ESP_LOGW("health", "Tacho failure detected! Count: %d", id(tacho_failure_count));
+      }
+      
+      return id(tacho_failure_count);
+
 switch:
   - platform: template
     name: "${friendly_name} Status LED"
@@ -563,6 +752,160 @@ text_sensor:
         case ESP_RST_SDIO: return {"sdio"};
         default: return {"unknown"};
       }
+
+  # Sensor Uptime Tracking (mit Boot-Graceperiod: 300s)
+  - platform: template
+    name: "${friendly_name} AS7341 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t as7341_start_time = millis();
+      // Boot-Graceperiod: Nur nach 300s Uptime Fehler als Fehler werten
+      if (!id(as7341_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          as7341_start_time = millis();  // Reset bei echtem Fehler
+        }
+      }
+      uint32_t uptime_ms = millis() - as7341_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} SHT31 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t sht31_start_time = millis();
+      if (!id(sht31_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          sht31_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - sht31_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} BMP280 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t bmp280_start_time = millis();
+      if (!id(bmp280_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          bmp280_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - bmp280_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} CO2 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t co2_start_time = millis();
+      if (!id(co2_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          co2_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - co2_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} MLX #1 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t mlx1_start_time = millis();
+      if (!id(mlx1_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          mlx1_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - mlx1_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} MLX #2 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t mlx2_start_time = millis();
+      if (!id(mlx2_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          mlx2_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - mlx2_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} DS18B20 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t ds18b20_start_time = millis();
+      if (!id(ds18b20_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          ds18b20_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - ds18b20_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} Tacho Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t tacho_start_time = millis();
+      if (!id(tacho_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          tacho_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - tacho_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
 
 binary_sensor:
   - platform: status
@@ -651,126 +994,71 @@ binary_sensor:
       if (co2 < 900.0f) alarm_active = false;
       return alarm_active;
 
-  # Sensor Uptime Tracking
+# SENSOR HEALTH BINARY SENSORS V2 (Health OK mit Boot-Graceperiod) ----------
   - platform: template
-    name: "${friendly_name} AS7341 Uptime"
-    icon: "mdi:clock-outline"
-    update_interval: 60s
+    name: "${friendly_name} AS7341 Health OK"
+    id: as7341_health_ok
+    device_class: problem
     lambda: |-
-      static uint32_t as7341_start_time = millis();
-      if (!id(as7341_active).state) as7341_start_time = millis();
-      uint32_t uptime_ms = millis() - as7341_start_time;
-      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
-      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
-      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
-      char buffer[32];
-      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
-      return {buffer};
+      // Nach Boot-Graceperiod: Sensor muss aktiv sein
+      if (id(node_uptime).state < 300.0) return true;  // Noch am booten
+      return id(as7341_active).state;
 
   - platform: template
-    name: "${friendly_name} SHT31 Uptime"
-    icon: "mdi:clock-outline"
-    update_interval: 60s
+    name: "${friendly_name} SHT31 Health OK"
+    id: sht31_health_ok
+    device_class: problem
     lambda: |-
-      static uint32_t sht31_start_time = millis();
-      if (!id(sht31_active).state) sht31_start_time = millis();
-      uint32_t uptime_ms = millis() - sht31_start_time;
-      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
-      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
-      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
-      char buffer[32];
-      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
-      return {buffer};
+      if (id(node_uptime).state < 300.0) return true;
+      return id(sht31_active).state;
 
   - platform: template
-    name: "${friendly_name} BMP280 Uptime"
-    icon: "mdi:clock-outline"
-    update_interval: 60s
+    name: "${friendly_name} BMP280 Health OK"
+    id: bmp280_health_ok
+    device_class: problem
     lambda: |-
-      static uint32_t bmp280_start_time = millis();
-      if (!id(bmp280_active).state) bmp280_start_time = millis();
-      uint32_t uptime_ms = millis() - bmp280_start_time;
-      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
-      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
-      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
-      char buffer[32];
-      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
-      return {buffer};
+      if (id(node_uptime).state < 300.0) return true;
+      return id(bmp280_active).state;
 
   - platform: template
-    name: "${friendly_name} CO2 Uptime"
-    icon: "mdi:clock-outline"
-    update_interval: 60s
+    name: "${friendly_name} CO2 Health OK"
+    id: co2_health_ok
+    device_class: problem
     lambda: |-
-      static uint32_t co2_start_time = millis();
-      if (!id(co2_active).state) co2_start_time = millis();
-      uint32_t uptime_ms = millis() - co2_start_time;
-      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
-      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
-      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
-      char buffer[32];
-      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
-      return {buffer};
+      if (id(node_uptime).state < 300.0) return true;
+      return id(co2_active).state;
 
   - platform: template
-    name: "${friendly_name} MLX #1 Uptime"
-    icon: "mdi:clock-outline"
-    update_interval: 60s
+    name: "${friendly_name} MLX #1 Health OK"
+    id: mlx1_health_ok
+    device_class: problem
     lambda: |-
-      static uint32_t mlx1_start_time = millis();
-      if (!id(mlx1_active).state) mlx1_start_time = millis();
-      uint32_t uptime_ms = millis() - mlx1_start_time;
-      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
-      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
-      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
-      char buffer[32];
-      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
-      return {buffer};
+      if (id(node_uptime).state < 300.0) return true;
+      return id(mlx1_active).state;
 
   - platform: template
-    name: "${friendly_name} MLX #2 Uptime"
-    icon: "mdi:clock-outline"
-    update_interval: 60s
+    name: "${friendly_name} MLX #2 Health OK"
+    id: mlx2_health_ok
+    device_class: problem
     lambda: |-
-      static uint32_t mlx2_start_time = millis();
-      if (!id(mlx2_active).state) mlx2_start_time = millis();
-      uint32_t uptime_ms = millis() - mlx2_start_time;
-      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
-      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
-      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
-      char buffer[32];
-      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
-      return {buffer};
+      if (id(node_uptime).state < 300.0) return true;
+      return id(mlx2_active).state;
 
   - platform: template
-    name: "${friendly_name} DS18B20 Uptime"
-    icon: "mdi:clock-outline"
-    update_interval: 60s
+    name: "${friendly_name} DS18B20 Health OK"
+    id: ds18b20_health_ok
+    device_class: problem
     lambda: |-
-      static uint32_t ds18b20_start_time = millis();
-      if (!id(ds18b20_active).state) ds18b20_start_time = millis();
-      uint32_t uptime_ms = millis() - ds18b20_start_time;
-      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
-      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
-      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
-      char buffer[32];
-      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
-      return {buffer};
+      if (id(node_uptime).state < 300.0) return true;
+      return id(ds18b20_active).state;
 
   - platform: template
-    name: "${friendly_name} Tacho Uptime"
-    icon: "mdi:clock-outline"
-    update_interval: 60s
+    name: "${friendly_name} Tacho Health OK"
+    id: tacho_health_ok
+    device_class: problem
     lambda: |-
-      static uint32_t tacho_start_time = millis();
-      if (!id(tacho_active).state) tacho_start_time = millis();
-      uint32_t uptime_ms = millis() - tacho_start_time;
-      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
-      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
-      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
-      char buffer[32];
-      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
-      return {buffer};
+      if (id(node_uptime).state < 300.0) return true;
+      return id(tacho_active).state;
 
 # AUTOMATIONS (Alarms & Emergency Dimming) ----------------------------------
 automation:

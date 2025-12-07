@@ -143,3 +143,12 @@ template:
             OK
           {% endif %}
         icon: mdi:test-tube
+
+# ===================================================================
+# HEALTH MONITORING V2 - Sensor Diagnostics (OPTIONAL)
+# ===================================================================
+# Um Health Monitoring V2 zu aktivieren:
+# 1. Inhalt von health_monitoring.yaml in diese template: Sektion kopieren
+# 2. ODER health_monitoring.yaml manuell unter template: einbinden
+#
+# Siehe health_monitoring.yaml für vollständige Implementation
