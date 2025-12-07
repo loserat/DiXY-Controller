@@ -1,0 +1,221 @@
+################################################################################
+# DiXY RDWC Controller - Kameraknoten Detail v0.2-beta
+# 
+# Funktion: Blattfarben-Analyse + Schädlings-Erkennung (Macro Side-View)
+# Hardware: ESP32-CAM AI-Thinker (OV2640 2MP)
+# 
+# GPIO PINOUT (ESP32-CAM AI-Thinker):
+# ├─ Kamera OV2640:
+# │  ├─ GPIO26/27: I2C (SDA/SCL) für Kamera-Config
+# │  ├─ GPIO5/18/19/21/36/39/34/35: Data Pins (D0-D7)
+# │  ├─ GPIO25: VSYNC
+# │  ├─ GPIO23: HREF
+# │  ├─ GPIO22: PCLK (Pixel Clock)
+# │  ├─ GPIO32: PWDN (Power Down)
+# │  └─ Reset: -1 (nicht verwendet)
+# ├─ Flashlight:
+# │  └─ GPIO4: White LED (für Nacht-Snapshots 02:00)
+# ├─ Onboard LED:
+# │  └─ GPIO33: Status LED
+# └─ Boot Button:
+#    └─ GPIO0: Flash Mode (beim Upload)
+# 
+# Features:
+# - 4x tägliche Snapshots (08:00/14:00/20:00/02:00)
+# - HSV-Farb-Analyse (Grün/Gelb/Braun für Stress-Detektion)
+# - Quality 5 (Maximum Detail für Blattoberflächen-Analyse)
+# - Automatische Nacht-Beleuchtung (Flash @02:00)
+################################################################################
+
+substitutions:
+  device_name: kameraknoten-detail
+  friendly_name: "Kamera Detail"
+  device_description: "Blattfarben-Analyse (Macro)"
+  project_version: "0.5-beta"
+
+esphome:
+  name: kameraknoten-detail
+  friendly_name: "Detail Kamera (Side-View)"
+  comment: "DiXY Kamera Detail v0.2-beta – Blattanalyse + WiFi Diagnostics + Health"
+  platform: ESP32
+  board: esp32cam
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  
+  manual_ip:
+    static_ip: !secret detail_cam_ip
+    gateway: !secret gateway_ip
+    subnet: !secret subnet_mask
+
+  ap:
+    ssid: !secret detail_cam_ap_ssid
+    password: !secret detail_cam_ap_password
+
+ota:
+  password: !secret camera_ota_password
+
+api:
+  encryption:
+    key: "REPLACE_WITH_GENERATED_KEY"
+
+logger:
+  level: INFO
+
+web_server:
+  port: 80
+  auth:
+    username: !secret web_username
+    password: !secret web_password
+
+time:
+  - platform: homeassistant
+    id: ha_time
+
+# GLOBALS (Health Monitoring V2: Failure Counters mit Flash-Persistenz) ------
+globals:
+  - id: camera_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+
+sensor:
+  # SYSTEM-SENSOREN -----------------------------------------------------
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi Signal"
+    id: wifi_rssi
+    update_interval: 60s
+  
+  - platform: internal_temperature
+    name: "${friendly_name} MCU Temperatur"
+  
+  - platform: uptime
+    name: "${friendly_name} Uptime"
+    id: node_uptime
+    update_interval: 60s
+  
+  - platform: template
+    name: "${friendly_name} Free Heap"
+    unit_of_measurement: "kB"
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: 'return (float)esp_get_free_heap_size() / 1024.0f;'
+  
+  # CAMERA FAILURE COUNTER (mit Boot-Graceperiod + Flash-Persistenz)
+  - platform: template
+    name: "${friendly_name} Camera Failures Total"
+    id: camera_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(camera_failure_count);
+      }
+      // Camera health check wird via HA binary_sensor.detail_camera_stream_active gemacht
+      return id(camera_failure_count);
+
+text_sensor:
+  - platform: version
+    name: "${friendly_name} ESPHome Version"
+  
+  - platform: wifi_info
+    ip_address:
+      name: "${friendly_name} IP"
+    ssid:
+      name: "${friendly_name} SSID"
+    bssid:
+      name: "${friendly_name} BSSID"
+  
+  - platform: template
+    name: "${friendly_name} Projekt"
+    icon: "mdi:identifier"
+    lambda: 'return {"DiXY RDWC Controller"};'
+  
+  - platform: template
+    name: "${friendly_name} Version"
+    icon: "mdi:tag"
+    lambda: 'return {"${project_version}"};'
+  
+  - platform: template
+    name: "${friendly_name} Status Summary"
+    icon: "mdi:information-outline"
+    update_interval: 30s
+    lambda: |-
+      char buffer[80];
+      float wifi = id(wifi_rssi).has_state() ? id(wifi_rssi).state : NAN;
+      float up_hours = id(node_uptime).has_state() ? id(node_uptime).state / 3600.0f : NAN;
+      const char *wifi_str = isnan(wifi) ? "n/a" : (wifi > -60 ? "strong" : (wifi > -75 ? "ok" : "weak"));
+      if (isnan(up_hours)) {
+        snprintf(buffer, sizeof(buffer), "ver %s | WiFi %s", "${project_version}", wifi_str);
+      } else {
+        snprintf(buffer, sizeof(buffer), "ver %s | WiFi %s | up %.1fh", "${project_version}", wifi_str, up_hours);
+      }
+      return {buffer};
+  
+  - platform: template
+    name: "${friendly_name} Reset Grund"
+    icon: "mdi:restart-alert"
+    lambda: |-
+      switch (esp_reset_reason()) {
+        case ESP_RST_POWERON: return {"poweron"};
+        case ESP_RST_EXT: return {"ext"};
+        case ESP_RST_SW: return {"sw"};
+        case ESP_RST_PANIC: return {"panic"};
+        case ESP_RST_INT_WDT: return {"int_wdt"};
+        case ESP_RST_TASK_WDT: return {"task_wdt"};
+        case ESP_RST_WDT: return {"wdt"};
+        case ESP_RST_DEEPSLEEP: return {"deepsleep"};
+        case ESP_RST_BROWNOUT: return {"brownout"};
+        case ESP_RST_SDIO: return {"sdio"};
+        default: return {"unknown"};
+      }
+
+binary_sensor:
+  - platform: status
+    name: "${friendly_name} Status"
+
+esp32_camera:
+  id: detail_camera
+  name: "Detail Camera"
+  
+  # Pin-Konfiguration (ESP32-CAM AI-Thinker)
+  data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
+  vsync_pin: GPIO25
+  href_pin: GPIO23
+  pixel_clock_pin: GPIO22
+  power_down_pin: GPIO32
+  reset_pin: -1
+  
+  # I2C für Kamera-Config
+  sda: GPIO26
+  scl: GPIO27
+  
+  # Kamera-Parameter (High Quality für Macro)
+  resolution: "800x600"
+  jpeg_quality: 5
+  max_framerate: "1 fps"
+  vertical_flip: false
+  horizontal_mirror: false
+  saturation: 0
+  brightness: 0
+  contrast: 0
+  special_effect: NONE
+  auto_white_balance: true
+  white_balance_mode: AUTO
+
+light:
+  # Flashlight für Nacht-Snapshots (02:00)
+  - platform: gpio
+    pin: GPIO4
+    name: "Detail Flash"
+    id: detail_flash
+
+output:
+  - platform: gpio
+    pin: GPIO33
+    id: detail_status_led
+
+status_led:
+  pin: GPIO33

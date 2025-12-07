@@ -1,54 +1,334 @@
 # DiXY RDWC Controller - Release Notes
 
-## 📋 Versions-Übersicht
+## 📊 Version Overview
 
-| Komponente | Version | Datum | Status |
-|-----------|---------|-------|--------|
-| **Hydroknoten** | v0.5-beta | 07.12.2025 | ✅ Updated |
-| **Dosierknoten** | v0.5-beta | 07.12.2025 | ✅ Updated |
-| **Klimaknoten** | v0.5-beta | 07.12.2025 | ✅ Updated |
-| **Zeltsensor** | v0.5-beta | 07.12.2025 | ✅ Updated |
-| **Zeltsensor v2** | v0.5-beta | 07.12.2025 | ✅ Released |
-| **Kameraknoten Canopy** | v0.5-beta | 07.12.2025 | ✅ Updated |
-| **Kameraknoten Detail** | v0.5-beta | 07.12.2025 | ✅ Updated |
-| **Plant Stress Detector** | v0.1-beta | 06.12.2025 | 🆕 New Beta |
-| **Home Assistant** | 2024.12.x | - | ✅ Required |
+| Version | Status | Focus | Target |
+|---------|--------|-------|--------|
+| **v0.1–0.9** | 🔄 Current | Alle Sensoren + HA Dashboard | Dez 2025 |
+| **v1.0–1.9** | 🔴 Planned | Dosierungsknoten (EC/pH Auto) | Jan 2026 |
+| **v2.0–2.9** | 🔴 Planned | KI-Anbindung (Plant Stress ML) | Feb 2026 |
+| **v3.0–3.9** | 🔴 Planned | Hardware-Optimierung (MQTT, PID, Multi-Zelt) | Mar 2026 |
+| **v4.0+** | 🔴 Planned | Deep Learning (YOLOv8, Mobile App) | Q2+ 2026 |
 
 ---
 
-## 🚀 v0.5-beta (✅ Released) – Universal Health Monitoring V2 Rollout (07.12.2025)
+## 🚀 v0.1–0.9: Sensoren & Home Assistant Dashboard
 
-### 📦 Neu in v0.5-beta – Alle Knoten auf gleichem Feature-Level
+### v0.1 (Hydroknoten Baseline)
+**Status:** 🔄 In Progress  
+**Target:** Dec 7, 2025
 
-#### **Health Monitoring V2 (Production-Ready)** 🏥
+#### Features
+- ✅ EC-Wert (ADS1115, 2-Punkt-Kalibrierung, Temp-Kompensation)
+- ✅ pH-Wert (ADS1115, 2-Punkt-Kalibrierung)
+- ✅ Dual DS18B20 Temperaturen (Tank + Rücklauf mit Offset)
+- ✅ 6× Wasserstand-Sensoren (GPIO digital mit Debounce)
+- ✅ WiFi + API Encryption
+- ✅ Health Monitoring (Free Heap, Uptime, Reset Grund)
+- ✅ Status Summary Text
 
-**Implementiert auf ALLEN Knoten:**
-- ✅ **Boot-Graceperiod (300s)**: Verhindert False-Positives während Startup/WiFi-Reconnect
-- ✅ **Flash-Persistente Failure Counter**: Überleben ESP32-Reboots (restore_value: true)
-- ✅ **Reset Grund Detection**: poweron/sw/panic/wdt/brownout/etc. für Diagnose
-- ✅ **Status Summary**: WiFi-Qualität + Uptime + Version kompakt
-- ✅ **Free Heap Monitoring**: RAM-Überwachung für Stabilitäts-Checks
+#### HA Integration
+- [ ] Alle Entities erkannt (17 Sensoren)
+- [ ] Dashboard Template erstellt
+- [ ] Kalibrier-Buttons funktional
+- [ ] Offset-Anpassung getestet
 
-#### **Sensor Health pro Knoten:**
+### v0.2 (Zeltsensor Integration)
+**Target:** Dec 14, 2025
 
-**Zeltsensor v2 (8 Sensoren)**:
-- AS7341 PPFD, SHT31, BMP280, CO₂, MLX #1/#2, DS18B20, Tacho
-- 8× Failure Counter, 8× Health OK Binary, 8× Uptime Tracker
+#### Features
+- [ ] AS7341 Spektralsensor (8 Kanäle: VN, BN, BLUE, CYAN, GREEN, YELLOW, ORANGE, RED, NIR)
+- [ ] PPFD Berechnung (µmol/m²/s)
+- [ ] DLI Berechnung (mol/m²/day)
+- [ ] CCT Berechnung (Farbtemperatur)
+- [ ] SHT31 Luftfeuchte + Temperatur
+- [ ] BMP280 Luftdruck
+- [ ] AS7341 Health Check
 
-**Klimaknoten (3 Sensoren)**:
-- SHT31, MLX90614, BMP280
-- 3× Failure Counter, 3× Health OK Binary, 3× Uptime Tracker
+### v0.3 (Klimaknoten Backup)
+**Target:** Dec 21, 2025
 
-**Hydroknoten (EC/pH/Temp/Level)**:
-- EC-Sensor, pH-Sensor, 2× DS18B20, 6× Waterlevel
-- Reset Grund, Free Heap, WiFi Diagnostics
+#### Features
+- [ ] SHT31 (Luftfeuchte + Temperatur)
+- [ ] MLX90614 (Blatttemperatur IR)
+- [ ] BMP280 (Luftdruck)
+- [ ] VPD-Berechnung (Magnus-Formel)
+- [ ] Health Monitoring (Sensor Status)
 
-**Dosierknoten (4 Pumpen + Stirrer)**:
-- Reset Grund, Free Heap, Enhanced Status Summary
-- (Pumpen-Health via Runtime-Tracking bereits vorhanden)
+### v0.4 (Kameraknoten)
+**Target:** Dec 28, 2025
 
-**Kameraknoten Canopy/Detail (OV2640)**:
-- Camera Failure Counter, WiFi/Uptime/MCU/Heap
+#### Features
+- [ ] OV2640 Kamera Integration (Canopy)
+- [ ] Timelapse Mode (stündlich)
+- [ ] Snapshots speichern
+- [ ] WiFi Stability Testing
+
+### v0.5 (Plant Stress Detector Baseline)
+**Target:** Jan 4, 2026
+
+#### Features
+- [ ] Regelbasierte Multi-Sensor-Analyse
+- [ ] Growth Stage Detection (7 Phasen)
+- [ ] Stress Score Berechnung (0–100)
+- [ ] Alert-Schwellen
+- [ ] Home Assistant Notifications
+
+### v0.6–0.9 (Stabilisierung & Testing)
+**Target:** Jan 11–25, 2026
+
+#### Features
+- [ ] Dashboard Optimierung (Lovelace)
+- [ ] Health Monitoring v2 (Failure Counter)
+- [ ] Fehlerbehandlung + Watchdog
+- [ ] 72h Stress-Test (WiFi Reconnect, Sensor Drift)
+- [ ] Dokumentation: SETUP_GUIDE.md
+
+#### Success Criteria
+- ✅ Alle 6 Knoten laufen 2–3 Wochen stabil
+- ✅ HA Dashboard übersichtlich + funktional
+- ✅ Keine WiFi-Dropouts > 30 Minuten
+- ✅ EC/pH Drift < 0.1 mS/cm / 0.1 pH pro Woche
+
+---
+
+## 🚀 v1.0–1.9: Dosierungsknoten (EC/pH Auto-Dosierung)
+
+### v1.0 (Dosierknoten Hardware)
+**Target:** Jan 25, 2026
+
+#### Features
+- [ ] 4× PWM Peristaltikpumpen (Dünger, pH Down, pH Up, Additive)
+- [ ] Rührmotor MCP4131 Speed Control
+- [ ] Stromsensor (ACS712) pro Pumpe → Verification
+- [ ] Relay Feedback (Optokoppler)
+- [ ] Safety Limits: Max ml/Zyklus, Max ml/Tag, Auto-Stop >30 Min
+
+#### HA Integration
+- [ ] Pumpe A–D Manual Control (Slider: 0–100 ml)
+- [ ] Rührmotor Speed (0–100%)
+- [ ] Pump Runtime Counter
+- [ ] Current Monitoring
+
+### v1.1 (EC Auto-Dosierung)
+**Target:** Feb 1, 2026
+
+#### Features
+- [ ] EC Target eingeben (input_number)
+- [ ] EC Hysterese (0.05–0.3 mS/cm)
+- [ ] Dosierung bei EC zu niedrig: Pumpe A aktivieren
+- [ ] Berechnung: ml = f(EC_error, Tank_Volume, Growth_Stage)
+- [ ] Safety: Daily Limit Check
+
+### v1.2 (pH Auto-Dosierung)
+**Target:** Feb 8, 2026
+
+#### Features
+- [ ] pH Target eingeben (input_number, default 5.8)
+- [ ] pH Hysterese (0.1–0.5 pH)
+- [ ] Zu sauer: Pumpe C (pH Up) aktivieren
+- [ ] Zu basisch: Pumpe B (pH Down) aktivieren
+- [ ] Pumpen abwechselnd steuern (nicht beide gleichzeitig)
+
+### v1.3 (Rührmotor + Safety)
+**Target:** Feb 15, 2026
+
+#### Features
+- [ ] Nach jeder Dosierung: Rührmotor 5 Min @ 75%
+- [ ] Wartezeit nach Dosierung: 30 Min (vor nächster Dosierung)
+- [ ] Daily Limit Alert (wenn >500 ml Gesamt)
+- [ ] Pump Runtime Counter persistent
+- [ ] Failure Detection: Pumpe läuft, aber kein Strom → Alert
+
+### v1.4–1.9 (Node-RED + Tuning)
+**Target:** Feb 22–Mar 8, 2026
+
+#### Features
+- [ ] Flow 03: pH Dosierung dokumentiert
+- [ ] Flow 05: EC Dosierung dokumentiert
+- [ ] Manual Override Modes
+- [ ] Testing mit echten Nährstofflösungen
+- [ ] Parameter-Tuning (P/I/D für v3.0 vorbereitet)
+
+#### Success Criteria
+- ✅ EC hält ±0.15 mS/cm Zielwert
+- ✅ pH hält ±0.2 pH Zielwert
+- ✅ Keine Überdosierungen
+- ✅ Daily Limits funktionieren
+
+---
+
+## 🚀 v2.0–2.9: KI-Anbindung (Plant Stress Detector ML)
+
+### v2.0 (Plant Stress Detector v0.1 erweitert)
+**Target:** Mar 15, 2026
+
+#### Features
+- [ ] 7-Phasen Growth Stage Detection
+- [ ] Stage-spezifische Targets (EC, pH, VPD, PPFD)
+- [ ] Multi-Sensor Anomalieerkennung
+- [ ] Stress Score (0–100)
+- [ ] Wasserverbrauch Baseline Tracking
+
+### v2.1 (AI Data Collector)
+**Target:** Mar 22, 2026
+
+#### Features
+- [ ] ai_data_collector.py stündliche Speicherung
+- [ ] CSV Export (data/dixy_YYYYMM.csv)
+- [ ] 40+ Entities pro Eintrag
+- [ ] Vorbereitung für ML-Training
+
+### v2.2 (Growth Stage Auto-Detection)
+**Target:** Mar 29, 2026
+
+#### Features
+- [ ] Days Since Seed eingeben
+- [ ] Automatische Phase-Erkennung
+- [ ] Targets pro Phase updaten
+- [ ] Umschalten mit Alert
+
+### v2.3 (Blattfarb-Analyse)
+**Target:** Apr 5, 2026
+
+#### Features
+- [ ] Kamera Detail: HSV-Analyse
+- [ ] Grün / Gelb / Braun Prozentsätze
+- [ ] Stress Indicator
+- [ ] Nährstoffmangel-Erkennung
+
+### v2.4–2.9 (Datensatz + ML-Vorbereitung)
+**Target:** Apr 12–May 24, 2026
+
+#### Features
+- [ ] 30+ Tage Daten gesammelt
+- [ ] CSV mit 40+ Features
+- [ ] Feature Engineering
+- [ ] Erste Scikit-learn Experimente
+
+#### Success Criteria
+- ✅ Stress Score korreliert mit visueller Assessment
+- ✅ 30+ Tage Daten gesammelt
+- ✅ Ready für ML-Training
+
+---
+
+## 🚀 v3.0–3.9: Hardware-Optimierung & Entwicklung
+
+### v3.0 (MQTT Integration - Optional)
+**Target:** May 25, 2026
+
+#### Features
+- [ ] Mosquitto Broker Setup
+- [ ] ESPHome MQTT Discovery
+- [ ] 265+ Topics dokumentiert
+- [ ] Command/ACK/State Pattern
+
+### v3.1 (PID-Regler)
+**Target:** Jun 1, 2026
+
+#### Features
+- [ ] PID für EC-Dosierung
+- [ ] PID für pH-Dosierung
+- [ ] PID für Lüfter-Speed (VPD)
+- [ ] Tuning Parameter (P, I, D)
+
+### v3.2 (Multi-Zelt Support)
+**Target:** Jun 8, 2026
+
+#### Features
+- [ ] 2–4 unabhängige Grow-Räume
+- [ ] Separate Growth Stages pro Zelt
+- [ ] Separate Targets
+- [ ] Aggregierte Analysen
+
+### v3.3 (InfluxDB + Grafana - Optional)
+**Target:** Jun 15, 2026
+
+#### Features
+- [ ] InfluxDB Zeitreihen
+- [ ] Grafana Dashboards
+- [ ] 1+ Jahr Datenspeicherung
+- [ ] Query API für ML
+
+### v3.4 (WiFi Power-Saving + OTA)
+**Target:** Jun 22, 2026
+
+#### Features
+- [ ] Kamera Sleep Modes
+- [ ] Auto-Failover
+- [ ] OTA Auto-Updates
+- [ ] Silent Updates ohne Reboot
+
+### v3.5–3.9 (Community + Stabilisierung)
+**Target:** Jun 29–Jul 20, 2026
+
+#### Features
+- [ ] User Feedback Integration
+- [ ] Performance Optimierung
+- [ ] Bugfixes
+- [ ] Extended Documentation
+
+#### Success Criteria
+- ✅ System läuft 30+ Tage stabil
+- ✅ Datensatz für ML-Training vorhanden
+- ✅ Production-Ready
+
+---
+
+## 🚀 v4.0+: Deep Learning & Zukunft
+
+### v4.0 (Plant Stress Detector ML-Hybrid)
+**Target:** Aug 2026
+
+#### Features
+- [ ] Random Forest Classifier (Scikit-learn)
+- [ ] Training auf 3+ Monate Datensatz
+- [ ] Genauigkeit >85%
+- [ ] Stress-Vorhersage 48h im Voraus
+
+### v4.1 (Disease Detection)
+**Target:** Sep 2026
+
+#### Features
+- [ ] OpenCV für Blattanalyse
+- [ ] Pilz/Mehltau-Erkennung
+- [ ] Nährstoffmangel-Klassifikation
+
+### v4.2 (YOLOv8 Plant Detection)
+**Target:** Oct 2026
+
+#### Features
+- [ ] Real-time Plant Detection
+- [ ] Growth Tracking
+- [ ] Pest Detection
+
+### v4.3+ (Advanced & Mobile)
+**Target:** Q4 2026+
+
+#### Features
+- [ ] Mobile App (iOS/Android)
+- [ ] REST API für externe Integrationen
+- [ ] Multi-Crop Support
+- [ ] Community Plugins
+
+---
+
+## 📌 Meilensteine
+
+| Phase | Ziel | Datum |
+|-------|------|-------|
+| **v0.1** | Hydroknoten läuft | Dec 7 |
+| **v0.9** | Alle Sensoren + HA Dashboard | Jan 25 |
+| **v1.9** | Auto EC/pH Dosierung | Mar 8 |
+| **v2.9** | Plant Stress ML-Ready (30+ Tage Daten) | May 24 |
+| **v3.9** | Production-Ready, MQTT, PID, Multi-Zelt | Jul 20 |
+| **v4.0+** | Deep Learning | Aug+ |
+
+---
+
+**Last Updated:** Dec 7, 2025  
+**Next Milestone:** v0.2 (Zeltsensor) – Dec 14, 2025
 - Reset Grund, Status Summary
 
 #### **System-Sensoren (Standard auf allen Knoten):**

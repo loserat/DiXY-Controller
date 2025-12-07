@@ -1,0 +1,707 @@
+################################################################################
+# DiXY RDWC Dosierung v2 SIMULATION (ESPHome)
+# Alle Hardware-Sensoren durch Template-Sensoren mit simulierten Werten ersetzt
+# Ideal für Config-Validierung, MQTT-Pfade testen ohne Hardware/Flashing
+################################################################################
+
+substitutions:
+  device_name: dosierung_v2_sim
+  friendly_name: "Dosierung v2 SIM"
+  project_name: "DiXY Dosierung v2 SIM"
+  project_version: "0.5-sim"
+
+  # Pumpen Defaults
+  pump_default_power_pct: "75"
+  max_pump_duration_ms: "30000"
+  pump_shot_ms: "10000"
+
+  # I2C Pins (nicht verwendet in SIM)
+  i2c_sda_pin: "21"
+  i2c_scl_pin: "22"
+  
+  # 1-Wire Pins (nicht verwendet in SIM)
+  onewire_pin1: "4"
+  onewire_pin2: "5"
+  
+  # Water level GPIO (nicht verwendet in SIM)
+  tank1_pin: "32"
+  tank2_pin: "33"
+  tank3_pin: "14"
+  tank4_pin: "12"
+  tank5_pin: "13"
+  tank6_pin: "15"
+  
+  # Pump PWM Pins (nicht verwendet in SIM, aber definiert für Kompatibilität)
+  pump_a_pin: "25"
+  pump_b_pin: "26"
+  pump_c_pin: "27"
+  pump_d_pin: "16"
+  
+  # Stirrer Motor PWM (nicht verwendet in SIM)
+  stirrer_pin: "17"
+  
+  # Current Sensors ADC (nicht verwendet in SIM)
+  current_a_pin: "34"
+  current_b_pin: "35"
+  current_c_pin: "36"
+  current_d_pin: "37"
+  
+  # 0-10V Output für DC Runner (nicht verwendet in SIM)
+  dc_runner_pwm_pin: "11"
+  
+  # Status LED (nicht verwendet in SIM)
+  status_led_pin: "2"
+  
+  # UI: Buttons & Encoder (nicht verwendet in SIM)
+  button1_pin: "38"
+  button2_pin: "39"
+  button3_pin: "40"
+  button4_pin: "41"
+  encoder_clk_pin: "19"
+  encoder_dt_pin: "18"
+  encoder_sw_pin: "23"
+  
+  # I2C Adressen (nicht verwendet in SIM)
+  ads1115_address: "0x48"
+  bmp280_address: "0x76"
+  mcp23017_address: "0x20"
+
+esphome:
+  name: ${device_name}
+  comment: "SIMULATION: Dosierung v2 ohne Hardware - nur MQTT/API Pfade"
+  project:
+    name: "dixy.${project_name}"
+    version: ${project_version}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: INFO
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: "dixy12345"
+
+mqtt:
+  broker: !secret mqtt_broker
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+  topic_prefix: "dixy/${device_name}"
+  discovery: true
+  discovery_retain: false
+  birth_message:
+    topic: "dixy/${device_name}/status"
+    payload: "online"
+    qos: 1
+  will_message:
+    topic: "dixy/${device_name}/status"
+    payload: "offline"
+    qos: 1
+  on_json_message:
+    - topic: "dixy/${device_name}/cmd/dose"
+      then:
+        - lambda: |-
+            if (!x.containsKey("pump") || !x.containsKey("duration_ms")) {
+              ESP_LOGW("dose", "missing pump or duration_ms in payload");
+              return;
+            }
+            std::string pump = x["pump"].as<std::string>();
+            int duration = x["duration_ms"];
+            int power = x.containsKey("power_pct") ? x["power_pct"] : ${pump_default_power_pct};
+            id(dose_pump).execute(pump, duration, power);
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+  services:
+    - service: dose_pump
+      variables:
+        pump: string
+        duration_ms: int
+        power_pct: int
+      then:
+        - lambda: |-
+            id(dose_pump).execute(pump, duration_ms, power_pct);
+
+ota:
+  password: !secret ota_password
+
+web_server:
+  port: 80
+
+time:
+  - platform: sntp
+    id: sntp_time
+
+globals:
+  - id: last_ec_cal_ts
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: last_ph_cal_ts
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: pump_a_total_ml_today
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: pump_b_total_ml_today
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: pump_c_total_ml_today
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: pump_d_total_ml_today
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: pump_a_total_ml_lifetime
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: encoder_value
+    type: int32_t
+    restore_value: false
+    initial_value: '0'
+  - id: ui_page
+    type: int32_t
+    restore_value: false
+    initial_value: '0'
+
+script:
+  - id: dose_pump
+    parameters:
+      pump: string
+      duration_ms: int
+      power_pct: int
+    then:
+      - lambda: |-
+          if (id(any_tank_empty).state) {
+            ESP_LOGW("dose", "SIM: blocked: tank empty");
+            return;
+          }
+          if (duration_ms <= 0) {
+            ESP_LOGW("dose", "SIM: invalid duration");
+            return;
+          }
+          if (duration_ms > ${max_pump_duration_ms}) duration_ms = ${max_pump_duration_ms};
+          float p = power_pct > 0 ? power_pct : ${pump_default_power_pct};
+          if (p > 100) p = 100;
+          ESP_LOGI("dose", "SIM: pump %s for %d ms @ %.0f%%", pump.c_str(), duration_ms, p);
+          id(pump_a_verified).publish_state(true);
+          delay(100);  // Kurze Verzögerung statt echter PWM
+          id(pump_a_verified).publish_state(false);
+          mqtt::MQTTClientComponent *m = mqtt::global_mqtt_client;
+          if (m != nullptr) {
+            char buf[64];
+            snprintf(buf, sizeof(buf), "{\"pump\":\"%s\",\"ms\":%d,\"pct\":%.0f}", pump.c_str(), duration_ms, p);
+            m->publish("dixy/${device_name}/state/last_dose", buf);
+          }
+
+# ═════════════════════════════════════════════════════════════
+# SENSOR: Template-basierte Simulation
+# ═════════════════════════════════════════════════════════════
+sensor:
+  # System Health
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi Signal"
+    id: wifi_dbm
+    unit_of_measurement: "dBm"
+    update_interval: 60s
+
+  - platform: uptime
+    name: "${friendly_name} Uptime"
+    id: node_uptime
+    unit_of_measurement: "h"
+    update_interval: 60s
+    filters:
+      - lambda: return x / 3600.0;
+
+  - platform: internal_temperature
+    name: "${friendly_name} MCU Temp"
+    update_interval: 30s
+
+  - platform: template
+    name: "${friendly_name} Free Heap"
+    unit_of_measurement: "kB"
+    update_interval: 60s
+    lambda: |-
+      return 100.0;  // Dummy value
+
+  # ═════════════════════════════════════════════════════════════
+  # SIMULATED: DS18B20 TEMPERATURES (Template)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Tank Temp"
+    id: temp1_corr
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    update_interval: 15s
+    lambda: |-
+      return 24.5 + (id(encoder_value) % 5) * 0.1;  // Variiert um 24.5-24.9°C
+
+  - platform: template
+    name: "${friendly_name} Ruecklauf Temp"
+    id: temp2_corr
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    update_interval: 15s
+    lambda: |-
+      return 24.2 + (id(encoder_value) % 4) * 0.1;  // Variiert um 24.2-24.5°C
+
+  # ═════════════════════════════════════════════════════════════
+  # SIMULATED: ADS1115 (EC/pH)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} EC"
+    id: ec_value
+    unit_of_measurement: "mS/cm"
+    accuracy_decimals: 2
+    device_class: conductivity
+    state_class: measurement
+    update_interval: 10s
+    lambda: |-
+      return 1.6 + (id(encoder_value) % 10) * 0.05;  // 1.6-2.05 mS/cm
+
+  - platform: template
+    name: "${friendly_name} pH"
+    id: ph_value
+    unit_of_measurement: "pH"
+    accuracy_decimals: 2
+    state_class: measurement
+    update_interval: 10s
+    lambda: |-
+      return 5.8 + (id(encoder_value) % 5) * 0.04;  // 5.8-5.96 pH
+
+  # ═════════════════════════════════════════════════════════════
+  # SIMULATED: PUMP CURRENTS (ACS712 optional)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Pumpe A Current"
+    id: pump_a_current
+    unit_of_measurement: "A"
+    update_interval: 1s
+    lambda: |-
+      return 0.05;  // Idle current
+
+  - platform: template
+    name: "${friendly_name} Pumpe B Current"
+    id: pump_b_current
+    unit_of_measurement: "A"
+    update_interval: 1s
+    lambda: |-
+      return 0.05;
+
+  - platform: template
+    name: "${friendly_name} Pumpe C Current"
+    id: pump_c_current
+    unit_of_measurement: "A"
+    update_interval: 1s
+    lambda: |-
+      return 0.05;
+
+  - platform: template
+    name: "${friendly_name} Pumpe D Current"
+    id: pump_d_current
+    unit_of_measurement: "A"
+    update_interval: 1s
+    lambda: |-
+      return 0.05;
+
+  # Health Check (Dummy)
+  - platform: template
+    name: "${friendly_name} ADS1115 OK"
+    id: ads1115_ok
+    device_class: problem
+    lambda: |-
+      return false;  // Simulated: always OK
+
+  - platform: template
+    name: "${friendly_name} Temp Sensoren OK"
+    id: temps_ok
+    device_class: problem
+    lambda: |-
+      return false;  // Simulated: always OK
+
+# ═════════════════════════════════════════════════════════════
+# BINARY_SENSOR: SIMULATED
+# ═════════════════════════════════════════════════════════════
+binary_sensor:
+  - platform: status
+    name: "${friendly_name} Status"
+
+  # ═════════════════════════════════════════════════════════════
+  # SIMULATED: WATER LEVEL SENSORS (6x Template)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Tank 1 Level"
+    id: tank1_level
+    device_class: moisture
+    lambda: |-
+      return true;  // Simulated: always has liquid
+
+  - platform: template
+    name: "${friendly_name} Tank 2 Level"
+    id: tank2_level
+    device_class: moisture
+    lambda: |-
+      return true;
+
+  - platform: template
+    name: "${friendly_name} Tank 3 Level"
+    id: tank3_level
+    device_class: moisture
+    lambda: |-
+      return true;
+
+  - platform: template
+    name: "${friendly_name} Tank 4 Level"
+    id: tank4_level
+    device_class: moisture
+    lambda: |-
+      return true;
+
+  - platform: template
+    name: "${friendly_name} Tank 5 Level"
+    id: tank5_level
+    device_class: moisture
+    lambda: |-
+      return true;
+
+  - platform: template
+    name: "${friendly_name} Tank 6 Level"
+    id: tank6_level
+    device_class: moisture
+    lambda: |-
+      return true;
+
+  - platform: template
+    name: "${friendly_name} Tank Leer (irgendeiner)"
+    id: any_tank_empty
+    device_class: problem
+    lambda: |-
+      return false;  // Simulated: no tanks empty
+
+  # ═════════════════════════════════════════════════════════════
+  # SIMULATED: PUMP VERIFICATION (always "idle" in SIM)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Pumpe A Running (Verified)"
+    id: pump_a_verified
+    device_class: problem
+    lambda: |-
+      return false;  // Simulated: idle
+
+  - platform: template
+    name: "${friendly_name} Pumpe B Running (Verified)"
+    id: pump_b_verified
+    device_class: problem
+    lambda: |-
+      return false;
+
+  - platform: template
+    name: "${friendly_name} Pumpe C Running (Verified)"
+    id: pump_c_verified
+    device_class: problem
+    lambda: |-
+      return false;
+
+  - platform: template
+    name: "${friendly_name} Pumpe D Running (Verified)"
+    id: pump_d_verified
+    device_class: problem
+    lambda: |-
+      return false;
+
+# ═════════════════════════════════════════════════════════════
+# TEXT_SENSOR
+# ═════════════════════════════════════════════════════════════
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "${friendly_name} IP"
+    ssid:
+      name: "${friendly_name} WLAN"
+    bssid:
+      name: "${friendly_name} BSSID"
+    mac_address:
+      name: "${friendly_name} MAC"
+
+  - platform: version
+    name: "${friendly_name} ESPHome Version"
+
+  - platform: template
+    name: "${friendly_name} Projekt Version"
+    lambda: |-
+      return {std::string(${project_version})};
+    update_interval: 300s
+
+  - platform: template
+    name: "${friendly_name} Stepper 1 Status"
+    id: stepper1_state
+    lambda: |-
+      return std::string("SIM: Idle");
+    update_interval: 10s
+
+  - platform: template
+    name: "${friendly_name} Stepper 2 Status"
+    id: stepper2_state
+    lambda: |-
+      return std::string("SIM: Idle");
+    update_interval: 10s
+
+  - platform: template
+    name: "${friendly_name} Stepper 3 Status"
+    id: stepper3_state
+    lambda: |-
+      return std::string("SIM: Idle");
+    update_interval: 10s
+
+  - platform: template
+    name: "${friendly_name} Stepper 4 Status"
+    id: stepper4_state
+    lambda: |-
+      return std::string("SIM: Idle");
+    update_interval: 10s
+
+  - platform: template
+    name: "${friendly_name} Status Summary"
+    lambda: |-
+      char buf[256];
+      snprintf(buf, sizeof(buf),
+        "SIM: EC %.2f | pH %.2f | T1 %.1fC | T2 %.1fC | WiFi %d dBm | All Tanks OK",
+        id(ec_value).state,
+        id(ph_value).state,
+        id(temp1_corr).state,
+        id(temp2_corr).state,
+        (int) id(wifi_dbm).state
+      );
+      return std::string(buf);
+    update_interval: 30s
+
+# ═════════════════════════════════════════════════════════════
+# NUMBER: Setpoints & Controls
+# ═════════════════════════════════════════════════════════════
+number:
+  - platform: template
+    name: "${friendly_name} Temp1 Offset"
+    id: temp1_offset
+    min_value: -2
+    max_value: 2
+    step: 0.1
+    restore_value: false
+    initial_value: 0
+
+  - platform: template
+    name: "${friendly_name} Temp2 Offset"
+    id: temp2_offset
+    min_value: -2
+    max_value: 2
+    step: 0.1
+    restore_value: false
+    initial_value: 0
+
+  - platform: template
+    name: "${friendly_name} EC Cal 1.413mS"
+    id: ec_cal_low
+    min_value: 0.05
+    max_value: 1.0
+    step: 0.001
+    restore_value: false
+    initial_value: 0.104
+
+  - platform: template
+    name: "${friendly_name} EC Cal 12.88mS"
+    id: ec_cal_high
+    min_value: 1.0
+    max_value: 3.3
+    step: 0.001
+    restore_value: false
+    initial_value: 1.598
+
+  - platform: template
+    name: "${friendly_name} pH Cal 7.0"
+    id: ph_cal_7
+    min_value: 1.0
+    max_value: 4.0
+    step: 0.01
+    restore_value: false
+    initial_value: 2.50
+
+  - platform: template
+    name: "${friendly_name} pH Cal 4.0"
+    id: ph_cal_4
+    min_value: 1.0
+    max_value: 4.0
+    step: 0.01
+    restore_value: false
+    initial_value: 3.00
+
+  - platform: template
+    name: "${friendly_name} EC Soll"
+    id: ec_target
+    min_value: 0.5
+    max_value: 3.0
+    step: 0.05
+    unit_of_measurement: "mS/cm"
+    restore_value: false
+    initial_value: 1.60
+
+  - platform: template
+    name: "${friendly_name} pH Soll"
+    id: ph_target
+    min_value: 5.0
+    max_value: 7.0
+    step: 0.05
+    unit_of_measurement: "pH"
+    restore_value: false
+    initial_value: 5.80
+
+  - platform: template
+    name: "${friendly_name} Durchfluss Soll"
+    id: flow_target
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    restore_value: false
+    initial_value: 50
+
+  - platform: template
+    name: "${friendly_name} Pumpe A ml"
+    id: pump_a_ml
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "ml"
+    mode: slider
+
+  - platform: template
+    name: "${friendly_name} Pumpe B ml"
+    id: pump_b_ml
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "ml"
+    mode: slider
+
+  - platform: template
+    name: "${friendly_name} Pumpe C ml"
+    id: pump_c_ml
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "ml"
+    mode: slider
+
+  - platform: template
+    name: "${friendly_name} Pumpe D ml"
+    id: pump_d_ml
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "ml"
+    mode: slider
+
+  - platform: template
+    name: "${friendly_name} Ruehrmotor Speed"
+    id: stirrer_speed
+    min_value: 0
+    max_value: 100
+    step: 5
+    unit_of_measurement: "%"
+    mode: slider
+
+  - platform: template
+    name: "${friendly_name} DC Runner Durchfluss"
+    id: dc_runner_flow
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+
+# ═════════════════════════════════════════════════════════════
+# BUTTON
+# ═════════════════════════════════════════════════════════════
+button:
+  - platform: restart
+    name: "${friendly_name} Neustart"
+
+# ═════════════════════════════════════════════════════════════
+# SWITCH: Controls & Dosing Buttons
+# ═════════════════════════════════════════════════════════════
+switch:
+  - platform: template
+    name: "${friendly_name} Automatik Aktiv"
+    id: auto_control_enabled
+    optimistic: true
+    restore_state: false
+
+  - platform: template
+    name: "${friendly_name} EC Kalibrierung markieren"
+    on_press:
+      then:
+        - lambda: |-
+            auto t = id(sntp_time).now();
+            if (t.is_valid()) id(last_ec_cal_ts) = t.timestamp;
+
+  - platform: template
+    name: "${friendly_name} pH Kalibrierung markieren"
+    on_press:
+      then:
+        - lambda: |-
+            auto t = id(sntp_time).now();
+            if (t.is_valid()) id(last_ph_cal_ts) = t.timestamp;
+
+  # ═════════════════════════════════════════════════════════════
+  # DOSIERUNG: PUMP BUTTONS (SIM)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Pumpe A Stoss"
+    on_press:
+      then:
+        - lambda: |-
+            ESP_LOGI("sim", "Pumpe A Stoss Button pressed - would execute dose_pump");
+            id(dose_pump).execute("A", ${pump_shot_ms}, ${pump_default_power_pct});
+
+  - platform: template
+    name: "${friendly_name} Pumpe B Stoss"
+    on_press:
+      then:
+        - lambda: |-
+            ESP_LOGI("sim", "Pumpe B Stoss Button pressed - would execute dose_pump");
+            id(dose_pump).execute("B", ${pump_shot_ms}, ${pump_default_power_pct});
+
+  - platform: template
+    name: "${friendly_name} Pumpe C Stoss"
+    on_press:
+      then:
+        - lambda: |-
+            ESP_LOGI("sim", "Pumpe C Stoss Button pressed - would execute dose_pump");
+            id(dose_pump).execute("C", ${pump_shot_ms}, ${pump_default_power_pct});
+
+  - platform: template
+    name: "${friendly_name} Pumpe D Stoss"
+    on_press:
+      then:
+        - lambda: |-
+            ESP_LOGI("sim", "Pumpe D Stoss Button pressed - would execute dose_pump");
+            id(dose_pump).execute("D", ${pump_shot_ms}, ${pump_default_power_pct});
+
+  - platform: template
+    name: "${friendly_name} Ruehrmotor 5min Start"
+    on_press:
+      then:
+        - logger.log: "SIM: Stirrer 5min Start (no actual PWM)"

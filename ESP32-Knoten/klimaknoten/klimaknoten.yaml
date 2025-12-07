@@ -1,0 +1,400 @@
+################################################################################
+# DiXY RDWC Controller - Klimaknoten v0.2-beta
+# 
+# ⚠️  ALTERNATIVE CONFIG - NUR ALS BACKUP NUTZEN!
+#
+# Empfohlen: zeltsensor.yaml (primäre VPD-Regelung)
+#
+# Funktion: Standalone VPD-Regelung (separater ESP32 Node)
+# Hardware: ESP32-DevKit
+#
+# GPIO PINOUT:
+# ├─ I2C Bus (SDA=21, SCL=22):
+# │  ├─ SHT31 (0x44): Lufttemperatur + Luftfeuchtigkeit
+# │  ├─ MLX90614 (0x5A): IR-Blatttemperatur (kontaktlos)
+# │  └─ BMP280 (0x76): Luftdruck + Höhe
+# ├─ PWM Lüfter:
+# │  └─ GPIO25: Abluft-Fan (0-100% LEDC)
+# ├─ Relays (4-Kanal Modul):
+# │  ├─ GPIO16: Relay 1 (Befeuchter)
+# │  ├─ GPIO17: Relay 2 (Entfeuchter)
+# │  ├─ GPIO18: Relay 3 (Heizung)
+# │  └─ GPIO19: Relay 4 (Umluft-Fan)
+# └─ Status LED:
+#    └─ GPIO2: Onboard LED
+################################################################################
+
+substitutions:
+  device_name: klimaknoten
+  friendly_name: "Klimaknoten"
+  device_description: "VPD-Regelung für RDWC-Zelt"
+  project_version: "0.5-beta"
+
+esphome:
+  name: klimaknoten
+  friendly_name: Klimaknoten
+  comment: "DiXY Klimaknoten v0.2-beta – VPD-Regelung mit SHT31 + MLX90614 + WiFi Diagnostics + Health"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: INFO
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  
+  ap:
+    ssid: !secret klimaknoten_ap_ssid
+    password: !secret klimaknoten_ap_password
+
+api:
+  reboot_timeout: 0s
+
+ota:
+  platform: esphome
+  password: !secret klimaknoten_ota_password
+
+web_server:
+  port: 80
+
+time:
+  - platform: homeassistant
+    id: ha_time
+
+i2c:
+  sda: 21
+  scl: 22
+  scan: true
+  frequency: 400kHz
+
+# GLOBALS (Health Monitoring V2: Failure Counters mit Flash-Persistenz) ------
+globals:
+  # Failure Counter für jeden Sensor (überlebt Reboots)
+  - id: sht31_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: mlx_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: bmp280_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+
+sensor:
+  # SYSTEM-SENSOREN -----------------------------------------------------
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi Signal"
+    id: wifi_rssi
+    update_interval: 60s
+  
+  - platform: internal_temperature
+    name: "${friendly_name} MCU Temperatur"
+  
+  - platform: uptime
+    name: "${friendly_name} Uptime"
+    id: node_uptime
+    update_interval: 60s
+  
+  - platform: template
+    name: "${friendly_name} Free Heap"
+    unit_of_measurement: "kB"
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: 'return (float)esp_get_free_heap_size() / 1024.0f;'
+
+  # KLIMA-SENSOREN -------------------------------------------------------
+  # SHT31 - Lufttemperatur + Luftfeuchte
+  - platform: sht3xd
+    temperature:
+      name: "Lufttemperatur"
+      id: air_temp
+    humidity:
+      name: "Luftfeuchte"
+      id: air_humidity
+    address: 0x44
+    update_interval: 30s
+
+  # MLX90614 - IR Blatttemperatur
+  - platform: mlx90614
+    name: "Blatttemperatur"
+    id: leaf_temp
+    address: 0x5A
+    update_interval: 30s
+
+  # BMP280 - Luftdruck
+  - platform: bmp280
+    temperature:
+      name: "BMP280 Temperatur"
+      internal: true
+    pressure:
+      name: "Luftdruck"
+      id: air_pressure
+    address: 0x76
+    update_interval: 30s
+
+# SENSOR FAILURE COUNTERS (mit Boot-Graceperiod + Flash-Persistenz) ----------
+  - platform: template
+    name: "${friendly_name} SHT31 Failures Total"
+    id: sht31_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(sht31_failure_count);
+      }
+      if (isnan(id(air_temp).state) || isnan(id(air_humidity).state)) {
+        id(sht31_failure_count)++;
+        ESP_LOGW("health", "SHT31 failure detected! Count: %d", id(sht31_failure_count));
+      }
+      return id(sht31_failure_count);
+
+  - platform: template
+    name: "${friendly_name} MLX90614 Failures Total"
+    id: mlx_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(mlx_failure_count);
+      }
+      if (isnan(id(leaf_temp).state)) {
+        id(mlx_failure_count)++;
+        ESP_LOGW("health", "MLX90614 failure detected! Count: %d", id(mlx_failure_count));
+      }
+      return id(mlx_failure_count);
+
+  - platform: template
+    name: "${friendly_name} BMP280 Failures Total"
+    id: bmp280_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(bmp280_failure_count);
+      }
+      if (isnan(id(air_pressure).state)) {
+        id(bmp280_failure_count)++;
+        ESP_LOGW("health", "BMP280 failure detected! Count: %d", id(bmp280_failure_count));
+      }
+      return id(bmp280_failure_count);
+
+# ===== VPD-Berechnung (Home Assistant via Python) =====
+# VPD = (SVP_leaf - SVP_air) * RH/100
+# SVP = 0.6108 * e^((17.27 * T) / (T + 237.7))
+
+text_sensor:
+  - platform: version
+    name: "${friendly_name} ESPHome Version"
+  
+  - platform: wifi_info
+    ip_address:
+      name: "${friendly_name} IP"
+    ssid:
+      name: "${friendly_name} SSID"
+    bssid:
+      name: "${friendly_name} BSSID"
+  
+  - platform: template
+    name: "${friendly_name} Projekt"
+    icon: "mdi:identifier"
+    lambda: 'return {"DiXY RDWC Controller"};'
+  
+  - platform: template
+    name: "${friendly_name} Version"
+    icon: "mdi:tag"
+    lambda: 'return {"${project_version}"};'
+  
+  - platform: template
+    name: "${friendly_name} Status Summary"
+    icon: "mdi:information-outline"
+    update_interval: 30s
+    lambda: |-
+      char buffer[80];
+      float wifi = id(wifi_rssi).has_state() ? id(wifi_rssi).state : NAN;
+      float up_hours = id(node_uptime).has_state() ? id(node_uptime).state / 3600.0f : NAN;
+      const char *wifi_str = isnan(wifi) ? "n/a" : (wifi > -60 ? "strong" : (wifi > -75 ? "ok" : "weak"));
+      if (isnan(up_hours)) {
+        snprintf(buffer, sizeof(buffer), "ver %s | WiFi %s", "${project_version}", wifi_str);
+      } else {
+        snprintf(buffer, sizeof(buffer), "ver %s | WiFi %s | up %.1fh", "${project_version}", wifi_str, up_hours);
+      }
+      return {buffer};
+  
+  - platform: template
+    name: "${friendly_name} Reset Grund"
+    icon: "mdi:restart-alert"
+    lambda: |-
+      switch (esp_reset_reason()) {
+        case ESP_RST_POWERON: return {"poweron"};
+        case ESP_RST_EXT: return {"ext"};
+        case ESP_RST_SW: return {"sw"};
+        case ESP_RST_PANIC: return {"panic"};
+        case ESP_RST_INT_WDT: return {"int_wdt"};
+        case ESP_RST_TASK_WDT: return {"task_wdt"};
+        case ESP_RST_WDT: return {"wdt"};
+        case ESP_RST_DEEPSLEEP: return {"deepsleep"};
+        case ESP_RST_BROWNOUT: return {"brownout"};
+        case ESP_RST_SDIO: return {"sdio"};
+        default: return {"unknown"};
+      }
+  
+  # Sensor Uptime Tracking (mit Boot-Graceperiod: 300s)
+  - platform: template
+    name: "${friendly_name} SHT31 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t sht31_start_time = millis();
+      if (isnan(id(air_temp).state) || isnan(id(air_humidity).state)) {
+        if (id(node_uptime).state > 300.0) {
+          sht31_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - sht31_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+  
+  - platform: template
+    name: "${friendly_name} MLX90614 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t mlx_start_time = millis();
+      if (isnan(id(leaf_temp).state)) {
+        if (id(node_uptime).state > 300.0) {
+          mlx_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - mlx_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+  
+  - platform: template
+    name: "${friendly_name} BMP280 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t bmp_start_time = millis();
+      if (isnan(id(air_pressure).state)) {
+        if (id(node_uptime).state > 300.0) {
+          bmp_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - bmp_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+binary_sensor:
+  - platform: status
+    name: "${friendly_name} Status"
+  
+  # SENSOR HEALTH BINARY SENSORS (Active/Inactive Status)
+  - platform: template
+    name: "${friendly_name} SHT31 Aktiv"
+    id: sht31_active
+    device_class: connectivity
+    lambda: 'return !isnan(id(air_temp).state) && !isnan(id(air_humidity).state);'
+  
+  - platform: template
+    name: "${friendly_name} MLX90614 Aktiv"
+    id: mlx_active
+    device_class: connectivity
+    lambda: 'return !isnan(id(leaf_temp).state);'
+  
+  - platform: template
+    name: "${friendly_name} BMP280 Aktiv"
+    id: bmp_active
+    device_class: connectivity
+    lambda: 'return !isnan(id(air_pressure).state);'
+  
+  # SENSOR HEALTH BINARY SENSORS V2 (Health OK mit Boot-Graceperiod)
+  - platform: template
+    name: "${friendly_name} SHT31 Health OK"
+    id: sht31_health_ok
+    device_class: problem
+    lambda: |-
+      if (id(node_uptime).state < 300.0) return true;
+      return id(sht31_active).state;
+  
+  - platform: template
+    name: "${friendly_name} MLX90614 Health OK"
+    id: mlx_health_ok
+    device_class: problem
+    lambda: |-
+      if (id(node_uptime).state < 300.0) return true;
+      return id(mlx_active).state;
+  
+  - platform: template
+    name: "${friendly_name} BMP280 Health OK"
+    id: bmp_health_ok
+    device_class: problem
+    lambda: |-
+      if (id(node_uptime).state < 300.0) return true;
+      return id(bmp_active).state;
+
+output:
+  # PWM für Abluft-Fan
+  - platform: ledc
+    pin: GPIO25
+    frequency: 1000 Hz
+    id: exhaust_fan_output
+
+light:
+  # Fan als Light für prozentuale Kontrolle
+  - platform: monochromatic
+    output: exhaust_fan_output
+    name: "Abluft-Fan Speed"
+    id: exhaust_fan_light
+
+switch:
+  # Befeuchter
+  - platform: gpio
+    pin: GPIO16
+    name: "Befeuchter"
+    id: humidifier
+    restore_mode: ALWAYS_OFF
+
+  # Entfeuchter
+  - platform: gpio
+    pin: GPIO17
+    name: "Entfeuchter"
+    id: dehumidifier
+    restore_mode: ALWAYS_OFF
+
+  # Heizung
+  - platform: gpio
+    pin: GPIO18
+    name: "Heizung"
+    id: heater
+    restore_mode: ALWAYS_OFF
+
+  # Umluft-Fan
+  - platform: gpio
+    pin: GPIO19
+    name: "Umluft-Fan"
+    id: circulation_fan
+    restore_mode: ALWAYS_OFF

@@ -1,0 +1,1188 @@
+################################################################################
+# DiXY RDWC Dosierung v2 All-in-One (ESPHome)
+# Hydro + Dosierung fusioniert: EC/pH/Temps/Wasserstand + 4x Pumpen + Rührmotor
+# v2: API encryption + OTA; project metadata; integrated hydro+dosing
+################################################################################
+
+substitutions:
+  device_name: dosierung_v2
+  friendly_name: "Dosierung v2"
+  project_name: "DiXY Dosierung v2"
+  project_version: "0.5-beta"
+
+  # Pumpen Defaults
+  pump_default_power_pct: "75"
+  max_pump_duration_ms: "30000"
+  pump_shot_ms: "10000"
+
+  # I2C Pins (EC/pH via ADS1115 + optional BMP280)
+  i2c_sda_pin: "21"
+  i2c_scl_pin: "22"
+  
+  # 1-Wire Pins (DS18B20 Temps)
+  onewire_pin1: "4"
+  onewire_pin2: "5"
+  
+  # Water level GPIO (6x digital sensors)
+  tank1_pin: "32"
+  tank2_pin: "33"
+  tank3_pin: "14"
+  tank4_pin: "12"
+  tank5_pin: "13"
+  tank6_pin: "15"
+  
+  # Pump PWM Pins (4x Peristaltik)
+  pump_a_pin: "25"  # EC Dünger
+  pump_b_pin: "26"  # pH Down
+  pump_c_pin: "27"  # pH Up
+  pump_d_pin: "16"  # Additive
+  
+  # Stirrer Motor PWM (MCP4131 SPI optional, hier GPIO PWM)
+  stirrer_pin: "17"
+  
+  # Current Sensors (ACS712) - optional but recommended
+  current_a_pin: "34"  # Pumpe A Current ADC
+  current_b_pin: "35"  # Pumpe B Current ADC
+  current_c_pin: "36"  # Pumpe C Current ADC
+  current_d_pin: "37"  # Pumpe D Current ADC
+  
+  # 0-10V Output für DC Runner Aqua Medic (Durchflussmenge)
+  dc_runner_pwm_pin: "11"  # 0-10V PWM für Durchflussregelung
+  
+  # Status LED
+  status_led_pin: "2"
+  
+  # UI: Buttons & Encoder
+  button1_pin: "38"       # Button 1 (OK/Select)
+  button2_pin: "39"       # Button 2 (Cancel/Back)
+  button3_pin: "40"       # Button 3 (Up)
+  button4_pin: "41"       # Button 4 (Down)
+  encoder_clk_pin: "19"   # Encoder CLK
+  encoder_dt_pin: "18"    # Encoder DT
+  encoder_sw_pin: "23"    # Encoder Switch (optional)
+  
+  # I2C Adressen
+  ads1115_address: "0x48"
+  bmp280_address: "0x76"
+  mcp23017_address: "0x20"  # MCP23017 für Stepper-Motoren
+
+esphome:
+  name: ${device_name}
+  comment: "Hydro + Dosierung All-in-One: EC/pH/Temps/6xWaterLevel + 4xPumps + Stirrer"
+  project:
+    name: "dixy.${project_name}"
+    version: ${project_version}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: INFO
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: "dixy12345"
+
+mqtt:
+  broker: !secret mqtt_broker
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+  topic_prefix: "dixy/${device_name}"
+  discovery: true
+  discovery_retain: false
+  birth_message:
+    topic: "dixy/${device_name}/status"
+    payload: "online"
+    qos: 1
+  will_message:
+    topic: "dixy/${device_name}/status"
+    payload: "offline"
+    qos: 1
+  on_json_message:
+    - topic: "dixy/${device_name}/cmd/dose"
+      then:
+        - lambda: |-
+            if (!x.containsKey("pump") || !x.containsKey("duration_ms")) {
+              ESP_LOGW("dose", "missing pump or duration_ms in payload");
+              return;
+            }
+            std::string pump = x["pump"].as<std::string>();
+            int duration = x["duration_ms"];
+            int power = x.containsKey("power_pct") ? x["power_pct"] : ${pump_default_power_pct};
+            id(dose_pump).execute(pump, duration, power);
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+  services:
+    - service: dose_pump
+      variables:
+        pump: string
+        duration_ms: int
+        power_pct: int
+      then:
+        - lambda: |-
+            id(dose_pump).execute(pump, duration_ms, power_pct);
+
+ota:
+  password: !secret ota_password
+
+web_server:
+  port: 80
+
+time:
+  - platform: sntp
+    id: sntp_time
+
+status_led:
+  pin: ${status_led_pin}
+
+i2c:
+  sda: ${i2c_sda_pin}
+  scl: ${i2c_scl_pin}
+  scan: true
+  frequency: 400kHz
+  id: bus_main
+
+ads1115:
+  - id: ads1
+    address: ${ads1115_address}
+    i2c_id: bus_main
+
+mcp23017:
+  - id: mcp23017_expander
+    address: ${mcp23017_address}
+    i2c_id: bus_main
+    update_interval: 100ms
+
+dallas:
+  - id: ow_bus1
+    pin: ${onewire_pin1}
+  - id: ow_bus2
+    pin: ${onewire_pin2}
+
+display:
+  - platform: ssd1306
+    model: "SSD1306 128x64"
+    reset_pin: 4
+    address: 0x3C
+    i2c_id: bus_main
+    id: display_oled
+    pages:
+      - id: page1
+        lambda: |-
+          it.printf(0, 0, id(font_small), "EC: %.2f | pH: %.2f", id(ec_value).state, id(ph_value).state);
+          it.printf(0, 12, id(font_small), "T: %.1fC | H: %d%%", id(temp1_corr).state, 50);
+          it.printf(0, 24, id(font_small), "Stepper Status");
+          it.printf(0, 36, id(font_small), "S1:%s S2:%s", id(stepper1_state).state.c_str(), id(stepper2_state).state.c_str());
+          it.printf(0, 48, id(font_small), "S3:%s S4:%s", id(stepper3_state).state.c_str(), id(stepper4_state).state.c_str());
+      - id: page2
+        lambda: |-
+          it.printf(0, 0, id(font_small), "Dosierung heute");
+          it.printf(0, 12, id(font_small), "A: %.1f ml", id(pump_a_total_ml_today));
+          it.printf(0, 24, id(font_small), "B: %.1f ml", id(pump_b_total_ml_today));
+          it.printf(0, 36, id(font_small), "C: %.1f ml", id(pump_c_total_ml_today));
+          it.printf(0, 48, id(font_small), "D: %.1f ml", id(pump_d_total_ml_today));
+
+font:
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 10
+  - file: "gfonts://Roboto"
+    id: font_large
+    size: 14
+
+globals:
+  - id: last_ec_cal_ts
+    type: uint32_t
+    restore_value: true
+    initial_value: '0'
+  - id: last_ph_cal_ts
+    type: uint32_t
+    restore_value: true
+    initial_value: '0'
+  - id: pump_a_total_ml_today
+    type: float
+    restore_value: true
+    initial_value: '0.0'
+  - id: pump_b_total_ml_today
+    type: float
+    restore_value: true
+    initial_value: '0.0'
+  - id: pump_c_total_ml_today
+    type: float
+    restore_value: true
+    initial_value: '0.0'
+  - id: pump_d_total_ml_today
+    type: float
+    restore_value: true
+    initial_value: '0.0'
+  - id: pump_a_total_ml_lifetime
+    type: float
+    restore_value: true
+    initial_value: '0.0'
+  - id: encoder_value
+    type: int32_t
+    restore_value: false
+    initial_value: '0'
+  - id: ui_page
+    type: int32_t
+    restore_value: false
+    initial_value: '0'
+
+script:
+  - id: dose_pump
+    parameters:
+      pump: string
+      duration_ms: int
+      power_pct: int
+    then:
+      - lambda: |-
+          if (id(any_tank_empty).state) {
+            ESP_LOGW("dose", "blocked: tank empty");
+            return;
+          }
+          if (duration_ms <= 0) {
+            ESP_LOGW("dose", "invalid duration");
+            return;
+          }
+          if (duration_ms > ${max_pump_duration_ms}) duration_ms = ${max_pump_duration_ms};
+          float p = power_pct > 0 ? power_pct : ${pump_default_power_pct};
+          if (p > 100) p = 100;
+          auto set_level = [&](auto &out){ out.set_level(p / 100.0f); };
+          auto stop_level = [&](auto &out){ out.set_level(0.0f); };
+          if (pump == "A" || pump == "a") {
+            set_level(id(pump_a_pwm));
+            id(pump_a_verified).publish_state(false);
+            delay(duration_ms);
+            stop_level(id(pump_a_pwm));
+          } else if (pump == "B" || pump == "b") {
+            set_level(id(pump_b_pwm));
+            id(pump_b_verified).publish_state(false);
+            delay(duration_ms);
+            stop_level(id(pump_b_pwm));
+          } else if (pump == "C" || pump == "c") {
+            set_level(id(pump_c_pwm));
+            id(pump_c_verified).publish_state(false);
+            delay(duration_ms);
+            stop_level(id(pump_c_pwm));
+          } else if (pump == "D" || pump == "d") {
+            set_level(id(pump_d_pwm));
+            id(pump_d_verified).publish_state(false);
+            delay(duration_ms);
+            stop_level(id(pump_d_pwm));
+          } else {
+            ESP_LOGW("dose", "unknown pump: %s", pump.c_str());
+            return;
+          }
+          ESP_LOGI("dose", "done pump %s for %d ms @ %.0f%%", pump.c_str(), duration_ms, p);
+          mqtt::MQTTClientComponent *m = mqtt::global_mqtt_client;
+          if (m != nullptr) {
+            char buf[64];
+            snprintf(buf, sizeof(buf), "{\"pump\":\"%s\",\"ms\":%d,\"pct\":%.0f}", pump.c_str(), duration_ms, p);
+            m->publish("dixy/${device_name}/state/last_dose", buf);
+          }
+
+output:
+  # Pump PWM Outputs (0-100%)
+  - platform: ledc
+    id: pump_a_pwm
+    pin: ${pump_a_pin}
+    frequency: 1000 Hz
+    min_power: 0.0
+    max_power: 1.0
+
+  - platform: ledc
+    id: pump_b_pwm
+    pin: ${pump_b_pin}
+    frequency: 1000 Hz
+    min_power: 0.0
+    max_power: 1.0
+
+  - platform: ledc
+    id: pump_c_pwm
+    pin: ${pump_c_pin}
+    frequency: 1000 Hz
+    min_power: 0.0
+    max_power: 1.0
+
+  - platform: ledc
+    id: pump_d_pwm
+    pin: ${pump_d_pin}
+    frequency: 1000 Hz
+    min_power: 0.0
+    max_power: 1.0
+
+  # Stirrer Motor PWM
+  - platform: ledc
+    id: stirrer_pwm
+    pin: ${stirrer_pin}
+    frequency: 1000 Hz
+    min_power: 0.0
+    max_power: 1.0
+
+  # ═════════════════════════════════════════════════════════════
+  # 0-10V OUTPUT für DC Runner Aqua Medic Pumpe (Durchflussmenge)
+  # ═════════════════════════════════════════════════════════════
+  - platform: ledc
+    id: dc_runner_pwm
+    pin: ${dc_runner_pwm_pin}
+    frequency: 1000 Hz
+    min_power: 0.0
+    max_power: 1.0
+
+  # ═════════════════════════════════════════════════════════════
+  # STEPPER MOTORS (4x NEMA17 via MCP23017)
+  # ═════════════════════════════════════════════════════════════
+  # Stepper 1: Dosieranlage A (Dünger Makro) - Pins 0,1
+  - platform: gpio
+    id: stepper1_dir
+    pin:
+      mcp23017: mcp23017_expander
+      number: 0
+      mode: OUTPUT
+
+  - platform: gpio
+    id: stepper1_step
+    pin:
+      mcp23017: mcp23017_expander
+      number: 1
+      mode: OUTPUT
+
+  # Stepper 2: Dosieranlage B (pH Down) - Pins 2,3
+  - platform: gpio
+    id: stepper2_dir
+    pin:
+      mcp23017: mcp23017_expander
+      number: 2
+      mode: OUTPUT
+
+  - platform: gpio
+    id: stepper2_step
+    pin:
+      mcp23017: mcp23017_expander
+      number: 3
+      mode: OUTPUT
+
+  # Stepper 3: Dosieranlage C (pH Up) - Pins 4,5
+  - platform: gpio
+    id: stepper3_dir
+    pin:
+      mcp23017: mcp23017_expander
+      number: 4
+      mode: OUTPUT
+
+  - platform: gpio
+    id: stepper3_step
+    pin:
+      mcp23017: mcp23017_expander
+      number: 5
+      mode: OUTPUT
+
+  # Stepper 4: Dosieranlage D (Additive) - Pins 6,7
+  - platform: gpio
+    id: stepper4_dir
+    pin:
+      mcp23017: mcp23017_expander
+      number: 6
+      mode: OUTPUT
+
+  - platform: gpio
+    id: stepper4_step
+    pin:
+      mcp23017: mcp23017_expander
+      number: 7
+      mode: OUTPUT
+
+sensor:
+  # ═════════════════════════════════════════════════════════════
+  # SYSTEM HEALTH
+  # ═════════════════════════════════════════════════════════════
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi Signal"
+    id: wifi_dbm
+    unit_of_measurement: "dBm"
+    update_interval: 60s
+
+  - platform: uptime
+    name: "${friendly_name} Uptime"
+    id: node_uptime
+    unit_of_measurement: "h"
+    update_interval: 60s
+    filters:
+      - lambda: return x / 3600.0;
+
+  - platform: internal_temperature
+    name: "${friendly_name} MCU Temp"
+    update_interval: 30s
+
+  - platform: template
+    name: "${friendly_name} Free Heap"
+    unit_of_measurement: "kB"
+    update_interval: 60s
+    lambda: |-
+      return ESP.getFreeHeap() / 1024.0;
+
+  # ═════════════════════════════════════════════════════════════
+  # ENCODER PULSE COUNTER
+  # ═════════════════════════════════════════════════════════════
+  - platform: pulse_counter
+    pin: ${encoder_clk_pin}
+    name: "${friendly_name} Encoder Pulses"
+    id: encoder_pulses
+    unit_of_measurement: "pulses"
+    update_interval: 100ms
+    filters:
+      - lambda: |-
+          id(encoder_value) = x;
+          return x;
+
+  # ═════════════════════════════════════════════════════════════
+  # HYDROKNOTEN: DS18B20 TEMPERATURES
+  # ═════════════════════════════════════════════════════════════
+  - platform: dallas
+    name: "${friendly_name} Tank Temp Roh"
+    id: temp1_raw
+    dallas_id: ow_bus1
+    index: 0
+    update_interval: 15s
+
+  - platform: dallas
+    name: "${friendly_name} Ruecklauf Temp Roh"
+    id: temp2_raw
+    dallas_id: ow_bus2
+    index: 0
+    update_interval: 15s
+
+  # DS18B20 corrected
+  - platform: template
+    name: "${friendly_name} Tank Temp"
+    id: temp1_corr
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    update_interval: 15s
+    lambda: |-
+      if (!id(temp1_raw).has_state()) return NAN;
+      return id(temp1_raw).state + id(temp1_offset).state;
+
+  - platform: template
+    name: "${friendly_name} Ruecklauf Temp"
+    id: temp2_corr
+    device_class: temperature
+    unit_of_measurement: "°C"
+    state_class: measurement
+    update_interval: 15s
+    lambda: |-
+      if (!id(temp2_raw).has_state()) return NAN;
+      return id(temp2_raw).state + id(temp2_offset).state;
+
+  # ═════════════════════════════════════════════════════════════
+  # HYDROKNOTEN: ADS1115 (EC/pH)
+  # ═════════════════════════════════════════════════════════════
+  - platform: ads1115
+    ads1115_id: ads1
+    multiplexer: A0_GND
+    gain: 6.144
+    name: "${friendly_name} EC Raw Voltage"
+    id: ec_raw
+    unit_of_measurement: "V"
+    update_interval: 1s
+
+  - platform: ads1115
+    ads1115_id: ads1
+    multiplexer: A1_GND
+    gain: 6.144
+    name: "${friendly_name} pH Raw Voltage"
+    id: ph_raw
+    unit_of_measurement: "V"
+    update_interval: 1s
+
+  # Derived EC (temp-compensated to 25C)
+  - platform: template
+    name: "${friendly_name} EC"
+    id: ec_value
+    unit_of_measurement: "mS/cm"
+    accuracy_decimals: 2
+    device_class: conductivity
+    state_class: measurement
+    update_interval: 10s
+    lambda: |-
+      if (!id(ec_raw).has_state()) return NAN;
+      float v = id(ec_raw).state * 3.3;
+      float v_low = id(ec_cal_low).state;
+      float v_high = id(ec_cal_high).state;
+      float slope = (12.88f - 1.413f) / (v_high - v_low);
+      float offset = 1.413f - slope * v_low;
+      float ec = slope * v + offset;
+      if (ec < 0) ec = 0;
+      if (id(temp1_corr).has_state()) {
+        float t = id(temp1_corr).state;
+        ec = ec / (1 + 0.0185f * (t - 25.0f));
+      }
+      return ec;
+
+  # Derived pH
+  - platform: template
+    name: "${friendly_name} pH"
+    id: ph_value
+    unit_of_measurement: "pH"
+    accuracy_decimals: 2
+    state_class: measurement
+    update_interval: 10s
+    lambda: |-
+      if (!id(ph_raw).has_state()) return NAN;
+      float v = id(ph_raw).state * 3.3;
+      float v7 = id(ph_cal_7).state;
+      float v4 = id(ph_cal_4).state;
+      float m = (4.0f - 7.0f) / (v4 - v7);
+      return m * (v - v7) + 7.0f;
+
+  # ═════════════════════════════════════════════════════════════
+  # DOSIERUNG: PUMP CURRENTS (ACS712 optional)
+  # ═════════════════════════════════════════════════════════════
+  - platform: adc
+    pin: ${current_a_pin}
+    name: "${friendly_name} Pumpe A Current"
+    id: pump_a_current
+    unit_of_measurement: "A"
+    update_interval: 1s
+    filters:
+      - multiply: 0.185  # ACS712-5A conversion (185mV per A)
+
+  - platform: adc
+    pin: ${current_b_pin}
+    name: "${friendly_name} Pumpe B Current"
+    id: pump_b_current
+    unit_of_measurement: "A"
+    update_interval: 1s
+    filters:
+      - multiply: 0.185
+
+  - platform: adc
+    pin: ${current_c_pin}
+    name: "${friendly_name} Pumpe C Current"
+    id: pump_c_current
+    unit_of_measurement: "A"
+    update_interval: 1s
+    filters:
+      - multiply: 0.185
+
+  - platform: adc
+    pin: ${current_d_pin}
+    name: "${friendly_name} Pumpe D Current"
+    id: pump_d_current
+    unit_of_measurement: "A"
+    update_interval: 1s
+    filters:
+      - multiply: 0.185
+
+  # ═════════════════════════════════════════════════════════════
+  # HEALTH CHECK SENSORS
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} ADS1115 OK"
+    id: ads1115_ok
+    device_class: problem
+    lambda: |-
+      return !(id(ec_raw).has_state() && id(ph_raw).has_state());
+    filters:
+      - delayed_on: 2s
+      - delayed_off: 5s
+
+  - platform: template
+    name: "${friendly_name} Temp Sensoren OK"
+    id: temps_ok
+    device_class: problem
+    lambda: |-
+      return !(id(temp1_raw).has_state() && id(temp2_raw).has_state());
+    filters:
+      - delayed_on: 5s
+      - delayed_off: 5s
+
+binary_sensor:
+  - platform: status
+    name: "${friendly_name} Status"
+
+  # ═════════════════════════════════════════════════════════════
+  # UI BUTTONS (4x)
+  # ═════════════════════════════════════════════════════════════
+  - platform: gpio
+    name: "${friendly_name} Button 1 (OK/Select)"
+    id: button1
+    pin:
+      number: ${button1_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    filters:
+      - delayed_on: 20ms
+      - delayed_off: 20ms
+    on_press:
+      then:
+        - logger.log: "Button 1 pressed"
+        - component.update: display_oled
+
+  - platform: gpio
+    name: "${friendly_name} Button 2 (Cancel/Back)"
+    id: button2
+    pin:
+      number: ${button2_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    filters:
+      - delayed_on: 20ms
+      - delayed_off: 20ms
+    on_press:
+      then:
+        - logger.log: "Button 2 pressed"
+
+  - platform: gpio
+    name: "${friendly_name} Button 3 (Up)"
+    id: button3
+    pin:
+      number: ${button3_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    filters:
+      - delayed_on: 20ms
+      - delayed_off: 20ms
+    on_press:
+      then:
+        - logger.log: "Button 3 pressed"
+
+  - platform: gpio
+    name: "${friendly_name} Button 4 (Down)"
+    id: button4
+    pin:
+      number: ${button4_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    filters:
+      - delayed_on: 20ms
+      - delayed_off: 20ms
+    on_press:
+      then:
+        - logger.log: "Button 4 pressed"
+
+  - platform: gpio
+    name: "${friendly_name} Encoder Switch"
+    id: encoder_sw
+    pin:
+      number: ${encoder_sw_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    filters:
+      - delayed_on: 20ms
+      - delayed_off: 20ms
+    on_press:
+      then:
+        - logger.log: "Encoder button pressed"
+  # WATER LEVEL SENSORS (6x)
+  # ═════════════════════════════════════════════════════════════
+  - platform: gpio
+    name: "${friendly_name} Tank 1 Level"
+    id: tank1_level
+    pin:
+      number: ${tank1_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    device_class: moisture
+    filters:
+      - delayed_on: 500ms
+      - delayed_off: 2s
+
+  - platform: gpio
+    name: "${friendly_name} Tank 2 Level"
+    id: tank2_level
+    pin:
+      number: ${tank2_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    device_class: moisture
+    filters:
+      - delayed_on: 500ms
+      - delayed_off: 2s
+
+  - platform: gpio
+    name: "${friendly_name} Tank 3 Level"
+    id: tank3_level
+    pin:
+      number: ${tank3_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    device_class: moisture
+    filters:
+      - delayed_on: 500ms
+      - delayed_off: 2s
+
+  - platform: gpio
+    name: "${friendly_name} Tank 4 Level"
+    id: tank4_level
+    pin:
+      number: ${tank4_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    device_class: moisture
+    filters:
+      - delayed_on: 500ms
+      - delayed_off: 2s
+
+  - platform: gpio
+    name: "${friendly_name} Tank 5 Level"
+    id: tank5_level
+    pin:
+      number: ${tank5_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    device_class: moisture
+    filters:
+      - delayed_on: 500ms
+      - delayed_off: 2s
+
+  - platform: gpio
+    name: "${friendly_name} Tank 6 Level"
+    id: tank6_level
+    pin:
+      number: ${tank6_pin}
+      mode: INPUT_PULLUP
+      inverted: true
+    device_class: moisture
+    filters:
+      - delayed_on: 500ms
+      - delayed_off: 2s
+
+  - platform: template
+    name: "${friendly_name} Tank Leer (irgendeiner)"
+    id: any_tank_empty
+    device_class: problem
+    lambda: |-
+      return !id(tank1_level).state || !id(tank2_level).state || !id(tank3_level).state ||
+             !id(tank4_level).state || !id(tank5_level).state || !id(tank6_level).state;
+    filters:
+      - delayed_on: 1s
+      - delayed_off: 5s
+
+  # ═════════════════════════════════════════════════════════════
+  # PUMP VERIFICATION (Current-based)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Pumpe A Running (Verified)"
+    id: pump_a_verified
+    device_class: problem
+    lambda: |-
+      return id(pump_a_current).state > 0.1;  # > 100mA = running
+    filters:
+      - delayed_on: 500ms
+      - delayed_off: 2s
+
+  - platform: template
+    name: "${friendly_name} Pumpe B Running (Verified)"
+    id: pump_b_verified
+    device_class: problem
+    lambda: |-
+      return id(pump_b_current).state > 0.1;
+    filters:
+      - delayed_on: 500ms
+      - delayed_off: 2s
+
+  - platform: template
+    name: "${friendly_name} Pumpe C Running (Verified)"
+    id: pump_c_verified
+    device_class: problem
+    lambda: |-
+      return id(pump_c_current).state > 0.1;
+    filters:
+      - delayed_on: 500ms
+      - delayed_off: 2s
+
+  - platform: template
+    name: "${friendly_name} Pumpe D Running (Verified)"
+    id: pump_d_verified
+    device_class: problem
+    lambda: |-
+      return id(pump_d_current).state > 0.1;
+    filters:
+      - delayed_on: 500ms
+      - delayed_off: 2s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "${friendly_name} IP"
+    ssid:
+      name: "${friendly_name} WLAN"
+    bssid:
+      name: "${friendly_name} BSSID"
+    mac_address:
+      name: "${friendly_name} MAC"
+
+  - platform: version
+    name: "${friendly_name} ESPHome Version"
+
+  - platform: template
+    name: "${friendly_name} Projekt Version"
+    lambda: |-
+      return {std::string(${project_version})};
+    update_interval: 300s
+
+  - platform: template
+    name: "${friendly_name} Stepper 1 Status"
+    id: stepper1_state
+    lambda: |-
+      return std::string("Idle");
+    update_interval: 10s
+
+  - platform: template
+    name: "${friendly_name} Stepper 2 Status"
+    id: stepper2_state
+    lambda: |-
+      return std::string("Idle");
+    update_interval: 10s
+
+  - platform: template
+    name: "${friendly_name} Stepper 3 Status"
+    id: stepper3_state
+    lambda: |-
+      return std::string("Idle");
+    update_interval: 10s
+
+  - platform: template
+    name: "${friendly_name} Stepper 4 Status"
+    id: stepper4_state
+    lambda: |-
+      return std::string("Idle");
+    update_interval: 10s
+
+  - platform: template
+    name: "${friendly_name} Status Summary"
+    lambda: |-
+      char buf[256];
+      snprintf(buf, sizeof(buf),
+        "EC %.2f | pH %.2f | T1 %.1fC | T2 %.1fC | WiFi %d dBm | Tanks: %d/%d OK",
+        id(ec_value).state,
+        id(ph_value).state,
+        id(temp1_corr).state,
+        id(temp2_corr).state,
+        (int) id(wifi_dbm).state,
+        (int)(!id(tank1_level).state) + (int)(!id(tank2_level).state) + 
+        (int)(!id(tank3_level).state) + (int)(!id(tank4_level).state) + 
+        (int)(!id(tank5_level).state) + (int)(!id(tank6_level).state),
+        6
+      );
+      return std::string(buf);
+    update_interval: 30s
+
+number:
+  # ═════════════════════════════════════════════════════════════
+  # HYDROKNOTEN: CALIBRATION & OFFSETS
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Temp1 Offset"
+    id: temp1_offset
+    min_value: -2
+    max_value: 2
+    step: 0.1
+    restore_value: true
+    initial_value: 0
+
+  - platform: template
+    name: "${friendly_name} Temp2 Offset"
+    id: temp2_offset
+    min_value: -2
+    max_value: 2
+    step: 0.1
+    restore_value: true
+    initial_value: 0
+
+  - platform: template
+    name: "${friendly_name} EC Cal 1.413mS"
+    id: ec_cal_low
+    min_value: 0.05
+    max_value: 1.0
+    step: 0.001
+    restore_value: true
+    initial_value: 0.104
+
+  - platform: template
+    name: "${friendly_name} EC Cal 12.88mS"
+    id: ec_cal_high
+    min_value: 1.0
+    max_value: 3.3
+    step: 0.001
+    restore_value: true
+    initial_value: 1.598
+
+  - platform: template
+    name: "${friendly_name} pH Cal 7.0"
+    id: ph_cal_7
+    min_value: 1.0
+    max_value: 4.0
+    step: 0.01
+    restore_value: true
+    initial_value: 2.50
+
+  - platform: template
+    name: "${friendly_name} pH Cal 4.0"
+    id: ph_cal_4
+    min_value: 1.0
+    max_value: 4.0
+    step: 0.01
+    restore_value: true
+    initial_value: 3.00
+
+  # ═════════════════════════════════════════════════════════════
+  # SOLLWERTE / TARGETS (für spätere Automatiksteuerung)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} EC Soll"
+    id: ec_target
+    min_value: 0.5
+    max_value: 3.0
+    step: 0.05
+    unit_of_measurement: "mS/cm"
+    restore_value: true
+    initial_value: 1.60
+
+  - platform: template
+    name: "${friendly_name} pH Soll"
+    id: ph_target
+    min_value: 5.0
+    max_value: 7.0
+    step: 0.05
+    unit_of_measurement: "pH"
+    restore_value: true
+    initial_value: 5.80
+
+  - platform: template
+    name: "${friendly_name} Durchfluss Soll"
+    id: flow_target
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    restore_value: true
+    initial_value: 50
+
+  # ═════════════════════════════════════════════════════════════
+  # DOSIERUNG: PUMP CONTROL (ml)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Pumpe A ml"
+    id: pump_a_ml
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "ml"
+    mode: slider
+
+  - platform: template
+    name: "${friendly_name} Pumpe B ml"
+    id: pump_b_ml
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "ml"
+    mode: slider
+
+  - platform: template
+    name: "${friendly_name} Pumpe C ml"
+    id: pump_c_ml
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "ml"
+    mode: slider
+
+  - platform: template
+    name: "${friendly_name} Pumpe D ml"
+    id: pump_d_ml
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "ml"
+    mode: slider
+
+  # ═════════════════════════════════════════════════════════════
+  # DOSIERUNG: STIRRER SPEED (%)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Ruehrmotor Speed"
+    id: stirrer_speed
+    min_value: 0
+    max_value: 100
+    step: 5
+    unit_of_measurement: "%"
+    mode: slider
+    on_value:
+      then:
+        - lambda: |-
+            id(stirrer_pwm).set_level(x / 100.0);
+
+  # ═════════════════════════════════════════════════════════════
+  # DOSIERUNG: DC RUNNER DURCHFLUSSREGELUNG (0-10V)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} DC Runner Durchfluss"
+    id: dc_runner_flow
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+    on_value:
+      then:
+        - lambda: |-
+            id(dc_runner_pwm).set_level(x / 100.0);
+
+button:
+  - platform: restart
+    name: "${friendly_name} Neustart"
+
+switch:
+  # ═════════════════════════════════════════════════════════════
+  # AUTOMATIK EIN/AUS (Platzhalter für spätere Regelung)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Automatik Aktiv"
+    id: auto_control_enabled
+    optimistic: true
+    restore_state: true
+
+  - platform: template
+    name: "${friendly_name} EC Kalibrierung markieren"
+    on_press:
+      then:
+        - lambda: |-
+            auto t = id(sntp_time).now();
+            if (t.is_valid()) id(last_ec_cal_ts) = t.timestamp;
+
+  - platform: template
+    name: "${friendly_name} pH Kalibrierung markieren"
+    on_press:
+      then:
+        - lambda: |-
+            auto t = id(sntp_time).now();
+            if (t.is_valid()) id(last_ph_cal_ts) = t.timestamp;
+
+  # ═════════════════════════════════════════════════════════════
+  # DOSIERUNG: PUMP BUTTONS
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Pumpe A Stoss"
+    on_press:
+      then:
+        - lambda: |-
+            id(dose_pump).execute("A", ${pump_shot_ms}, ${pump_default_power_pct});
+
+  - platform: template
+    name: "${friendly_name} Pumpe B Stoss"
+    on_press:
+      then:
+        - lambda: |-
+            id(dose_pump).execute("B", ${pump_shot_ms}, ${pump_default_power_pct});
+
+  - platform: template
+    name: "${friendly_name} Pumpe C Stoss"
+    on_press:
+      then:
+        - lambda: |-
+            id(dose_pump).execute("C", ${pump_shot_ms}, ${pump_default_power_pct});
+
+  - platform: template
+    name: "${friendly_name} Pumpe D Stoss"
+    on_press:
+      then:
+        - lambda: |-
+            id(dose_pump).execute("D", ${pump_shot_ms}, ${pump_default_power_pct});
+
+  - platform: template
+    name: "${friendly_name} Ruehrmotor 5min Start"
+    on_press:
+      then:
+        - output.set_level:
+            id: stirrer_pwm
+            level: 0.75
+        - delay: 5min
+        - output.set_level:
+            id: stirrer_pwm
+            level: 0.0
+
+  # ═════════════════════════════════════════════════════════════
+  # STEPPER MOTOR BUTTONS (Test & Manual Dosing)
+  # ═════════════════════════════════════════════════════════════
+  - platform: template
+    name: "${friendly_name} Stepper 1 CW (1 Step)"
+    on_press:
+      then:
+        - digital_out.turn_off: stepper1_dir  # Clockwise
+        - digital_out.turn_on: stepper1_step
+        - delay: 10ms
+        - digital_out.turn_off: stepper1_step
+
+  - platform: template
+    name: "${friendly_name} Stepper 1 CCW (1 Step)"
+    on_press:
+      then:
+        - digital_out.turn_on: stepper1_dir   # Counter-Clockwise
+        - digital_out.turn_on: stepper1_step
+        - delay: 10ms
+        - digital_out.turn_off: stepper1_step
+
+  - platform: template
+    name: "${friendly_name} Stepper 2 CW (1 Step)"
+    on_press:
+      then:
+        - digital_out.turn_off: stepper2_dir
+        - digital_out.turn_on: stepper2_step
+        - delay: 10ms
+        - digital_out.turn_off: stepper2_step
+
+  - platform: template
+    name: "${friendly_name} Stepper 2 CCW (1 Step)"
+    on_press:
+      then:
+        - digital_out.turn_on: stepper2_dir
+        - digital_out.turn_on: stepper2_step
+        - delay: 10ms
+        - digital_out.turn_off: stepper2_step
+
+  - platform: template
+    name: "${friendly_name} Stepper 3 CW (1 Step)"
+    on_press:
+      then:
+        - digital_out.turn_off: stepper3_dir
+        - digital_out.turn_on: stepper3_step
+        - delay: 10ms
+        - digital_out.turn_off: stepper3_step
+
+  - platform: template
+    name: "${friendly_name} Stepper 3 CCW (1 Step)"
+    on_press:
+      then:
+        - digital_out.turn_on: stepper3_dir
+        - digital_out.turn_on: stepper3_step
+        - delay: 10ms
+        - digital_out.turn_off: stepper3_step
+
+  - platform: template
+    name: "${friendly_name} Stepper 4 CW (1 Step)"
+    on_press:
+      then:
+        - digital_out.turn_off: stepper4_dir
+        - digital_out.turn_on: stepper4_step
+        - delay: 10ms
+        - digital_out.turn_off: stepper4_step
+
+  - platform: template
+    name: "${friendly_name} Stepper 4 CCW (1 Step)"
+    on_press:
+      then:
+        - digital_out.turn_on: stepper4_dir
+        - digital_out.turn_on: stepper4_step
+        - delay: 10ms
+        - digital_out.turn_off: stepper4_step

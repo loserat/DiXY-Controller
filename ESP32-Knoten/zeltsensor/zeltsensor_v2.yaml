@@ -1,0 +1,1134 @@
+substitutions:
+  device_name: zeltsensor_v2
+  friendly_name: "Zeltsensor v2"
+  project_name: "DiXY Zeltsensor v2"
+  project_version: "0.5-beta"
+
+  # Pins
+  i2c_sda_pin: "21"
+  i2c_scl_pin: "22"
+  i2c2_sda_pin: "33"   # RJ12 extern (MLX)
+  i2c2_scl_pin: "32"
+  onewire_pin: "4"      # DS18B20
+  uart_rx_pin: "16"     # MH-Z19B RX
+  uart_tx_pin: "17"     # MH-Z19B TX
+  fan_pwm_pin: "25"     # 0-10V PWM/DAC via Converter
+  fan_tacho_pin: "23"   # optional RPM Input
+  light_pwm_pin: "26"   # 0-10V PWM/DAC via Converter
+  status_led_pin: "27"
+  buzzer_pin: "14"
+
+  # I2C addresses
+  as7341_addr: "0x39"
+  sht31_addr: "0x44"
+  bmp280_addr: "0x76"
+  mlx1_addr: "0x5A"
+  mlx2_addr: "0x5B"
+
+  # CO2 Sensor
+  co2_uart_baud: "9600"
+
+  # Defaults
+  fan_min_percent: "20"
+  fan_max_percent: "100"
+  light_min_percent: "0"
+  light_max_percent: "100"
+
+esphome:
+  name: ${device_name}
+  comment: "Professional climate + light sensor node (v2)"
+  project:
+    name: "dixy.${project_name}"
+    version: ${project_version}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: "dixy12345"
+
+logger:
+  level: INFO
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  password: !secret ota_password
+
+time:
+  - platform: sntp
+    id: sntp_time
+
+# I2C Bus intern + extern
+i2c:
+  - id: bus_main
+    sda: ${i2c_sda_pin}
+    scl: ${i2c_scl_pin}
+    scan: true
+    frequency: 400kHz
+  - id: bus_ext
+    sda: ${i2c2_sda_pin}
+    scl: ${i2c2_scl_pin}
+    scan: true
+    frequency: 100kHz
+
+# UART für MH-Z19B/C
+uart:
+  id: uart_co2
+  rx_pin: ${uart_rx_pin}
+  tx_pin: ${uart_tx_pin}
+  baud_rate: ${co2_uart_baud}
+
+# 1-Wire für DS18B20
+one_wire:
+  - platform: gpio
+    pin: ${onewire_pin}
+
+# GLOBALS (Health Monitoring V2: Failure Counters mit Flash-Persistenz) ------
+globals:
+  # Failure Counter für jeden Sensor (überlebt Reboots)
+  - id: as7341_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: sht31_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: bmp280_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: co2_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: mlx1_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: mlx2_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: ds18b20_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+  
+  - id: tacho_failure_count
+    type: int
+    restore_value: true
+    initial_value: '0'
+
+# OUTPUTS --------------------------------------------------------------------
+output:
+  # 0-10V Dimmer: Fan (PWM zu 0-10V Wandler)
+  - platform: ledc
+    id: fan_pwm
+    pin: ${fan_pwm_pin}
+    frequency: 1000 Hz
+    min_power: 0.0
+    max_power: 1.0
+
+  # 0-10V Dimmer: Light (PWM zu 0-10V Wandler)
+  - platform: ledc
+    id: light_pwm
+    pin: ${light_pwm_pin}
+    frequency: 1000 Hz
+    min_power: 0.0
+    max_power: 1.0
+
+  # Status LED (optional)
+  - platform: gpio
+    id: status_led
+    pin: ${status_led_pin}
+    inverted: false
+
+  # Buzzer (optional)
+  - platform: gpio
+    id: buzzer_out
+    pin: ${buzzer_pin}
+
+# NUMBERS (0-100% Dimmer exposed to HA) --------------------------------------
+number:
+  - platform: template
+    id: fan_speed_percent
+    name: "${friendly_name} Lüfter Leistung"
+    unit_of_measurement: "%"
+    min_value: 0
+    max_value: 100
+    step: 1
+    optimistic: true
+    restore_value: true
+    initial_value: 20
+    set_action:
+      - output.set_level:
+          id: fan_pwm
+          level: !lambda 'return x / 100.0;'
+
+  - platform: template
+    id: light_intensity_percent
+    name: "${friendly_name} Licht Intensität"
+    unit_of_measurement: "%"
+    min_value: 0
+    max_value: 100
+    step: 1
+    optimistic: true
+    restore_value: true
+    initial_value: 80
+    set_action:
+      - output.set_level:
+          id: light_pwm
+          level: !lambda 'return x / 100.0;'
+
+# BUTTONS (Preset Dimming) -------------------------------------------------------
+button:
+  - platform: template
+    name: "${friendly_name} Licht Dimmen"
+    id: light_preset_dimm
+    icon: "mdi:lightbulb-on-outline"
+    on_press:
+      - lambda: |-
+          float current = id(light_intensity_percent).state;
+          float next = 100.0f;  // default
+          if (current < 50) next = 10.0f;
+          else if (current < 60) next = 40.0f;
+          else if (current < 80) next = 70.0f;
+          else if (current < 90) next = 100.0f;
+          else next = 10.0f;  // wrap around
+          id(light_intensity_percent).publish_state(next);
+          id(light_intensity_percent).set_action(next);
+
+  - platform: template
+    name: "${friendly_name} Lüfter Dimmen"
+    id: fan_preset_dimm
+    icon: "mdi:fan"
+    on_press:
+      - lambda: |-
+          float current = id(fan_speed_percent).state;
+          float next = 100.0f;  // default
+          if (current < 50) next = 20.0f;
+          else if (current < 60) next = 40.0f;
+          else if (current < 80) next = 70.0f;
+          else if (current < 90) next = 100.0f;
+          else next = 20.0f;  // wrap around
+          id(fan_speed_percent).publish_state(next);
+          id(fan_speed_percent).set_action(next);
+
+# SENSORS ---------------------------------------------------------------------
+sensor:
+  # WiFi / System
+  - platform: wifi_signal
+    name: "${friendly_name} WiFi Signal"
+    id: wifi_rssi
+    update_interval: 60s
+  - platform: internal_temperature
+    name: "${friendly_name} MCU Temperatur"
+  - platform: uptime
+    name: "${friendly_name} Uptime"
+    id: node_uptime
+    update_interval: 60s
+  - platform: template
+    name: "${friendly_name} Free Heap"
+    unit_of_measurement: "kB"
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: 'return (float)esp_get_free_heap_size() / 1024.0f;'
+
+  # AS7341 Spektral (PPFD/PAR)
+  - platform: as7341
+    i2c_id: bus_main
+    address: ${as7341_addr}
+    name: "${friendly_name} PPFD"
+    update_interval: 20s
+    id: ppfd_sensor
+    integration_time: 80ms
+    gain: 256x
+
+  # SHT31 Temperatur/Feuchte
+  - platform: sht3xd
+    i2c_id: bus_main
+    address: ${sht31_addr}
+    temperature:
+      name: "${friendly_name} Lufttemperatur"
+      id: air_temp
+    humidity:
+      name: "${friendly_name} Luftfeuchte"
+      id: air_humidity
+    update_interval: 20s
+
+  # BMP280 Luftdruck
+  - platform: bmp280
+    i2c_id: bus_main
+    address: ${bmp280_addr}
+    temperature:
+      name: "${friendly_name} BMP Temperatur"
+      id: bmp_temp
+      filters:
+        - offset: 0.0
+    pressure:
+      name: "${friendly_name} Luftdruck"
+      id: air_pressure
+    update_interval: 30s
+
+  # CO2 Sensor MH-Z19B/C
+  - platform: mhz19
+    id: co2_sensor
+    uart_id: uart_co2
+    co2:
+      name: "${friendly_name} CO2"
+    temperature:
+      name: "${friendly_name} CO2 Temp"
+    automatic_baseline_calibration: false
+    update_interval: 30s
+
+  # MLX90614 Blatt-Temperaturen (2x RJ12)
+  - platform: mlx90614
+    i2c_id: bus_ext
+    address: ${mlx1_addr}
+    object_temperature:
+      name: "${friendly_name} Blatt Temp 1"
+      id: leaf_temp_1
+    ambient_temperature:
+      name: "${friendly_name} MLX1 Umgebung"
+    update_interval: 15s
+
+  - platform: mlx90614
+    i2c_id: bus_ext
+    address: ${mlx2_addr}
+    object_temperature:
+      name: "${friendly_name} Blatt Temp 2"
+      id: leaf_temp_2
+    ambient_temperature:
+      name: "${friendly_name} MLX2 Umgebung"
+    update_interval: 15s
+
+  # DS18B20 Wasser-Temperatur (Wurzelbehälter)
+  - platform: dallas
+    address: 0x0000000000000000
+    name: "${friendly_name} Wasser Temperatur"
+    id: water_temp
+    update_interval: 30s
+    filters:
+      - median:
+          window_size: 5
+          send_every: 1
+          send_first_at: 1
+
+  # Fan RPM (optional, wenn Tacho angeschlossen)
+  - platform: pulse_counter
+    pin: ${fan_tacho_pin}
+    name: "${friendly_name} Lüfter RPM"
+    update_interval: 10s
+    unit_of_measurement: "rpm"
+    filters:
+      - multiply: 1.0
+
+  # Berechnete Sensoren ------------------------------------------------------
+  - platform: template
+    name: "${friendly_name} Taupunkt"
+    id: dew_point
+    unit_of_measurement: "°C"
+    icon: "mdi:water"
+    update_interval: 20s
+    lambda: |-
+      if (isnan(id(air_temp).state) || isnan(id(air_humidity).state)) return NAN;
+      const float a = 17.62;
+      const float b = 243.12;
+      float gamma = (a * id(air_temp).state / (b + id(air_temp).state)) + log(id(air_humidity).state / 100.0);
+      return (b * gamma) / (a - gamma);
+
+  - platform: template
+    name: "${friendly_name} Absolute Feuchte"
+    unit_of_measurement: "g/m³"
+    icon: "mdi:water-percent"
+    update_interval: 20s
+    lambda: |-
+      if (isnan(id(air_temp).state) || isnan(id(air_humidity).state)) return NAN;
+      float temp = id(air_temp).state;
+      float rh = id(air_humidity).state;
+      float sat_vapor = 6.112 * exp((17.67 * temp) / (temp + 243.5));
+      float vapor = rh / 100.0 * sat_vapor;
+      return 2.1674 * vapor / (temp + 273.15) * 100.0;
+
+  - platform: template
+    name: "${friendly_name} VPD"
+    id: vpd
+    unit_of_measurement: "kPa"
+    icon: "mdi:gauge"
+    update_interval: 20s
+    accuracy_decimals: 2
+    lambda: |-
+      if (isnan(id(air_temp).state) || isnan(id(air_humidity).state)) return NAN;
+      float temp = id(air_temp).state;
+      float rh = id(air_humidity).state;
+      float svp = 0.6108 * exp((17.27 * temp) / (temp + 237.3));
+      float avp = svp * (rh / 100.0);
+      return (svp - avp);
+
+  - platform: template
+    name: "${friendly_name} Blatt Temp Durchschnitt"
+    id: leaf_temp_avg
+    unit_of_measurement: "°C"
+    update_interval: 15s
+    lambda: |-
+      float a = id(leaf_temp_1).has_state() ? id(leaf_temp_1).state : NAN;
+      float b = id(leaf_temp_2).has_state() ? id(leaf_temp_2).state : NAN;
+      if (isnan(a) && isnan(b)) return NAN;
+      if (isnan(a)) return b;
+      if (isnan(b)) return a;
+      return (a + b) / 2.0;
+
+  - platform: template
+    name: "${friendly_name} Leaf-Air Delta"
+    id: leaf_air_delta
+    unit_of_measurement: "°C"
+    update_interval: 15s
+    lambda: |-
+      if (!id(leaf_temp_avg).has_state() || isnan(id(air_temp).state)) return NAN;
+      return id(leaf_temp_avg).state - id(air_temp).state;
+
+  - platform: template
+    name: "${friendly_name} DLI"
+    unit_of_measurement: "mol/m²/d"
+    accuracy_decimals: 2
+    update_interval: 60s
+    lambda: |-
+      // DLI ~ integral of PPFD over the day; reset at midnight
+      static float dli_accum = 0.0;
+      static int last_day = -1;
+      auto t = id(sntp_time).now();
+      if (!t.is_valid()) return NAN;
+      if (!id(ppfd_sensor).has_state()) return NAN;
+      if (last_day == -1) last_day = t.day_of_year;
+      if (t.day_of_year != last_day) {
+        dli_accum = 0.0;
+        last_day = t.day_of_year;
+      }
+      dli_accum += id(ppfd_sensor).state * 60.0;  // 60s window
+      return dli_accum / 1000000.0;
+
+# SENSOR HEALTH MONITORING --------------------------------------------------
+  # AS7341 Status (Licht-Sensor)
+  - platform: template
+    name: "${friendly_name} AS7341 Status"
+    unit_of_measurement: "s"
+    icon: "mdi:lightbulb-check"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      if (!id(ppfd_sensor).has_state() || isnan(id(ppfd_sensor).state)) {
+        return NAN;  // No valid data
+      }
+      return 0.0;  // 0 = OK
+
+  # SHT31 Status (Temperatur/Feuchte)
+  - platform: template
+    name: "${friendly_name} SHT31 Status"
+    unit_of_measurement: "s"
+    icon: "mdi:thermometer-check"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      if (!id(air_temp).has_state() || isnan(id(air_temp).state)) {
+        return NAN;  // No valid data
+      }
+      return 0.0;  // 0 = OK
+
+  # BMP280 Status (Druck)
+  - platform: template
+    name: "${friendly_name} BMP280 Status"
+    unit_of_measurement: "s"
+    icon: "mdi:gauge-check"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      if (!id(air_pressure).has_state() || isnan(id(air_pressure).state)) {
+        return NAN;  // No valid data
+      }
+      return 0.0;  // 0 = OK
+
+  # CO2 Sensor Status (MH-Z19B/C)
+  - platform: template
+    name: "${friendly_name} CO2 Sensor Status"
+    unit_of_measurement: "s"
+    icon: "mdi:atom-variant"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      if (!id(co2_sensor).has_state() || isnan(id(co2_sensor).state)) {
+        return NAN;  // No valid data
+      }
+      return 0.0;  // 0 = OK
+
+  # MLX90614 #1 Status (Blatt 1)
+  - platform: template
+    name: "${friendly_name} MLX #1 Status"
+    unit_of_measurement: "s"
+    icon: "mdi:thermometer-probe"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      if (!id(leaf_temp_1).has_state() || isnan(id(leaf_temp_1).state)) {
+        return NAN;  // No valid data
+      }
+      return 0.0;  // 0 = OK
+
+  # MLX90614 #2 Status (Blatt 2)
+  - platform: template
+    name: "${friendly_name} MLX #2 Status"
+    unit_of_measurement: "s"
+    icon: "mdi:thermometer-probe"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      if (!id(leaf_temp_2).has_state() || isnan(id(leaf_temp_2).state)) {
+        return NAN;  // No valid data
+      }
+      return 0.0;  // 0 = OK
+
+  # DS18B20 Status (Wasser)
+  - platform: template
+    name: "${friendly_name} DS18B20 Status"
+    unit_of_measurement: "s"
+    icon: "mdi:water-thermometer"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      if (!id(water_temp).has_state() || isnan(id(water_temp).state)) {
+        return NAN;  // No valid data
+      }
+      return 0.0;  // 0 = OK
+
+  # Fan Tacho Status (RPM)
+  - platform: template
+    name: "${friendly_name} Tacho Status"
+    unit_of_measurement: "s"
+    icon: "mdi:fan-check"
+    accuracy_decimals: 1
+    update_interval: 15s
+    lambda: |-
+      static bool last_state = false;
+      if (!id(fan_rpm).has_state()) {
+        return NAN;  // No valid RPM data
+      }
+      return 0.0;  // 0 = OK
+
+# SENSOR FAILURE COUNTERS (mit Boot-Graceperiod + Flash-Persistenz) ----------
+  - platform: template
+    name: "${friendly_name} AS7341 Failures Total"
+    id: as7341_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      // NUR zählen wenn Node > 5min läuft (Boot-Grace-Period)
+      if (id(node_uptime).state < 300.0) {
+        return id(as7341_failure_count);
+      }
+      
+      if (!id(as7341_active).state) {
+        id(as7341_failure_count)++;
+        ESP_LOGW("health", "AS7341 failure detected! Count: %d", id(as7341_failure_count));
+      }
+      
+      return id(as7341_failure_count);
+
+  - platform: template
+    name: "${friendly_name} SHT31 Failures Total"
+    id: sht31_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(sht31_failure_count);
+      }
+      
+      if (!id(sht31_active).state) {
+        id(sht31_failure_count)++;
+        ESP_LOGW("health", "SHT31 failure detected! Count: %d", id(sht31_failure_count));
+      }
+      
+      return id(sht31_failure_count);
+
+  - platform: template
+    name: "${friendly_name} BMP280 Failures Total"
+    id: bmp280_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(bmp280_failure_count);
+      }
+      
+      if (!id(bmp280_active).state) {
+        id(bmp280_failure_count)++;
+        ESP_LOGW("health", "BMP280 failure detected! Count: %d", id(bmp280_failure_count));
+      }
+      
+      return id(bmp280_failure_count);
+
+  - platform: template
+    name: "${friendly_name} CO2 Failures Total"
+    id: co2_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(co2_failure_count);
+      }
+      
+      if (!id(co2_active).state) {
+        id(co2_failure_count)++;
+        ESP_LOGW("health", "CO2 failure detected! Count: %d", id(co2_failure_count));
+      }
+      
+      return id(co2_failure_count);
+
+  - platform: template
+    name: "${friendly_name} MLX #1 Failures Total"
+    id: mlx1_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(mlx1_failure_count);
+      }
+      
+      if (!id(mlx1_active).state) {
+        id(mlx1_failure_count)++;
+        ESP_LOGW("health", "MLX #1 failure detected! Count: %d", id(mlx1_failure_count));
+      }
+      
+      return id(mlx1_failure_count);
+
+  - platform: template
+    name: "${friendly_name} MLX #2 Failures Total"
+    id: mlx2_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(mlx2_failure_count);
+      }
+      
+      if (!id(mlx2_active).state) {
+        id(mlx2_failure_count)++;
+        ESP_LOGW("health", "MLX #2 failure detected! Count: %d", id(mlx2_failure_count));
+      }
+      
+      return id(mlx2_failure_count);
+
+  - platform: template
+    name: "${friendly_name} DS18B20 Failures Total"
+    id: ds18b20_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(ds18b20_failure_count);
+      }
+      
+      if (!id(ds18b20_active).state) {
+        id(ds18b20_failure_count)++;
+        ESP_LOGW("health", "DS18B20 failure detected! Count: %d", id(ds18b20_failure_count));
+      }
+      
+      return id(ds18b20_failure_count);
+
+  - platform: template
+    name: "${friendly_name} Tacho Failures Total"
+    id: tacho_failures_sensor
+    accuracy_decimals: 0
+    icon: "mdi:alert-circle-outline"
+    update_interval: 60s
+    lambda: |-
+      if (id(node_uptime).state < 300.0) {
+        return id(tacho_failure_count);
+      }
+      
+      if (!id(tacho_active).state) {
+        id(tacho_failure_count)++;
+        ESP_LOGW("health", "Tacho failure detected! Count: %d", id(tacho_failure_count));
+      }
+      
+      return id(tacho_failure_count);
+
+switch:
+  - platform: template
+    name: "${friendly_name} Status LED"
+    id: status_led_switch
+    optimistic: true
+    turn_on_action:
+      - output.turn_on: status_led
+    turn_off_action:
+      - output.turn_off: status_led
+
+  - platform: template
+    name: "${friendly_name} Buzzer"
+    id: buzzer_switch
+    optimistic: true
+    turn_on_action:
+      - output.turn_on: buzzer_out
+    turn_off_action:
+      - output.turn_off: buzzer_out
+
+text_sensor:
+  - platform: version
+    name: "${friendly_name} ESPHome Version"
+
+  - platform: wifi_info
+    ip_address:
+      name: "${friendly_name} IP"
+    ssid:
+      name: "${friendly_name} SSID"
+    bssid:
+      name: "${friendly_name} BSSID"
+
+  # Projekt-/Status-Metadaten
+  - platform: template
+    name: "${friendly_name} Projekt"
+    icon: "mdi:identifier"
+    lambda: |-
+      return {"${project_name}"};
+
+  - platform: template
+    name: "${friendly_name} Version"
+    icon: "mdi:tag"
+    lambda: |-
+      return {"${project_version}"};
+
+  - platform: template
+    name: "${friendly_name} Status Summary"
+    icon: "mdi:information-outline"
+    update_interval: 30s
+    lambda: |-
+      char buffer[80];
+      float wifi = id(wifi_rssi).has_state() ? id(wifi_rssi).state : NAN;
+      float up_hours = id(node_uptime).has_state() ? id(node_uptime).state / 3600.0f : NAN;
+      const char *wifi_str = isnan(wifi) ? "n/a" : (wifi > -60 ? "strong" : (wifi > -75 ? "ok" : "weak"));
+      if (isnan(up_hours)) {
+        snprintf(buffer, sizeof(buffer), "ver %s | WiFi %s", "${project_version}", wifi_str);
+      } else {
+        snprintf(buffer, sizeof(buffer), "ver %s | WiFi %s | up %.1fh", "${project_version}", wifi_str, up_hours);
+      }
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} Reset Grund"
+    icon: "mdi:restart-alert"
+    lambda: |-
+      switch (esp_reset_reason()) {
+        case ESP_RST_POWERON: return {"poweron"};
+        case ESP_RST_EXT: return {"ext"};
+        case ESP_RST_SW: return {"sw"};
+        case ESP_RST_PANIC: return {"panic"};
+        case ESP_RST_INT_WDT: return {"int_wdt"};
+        case ESP_RST_TASK_WDT: return {"task_wdt"};
+        case ESP_RST_WDT: return {"wdt"};
+        case ESP_RST_DEEPSLEEP: return {"deepsleep"};
+        case ESP_RST_BROWNOUT: return {"brownout"};
+        case ESP_RST_SDIO: return {"sdio"};
+        default: return {"unknown"};
+      }
+
+  # Sensor Uptime Tracking (mit Boot-Graceperiod: 300s)
+  - platform: template
+    name: "${friendly_name} AS7341 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t as7341_start_time = millis();
+      // Boot-Graceperiod: Nur nach 300s Uptime Fehler als Fehler werten
+      if (!id(as7341_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          as7341_start_time = millis();  // Reset bei echtem Fehler
+        }
+      }
+      uint32_t uptime_ms = millis() - as7341_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} SHT31 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t sht31_start_time = millis();
+      if (!id(sht31_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          sht31_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - sht31_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} BMP280 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t bmp280_start_time = millis();
+      if (!id(bmp280_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          bmp280_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - bmp280_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} CO2 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t co2_start_time = millis();
+      if (!id(co2_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          co2_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - co2_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} MLX #1 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t mlx1_start_time = millis();
+      if (!id(mlx1_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          mlx1_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - mlx1_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} MLX #2 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t mlx2_start_time = millis();
+      if (!id(mlx2_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          mlx2_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - mlx2_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} DS18B20 Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t ds18b20_start_time = millis();
+      if (!id(ds18b20_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          ds18b20_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - ds18b20_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+  - platform: template
+    name: "${friendly_name} Tacho Uptime"
+    icon: "mdi:clock-outline"
+    update_interval: 60s
+    lambda: |-
+      static uint32_t tacho_start_time = millis();
+      if (!id(tacho_active).state) {
+        if (id(node_uptime).state > 300.0) {
+          tacho_start_time = millis();
+        }
+      }
+      uint32_t uptime_ms = millis() - tacho_start_time;
+      uint32_t days = uptime_ms / (1000 * 60 * 60 * 24);
+      uint32_t hours = (uptime_ms / (1000 * 60 * 60)) % 24;
+      uint32_t minutes = (uptime_ms / (1000 * 60)) % 60;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%ld d, %ld h, %ld m", days, hours, minutes);
+      return {buffer};
+
+binary_sensor:
+  - platform: status
+    name: "${friendly_name} Status"
+
+# SENSOR HEALTH BINARY SENSORS (Active/Inactive Status) ----------------------
+  - platform: template
+    name: "${friendly_name} AS7341 Aktiv"
+    id: as7341_active
+    device_class: connectivity
+    lambda: |-
+      return id(ppfd_sensor).has_state() && !isnan(id(ppfd_sensor).state);
+
+  - platform: template
+    name: "${friendly_name} SHT31 Aktiv"
+    id: sht31_active
+    device_class: connectivity
+    lambda: |-
+      return id(air_temp).has_state() && !isnan(id(air_temp).state);
+
+  - platform: template
+    name: "${friendly_name} BMP280 Aktiv"
+    id: bmp280_active
+    device_class: connectivity
+    lambda: |-
+      return id(air_pressure).has_state() && !isnan(id(air_pressure).state);
+
+  - platform: template
+    name: "${friendly_name} CO2 Aktiv"
+    id: co2_active
+    device_class: connectivity
+    lambda: |-
+      return id(co2_sensor).has_state() && !isnan(id(co2_sensor).state);
+
+  - platform: template
+    name: "${friendly_name} MLX #1 Aktiv"
+    id: mlx1_active
+    device_class: connectivity
+    lambda: |-
+      return id(leaf_temp_1).has_state() && !isnan(id(leaf_temp_1).state);
+
+  - platform: template
+    name: "${friendly_name} MLX #2 Aktiv"
+    id: mlx2_active
+    device_class: connectivity
+    lambda: |-
+      return id(leaf_temp_2).has_state() && !isnan(id(leaf_temp_2).state);
+
+  - platform: template
+    name: "${friendly_name} DS18B20 Aktiv"
+    id: ds18b20_active
+    device_class: connectivity
+    lambda: |-
+      return id(water_temp).has_state() && !isnan(id(water_temp).state);
+
+  - platform: template
+    name: "${friendly_name} Tacho Aktiv"
+    id: tacho_active
+    device_class: connectivity
+    lambda: |-
+      return id(fan_rpm).has_state();
+
+  # Temperature Alarm: triggers at >30°C, clears at <29°C
+  - platform: template
+    name: "${friendly_name} Temperatur Alarm"
+    id: temp_alarm
+    device_class: heat
+    lambda: |-
+      if (!id(air_temp).has_state()) return false;
+      static bool alarm_active = false;
+      float temp = id(air_temp).state;
+      if (temp > 30.0f) alarm_active = true;
+      if (temp < 29.0f) alarm_active = false;
+      return alarm_active;
+
+  # CO2 Alarm: triggers at >1000 ppm, clears at <900 ppm
+  - platform: template
+    name: "${friendly_name} CO2 Alarm"
+    id: co2_alarm
+    device_class: problem
+    lambda: |-
+      if (!id(co2_sensor).has_state()) return false;
+      static bool alarm_active = false;
+      float co2 = id(co2_sensor).state;
+      if (co2 > 1000.0f) alarm_active = true;
+      if (co2 < 900.0f) alarm_active = false;
+      return alarm_active;
+
+# SENSOR HEALTH BINARY SENSORS V2 (Health OK mit Boot-Graceperiod) ----------
+  - platform: template
+    name: "${friendly_name} AS7341 Health OK"
+    id: as7341_health_ok
+    device_class: problem
+    lambda: |-
+      // Nach Boot-Graceperiod: Sensor muss aktiv sein
+      if (id(node_uptime).state < 300.0) return true;  // Noch am booten
+      return id(as7341_active).state;
+
+  - platform: template
+    name: "${friendly_name} SHT31 Health OK"
+    id: sht31_health_ok
+    device_class: problem
+    lambda: |-
+      if (id(node_uptime).state < 300.0) return true;
+      return id(sht31_active).state;
+
+  - platform: template
+    name: "${friendly_name} BMP280 Health OK"
+    id: bmp280_health_ok
+    device_class: problem
+    lambda: |-
+      if (id(node_uptime).state < 300.0) return true;
+      return id(bmp280_active).state;
+
+  - platform: template
+    name: "${friendly_name} CO2 Health OK"
+    id: co2_health_ok
+    device_class: problem
+    lambda: |-
+      if (id(node_uptime).state < 300.0) return true;
+      return id(co2_active).state;
+
+  - platform: template
+    name: "${friendly_name} MLX #1 Health OK"
+    id: mlx1_health_ok
+    device_class: problem
+    lambda: |-
+      if (id(node_uptime).state < 300.0) return true;
+      return id(mlx1_active).state;
+
+  - platform: template
+    name: "${friendly_name} MLX #2 Health OK"
+    id: mlx2_health_ok
+    device_class: problem
+    lambda: |-
+      if (id(node_uptime).state < 300.0) return true;
+      return id(mlx2_active).state;
+
+  - platform: template
+    name: "${friendly_name} DS18B20 Health OK"
+    id: ds18b20_health_ok
+    device_class: problem
+    lambda: |-
+      if (id(node_uptime).state < 300.0) return true;
+      return id(ds18b20_active).state;
+
+  - platform: template
+    name: "${friendly_name} Tacho Health OK"
+    id: tacho_health_ok
+    device_class: problem
+    lambda: |-
+      if (id(node_uptime).state < 300.0) return true;
+      return id(tacho_active).state;
+
+# AUTOMATIONS (Alarms & Emergency Dimming) ----------------------------------
+automation:
+  # Emergency dimming on temperature alarm: light 10%, fan 100%
+  - id: temp_alarm_emergency_dimming
+    trigger:
+      platform: binary_sensor
+      entity_id: temp_alarm
+      to: "on"
+    action:
+      - output.set_level:
+          id: light_pwm
+          level: 0.1  # 10%
+      - output.set_level:
+          id: fan_pwm
+          level: 1.0  # 100%
+      - number.set:
+          id: light_intensity_percent
+          value: 10
+      - number.set:
+          id: fan_speed_percent
+          value: 100
+      - logger.log:
+          format: "ALARM: Lufttemperatur überschritten! Notdimmung aktiv: Licht 10%, Lüfter 100%"
+          level: WARN
+
+  # Clear emergency dimming when temperature alarm resolves
+  - id: temp_alarm_clear
+    trigger:
+      platform: binary_sensor
+      entity_id: temp_alarm
+      to: "off"
+    action:
+      - logger.log:
+          format: "INFO: Temperaturalarm gelöst."
+          level: INFO
+
+  # Buzzer on CO2 alarm: pulse pattern
+  - id: co2_alarm_buzzer
+    trigger:
+      platform: binary_sensor
+      entity_id: co2_alarm
+      to: "on"
+    action:
+      - logger.log:
+          format: "ALARM: CO2-Gehalt überschritten! Buzzer aktiviert."
+          level: WARN
+      - output.turn_on: buzzer_out
+      - delay: 200ms
+      - output.turn_off: buzzer_out
+      - delay: 100ms
+      - output.turn_on: buzzer_out
+      - delay: 200ms
+      - output.turn_off: buzzer_out
+
+  # Clear buzzer on CO2 alarm resolution
+  - id: co2_alarm_buzzer_clear
+    trigger:
+      platform: binary_sensor
+      entity_id: co2_alarm
+      to: "off"
+    action:
+      - output.turn_off: buzzer_out
+      - logger.log:
+          format: "INFO: CO2-Alarm gelöst."
+          level: INFO
+
+# Hinweise:
+# - 0-10V Dimmer nutzen externe PWM->0-10V Wandler; ledc-Ausgang liefert PWM.
+# - CO2 Sensor: MH-Z19B/C per UART; ABC ist deaktiviert (manuell kalibrieren).
+# - MLX90614 Adressen 0x5A/0x5B vorausgesetzt (zweiter Sensor umadressieren).
+# - DLI Berechnung grob: 60s Abtastung, Tagesreset um Mitternacht.
+# - Weitere Automationen (VPD-basierte Lüfterregelung etc.) werden in Home Assistant angelegt.
