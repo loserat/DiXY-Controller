@@ -17,7 +17,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 system:
   project_name: "DiXY-Controller"
-  project_version: "0.3-beta"
+  project_version: "0.1"
   project_website: "https://github.com/loserat/DiXY-Controller"
   project_description: "Fully Automated RDWC Hydroponic Growing System with AI Integration"
   

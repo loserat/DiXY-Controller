@@ -1,10 +1,30 @@
 # DiXY RDWC Controller - Release Notes
 
+## 📋 Version Management Process
+
+**How versioning works going forward:**
+1. **Baseline:** v0.1 (Current - 2025-12-08)
+2. **Development:** Improvements and fixes added to code
+3. **Release:** When ready, increment to **v0.2** and document all changes below
+4. **Requirement:** Each version bump MUST include a summary of changes in this file
+
+**Format for version bumps:**
+```markdown
+### v0.2 (Release Date: YYYY-MM-DD)
+**Changes from v0.1:**
+- ✅ Feature 1 implemented
+- 🐛 Bug 2 fixed
+- 📝 Documentation 3 updated
+```
+
+---
+
 ## 📊 Version Overview
 
 | Version | Status | Focus | Target |
 |---------|--------|-------|--------|
-| **v0.1–0.9** | 🔄 Current | Alle Sensoren + HA Dashboard | Dez 2025 |
+| **v0.1** | 🟢 Current | Baseline - all nodes at v0.1 | Dec 08, 2025 |
+| **v0.2–0.9** | 🔄 Planned | Improvements + features | 2025-12-31 |
 | **v1.0–1.9** | 🔴 Planned | Dosierungsknoten (EC/pH Auto) | Jan 2026 |
 | **v2.0–2.9** | 🔴 Planned | KI-Anbindung (Plant Stress ML) | Feb 2026 |
 | **v3.0–3.9** | 🔴 Planned | Hardware-Optimierung (MQTT, PID, Multi-Zelt) | Mar 2026 |
@@ -12,11 +32,61 @@
 
 ---
 
-## 🚀 v0.1–0.9: Sensoren & Home Assistant Dashboard
+## 🚀 v0.1: Baseline Release
 
-### v0.1 (Hydroknoten Baseline)
-**Status:** 🔄 In Progress  
-**Target:** Dec 7, 2025
+**Status:** 🟢 Current  
+**Release Date:** Dec 08, 2025
+
+### Components at v0.1
+- ✅ Hydroknoten (EC/pH/Temp + Tank Levels)
+- ✅ Dosierung (4× Pumpen + Stirrer)
+- ✅ Zeltsensor (AS7341 Spektral + Climate)
+- ✅ Klimaknoten (VPD + 4× Relays)
+- ✅ Kameraknoten (Canopy + Detail Timelapse)
+
+### Features
+- ✅ All 5 ESP32 nodes at v0.1 baseline
+- ✅ MQTT Discovery ready
+- ✅ Home Assistant integration structure
+- ✅ Complete documentation (README + SENSORS.md per node)
+- ✅ Version synchronization across all components
+
+### Known Issues (for v0.2 fixes)
+- [ ] Node-Red flows in proposals/ need production validation
+- [ ] HA HACS integration not yet implemented
+- [ ] ESP32 flash wizard script needed
+- [ ] Docker-Compose stack not yet built
+
+---
+
+## 📝 Future Versions (Planned)
+
+### v0.2 (Planned: Dec 15, 2025)
+**Focus:** Node-Red integration + HA automation
+
+**Planned changes:**
+- [ ] Move Node-Red flows to production
+- [ ] Validate lighting, dosing, climate automation flows
+- [ ] Create ha_helpers.yaml with input_select, input_number, etc.
+- [ ] Implement Docker-Compose stack
+- [ ] Build install.sh script
+
+### v0.3 (Planned: Dec 22, 2025)
+**Focus:** HACS Custom Integration
+
+**Planned changes:**
+- [ ] Develop custom_components/dixy_controller/
+- [ ] Auto-discovery of nodes via MQTT
+- [ ] Unified dashboard auto-generation
+- [ ] Custom services (dose_pump, calibrate_ec)
+
+### v1.0 (Planned: Jan 2026)
+**Focus:** Production Release
+
+**Planned changes:**
+- [ ] Complete testing on live hardware
+- [ ] Performance optimization
+- [ ] Redundancy + failover mechanisms
 
 #### Features
 - ✅ EC-Wert (ADS1115, 2-Punkt-Kalibrierung, Temp-Kompensation)

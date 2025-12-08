@@ -1,14 +1,14 @@
 DiXY RDWC Controller
-Version: 0.2-beta
-Release Date: 2025-12-07
+Version: 0.1
+Release Date: 2025-12-08
 
 === Component Versions ===
-ESP32 Nodes: v0.2-beta (ALL SYNCHRONIZED)
-  - Hydroknoten: v0.2-beta ✅
-  - Dosierung: v0.2-beta ✅
-  - Zeltsensor: v0.2-beta ✅
-  - Klimaknoten: v0.2-beta ✅
-  - Kameraknoten: v0.2-beta ✅
+ESP32 Nodes: v0.1 (BASELINE - ALL SYNCHRONIZED)
+  - Hydroknoten: v0.1 ✅
+  - Dosierung: v0.1 ✅
+  - Zeltsensor: v0.1 ✅
+  - Klimaknoten: v0.1 ✅
+  - Kameraknoten: v0.1 ✅
 
 Home Assistant: Integrate via MQTT Discovery + ESPHome API
 Documentation: Fully restructured by knoten type + SENSORS reference

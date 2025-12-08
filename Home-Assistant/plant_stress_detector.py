@@ -9,9 +9,10 @@ Multisensor KI-Analyse für Pflanzenstress-Detektion mit:
 - Learning Mode mit Tipps
 """
 
+import logging
+
 import cv2
 import numpy as np
-from datetime import datetime, timedelta
 
 # ===============================================================
 # Wachstumsstadien-Definition mit Targets
@@ -100,10 +101,37 @@ VPD_HISTORY = []
 TEMP_HISTORY = []
 PH_HISTORY = []
 
+TANK_LEVEL_SENSORS = [
+    "binary_sensor.hydroknoten_tank1_wasserstand",
+    "binary_sensor.hydroknoten_tank2_wasserstand",
+    "binary_sensor.hydroknoten_tank3_wasserstand",
+    "binary_sensor.hydroknoten_tank4_wasserstand",
+    "binary_sensor.hydroknoten_tank5_wasserstand",
+    "binary_sensor.hydroknoten_tank6_wasserstand",
+]
+
+_LOGGER = logging.getLogger(__name__)
+
 
 # ===============================================================
 # Hilfsfunktionen
 # ===============================================================
+
+def get_float_state(hass, entity_id, default=0.0):
+    """Safely read a numeric state; returns default on missing/invalid."""
+    state_obj = hass.states.get(entity_id)
+    if not state_obj:
+        return default
+    try:
+        return float(state_obj.state)
+    except (TypeError, ValueError):
+        return default
+
+
+def get_binary_state(hass, entity_id):
+    """Return 'on'/'off'/None for a binary sensor."""
+    state_obj = hass.states.get(entity_id)
+    return state_obj.state.lower() if state_obj and state_obj.state else None
 
 def detect_growth_stage(hass):
     """
@@ -194,13 +222,34 @@ def analyze_water_consumption(hass, targets):
     -50% Abweichung = Wurzelprobleme, Rohre verstopft
     """
     
-    tank_level_sensor = hass.states.get("sensor.hydroknoten_tank_wasserstand")
-    if not tank_level_sensor:
+    # Priorisiere aggregierten Sensor (leer/ok)
+    tank_empty_state = get_binary_state(hass, "binary_sensor.hydroknoten_tank_leer")
+    if tank_empty_state == "on":
+        return {
+            "status": "LOW",
+            "severity": 90,
+            "message": "Tank leer erkannt",
+            "action": "Sofort nachfüllen",
+        }
+    
+    # Fallback: prüfe einzelne Tank-Level-Sensoren falls verfügbar
+    available_level_sensors = [
+        ent for ent in TANK_LEVEL_SENSORS if hass.states.get(ent) is not None
+    ]
+    if not tank_empty_state and not available_level_sensors:
         return {"status": "PENDING", "message": "Tank sensor not available"}
     
-    baseline = targets.get("water_consumption", 1.5)
-    current_level = float(tank_level_sensor.state) if tank_level_sensor.state else 0
+    if available_level_sensors:
+        empty_sensors = [ent for ent in available_level_sensors if get_binary_state(hass, ent) == "on"]
+        if empty_sensors:
+            return {
+                "status": "LOW",
+                "severity": 60,
+                "message": f"Tank-Level Sensor(en) kritisch: {', '.join(empty_sensors)}",
+                "action": "Fuellstand pruefen und nachfuellen",
+            }
     
+    baseline = targets.get("water_consumption", 1.5)
     # Placeholder: echte Berechnung benötigt Verbrauch/day
     consumption_rate = baseline  # TODO: Berechne echte Rate aus History
     
@@ -231,10 +280,10 @@ def analyze_sensors(hass, targets):
     Prüft EC, pH, VPD, Temp gegen Stage-Targets
     """
     
-    ec = float(hass.states.get("sensor.hydroknoten_ec", {}).state or 0)
-    ph = float(hass.states.get("sensor.hydroknoten_ph", {}).state or 0)
-    vpd = float(hass.states.get("sensor.zeltsensor_vpd", {}).state or 0)
-    temp = float(hass.states.get("sensor.zeltsensor_temperature", {}).state or 0)
+    ec = get_float_state(hass, "sensor.hydroknoten_ec_wert")
+    ph = get_float_state(hass, "sensor.hydroknoten_ph_wert")
+    vpd = get_float_state(hass, "sensor.zeltsensor_vpd")
+    temp = get_float_state(hass, "sensor.zeltsensor_lufttemperatur")
     
     findings = []
     severity = 0

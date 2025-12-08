@@ -31,7 +31,7 @@ substitutions:
   device_name: kameraknoten-canopy
   friendly_name: "Kamera Canopy"
   device_description: "Timelapse Übersicht (Top-Down)"
-  project_version: "0.5-beta"
+  project_version: "0.1"
 
 esphome:
   name: kameraknoten-canopy

@@ -1,0 +1,181 @@
+# Beispiel-Helpers für Home Assistant (nur Vorlage, nicht automatisch eingebunden)
+# Diese Entities dienen als UI für Setpoints/Parameter. Logik bleibt in Node-RED.
+
+input_number:
+  ec_target:
+    name: EC Ziel
+    min: 0.4
+    max: 3.0
+    step: 0.05
+    unit_of_measurement: "mS/cm"
+  ph_target:
+    name: pH Ziel
+    min: 4.5
+    max: 7.5
+    step: 0.05
+    unit_of_measurement: "pH"
+  ec_tolerance:
+    name: EC Toleranz
+    min: 0.02
+    max: 0.3
+    step: 0.01
+    unit_of_measurement: "mS/cm"
+    icon: mdi:approximately-equal
+  ph_tolerance:
+    name: pH Toleranz
+    min: 0.02
+    max: 0.3
+    step: 0.01
+    unit_of_measurement: "pH"
+    icon: mdi:approximately-equal
+  ppfd_target:
+    name: PPFD Ziel
+    min: 100
+    max: 1200
+    step: 10
+    unit_of_measurement: "µmol/m²s"
+  # Pumpen: manuelle Dosis (ml) und Rate (ml/s) je Pumpe
+  pump1_ml:
+    name: Pump1 Manuell (ml)
+    min: 0
+    max: 150
+    step: 1
+    unit_of_measurement: "ml"
+  pump2_ml:
+    name: Pump2 Manuell (ml)
+    min: 0
+    max: 150
+    step: 1
+    unit_of_measurement: "ml"
+  pump3_ml:
+    name: Pump3 Manuell (ml)
+    min: 0
+    max: 150
+    step: 1
+    unit_of_measurement: "ml"
+  pump4_ml:
+    name: Pump4 Manuell (ml)
+    min: 0
+    max: 150
+    step: 1
+    unit_of_measurement: "ml"
+  pump1_rate_ml_per_sec:
+    name: Pump1 Rate
+    min: 0.1
+    max: 10
+    step: 0.05
+    unit_of_measurement: "ml/s"
+  pump2_rate_ml_per_sec:
+    name: Pump2 Rate
+    min: 0.1
+    max: 10
+    step: 0.05
+    unit_of_measurement: "ml/s"
+  pump3_rate_ml_per_sec:
+    name: Pump3 Rate
+    min: 0.1
+    max: 10
+    step: 0.05
+    unit_of_measurement: "ml/s"
+  pump4_rate_ml_per_sec:
+    name: Pump4 Rate
+    min: 0.1
+    max: 10
+    step: 0.05
+    unit_of_measurement: "ml/s"
+  pump1_auto_ml:
+    name: Pump1 Auto-Schuss (ml)
+    min: 1
+    max: 50
+    step: 1
+    unit_of_measurement: "ml"
+  pump2_auto_ml:
+    name: Pump2 Auto-Schuss (ml)
+    min: 1
+    max: 50
+    step: 1
+    unit_of_measurement: "ml"
+  pump3_auto_ml:
+    name: Pump3 Auto-Schuss (ml)
+    min: 1
+    max: 50
+    step: 1
+    unit_of_measurement: "ml"
+  pump4_auto_ml:
+    name: Pump4 Auto-Schuss (ml)
+    min: 1
+    max: 50
+    step: 1
+    unit_of_measurement: "ml"
+  max_daily_ml_pump1:
+    name: Pump1 max/Tag
+    min: 0
+    max: 2000
+    step: 10
+    unit_of_measurement: "ml"
+  max_daily_ml_pump2:
+    name: Pump2 max/Tag
+    min: 0
+    max: 2000
+    step: 10
+    unit_of_measurement: "ml"
+  max_daily_ml_pump3:
+    name: Pump3 max/Tag
+    min: 0
+    max: 2000
+    step: 10
+    unit_of_measurement: "ml"
+  max_daily_ml_pump4:
+    name: Pump4 max/Tag
+    min: 0
+    max: 2000
+    step: 10
+    unit_of_measurement: "ml"
+  light_on_hour:
+    name: Licht EIN (HHMM)
+    min: 0
+    max: 2359
+    step: 1
+  light_off_hour:
+    name: Licht AUS (HHMM)
+    min: 0
+    max: 2359
+    step: 1
+  light_fade_duration:
+    name: Licht Fade-Dauer
+    unit_of_measurement: s
+    min: 60          # 1 Minute
+    max: 1800        # 30 Minuten
+    step: 30
+    initial: 300
+    icon: mdi:animation
+    mode: slider
+
+input_boolean:
+  pump1_manual:
+    name: Pump1 Manuell Start
+  pump2_manual:
+    name: Pump2 Manuell Start
+  pump3_manual:
+    name: Pump3 Manuell Start
+  pump4_manual:
+    name: Pump4 Manuell Start
+  dosing_enable:
+    name: Auto-Dosierung aktiv
+  light_manual:
+    name: Licht Manueller Override
+
+input_select:
+  light_mode:
+    name: Lichtmodus
+    options:
+      - Zeitplan
+      - PPFD
+      - Aus
+      - An
+  plug1_type:
+    name: Plug 1 Typ
+    options: ["Licht", "Lüfter", "Befeuchter", "CO2", "Heizung", "Frei"]
+  plug2_type:
+    name: Plug 2 Typ
+    options: ["Licht", "Lüfter", "Befeuchter", "CO2", "Heizung", "Frei"]

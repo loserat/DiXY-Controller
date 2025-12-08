@@ -1,0 +1,73 @@
+# Beispiel-ESPHome-Konfiguration für ESP32 mit AS7341 (Spektralsensor) + BMP280 (Druck/Temp)
+# Pins ggf. anpassen (Default: SDA=21, SCL=22). WiFi/API/OTA aus Secrets.
+
+esphome:
+  name: zeltsensor-as7341-bmp280
+  platform: ESP32
+  board: esp32dev
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "as7341-bmp280-fallback"
+
+api:
+  encryption:
+    key: !secret api_key
+ota:
+logger:
+
+i2c:
+  sda: 21
+  scl: 22
+  scan: true
+  id: bus_a
+
+sensor:
+  - platform: bmp280
+    address: 0x76
+    update_interval: 30s
+    temperature:
+      name: "Zeltsensor Lufttemperatur"
+      id: bmp_temp
+    pressure:
+      name: "Zeltsensor Luftdruck"
+    oversampling: 16x
+
+  - platform: as7341
+    address: 0x39
+    i2c_id: bus_a
+    update_interval: 30s
+    atime: 100ms
+    astep: 999
+    gain: 16x
+    channel_clear:
+      name: "AS7341 Clear"
+    channel_f1:
+      name: "AS7341 F1 415nm"
+    channel_f2:
+      name: "AS7341 F2 445nm"
+    channel_f3:
+      name: "AS7341 F3 480nm"
+    channel_f4:
+      name: "AS7341 F4 515nm"
+    channel_f5:
+      name: "AS7341 F5 555nm"
+    channel_f6:
+      name: "AS7341 F6 590nm"
+    channel_f7:
+      name: "AS7341 F7 630nm"
+    channel_f8:
+      name: "AS7341 F8 680nm"
+    flicker_detection:
+      name: "AS7341 Flicker"
+
+binary_sensor:
+  - platform: status
+    name: "Zeltsensor Status"
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "Zeltsensor IP"

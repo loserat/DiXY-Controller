@@ -1,0 +1,62 @@
+[
+  {
+    "id": "tab_acks",
+    "type": "tab",
+    "label": "04_Acks_Errors",
+    "disabled": false
+  },
+  {
+    "id": "mqtt_local_cfg_acks",
+    "type": "mqtt-broker",
+    "name": "MQTT Local",
+    "broker": "localhost",
+    "port": "1883",
+    "clientid": "dixy-node-red",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": 4,
+    "keepalive": "60",
+    "cleansession": true,
+    "autoUnsubscribe": true
+  },
+  {
+    "id": "mqtt_in_acks",
+    "type": "mqtt in",
+    "z": "tab_acks",
+    "name": "ACKs",
+    "topic": "dixy/ack/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local_cfg_acks",
+    "x": 120,
+    "y": 80,
+    "wires": [["dbg_acks"]]
+  },
+  {
+    "id": "mqtt_in_errors",
+    "type": "mqtt in",
+    "z": "tab_acks",
+    "name": "Errors",
+    "topic": "dixy/error/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local_cfg_acks",
+    "x": 120,
+    "y": 140,
+    "wires": [["dbg_acks"]]
+  },
+  {
+    "id": "dbg_acks",
+    "type": "debug",
+    "z": "tab_acks",
+    "name": "ACK/Errors",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "x": 350,
+    "y": 110,
+    "wires": []
+  }
+]

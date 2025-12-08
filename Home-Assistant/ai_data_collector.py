@@ -27,23 +27,23 @@ except Exception:
 
 DEFAULT_ENTITIES = [
     # Hydro/EC/pH
-    "sensor.hydroknoten_ec_value",
-    "sensor.hydroknoten_ph",
-    "sensor.hydroknoten_temp",
+    "sensor.hydroknoten_ec_wert",
+    "sensor.hydroknoten_ph_wert",
     # Zeltsensor / Klima
+    "sensor.zeltsensor_lufttemperatur",
+    "sensor.zeltsensor_luftfeuchte",
     "sensor.zeltsensor_vpd",
     "sensor.zeltsensor_ppfd",
-    "sensor.zeltsensor_air_temperature",
-    "sensor.zeltsensor_air_humidity",
     # Klimaknoten (backup)
     "sensor.klimaknoten_vpd",
     # Water levels (binary sensors)
-    "binary_sensor.tank_1_level",
-    "binary_sensor.tank_2_level",
-    "binary_sensor.tank_3_level",
-    "binary_sensor.tank_4_level",
-    "binary_sensor.tank_5_level",
-    "binary_sensor.tank_6_level",
+    "binary_sensor.hydroknoten_tank_leer",
+    "binary_sensor.hydroknoten_tank1_wasserstand",
+    "binary_sensor.hydroknoten_tank2_wasserstand",
+    "binary_sensor.hydroknoten_tank3_wasserstand",
+    "binary_sensor.hydroknoten_tank4_wasserstand",
+    "binary_sensor.hydroknoten_tank5_wasserstand",
+    "binary_sensor.hydroknoten_tank6_wasserstand",
 ]
 
 
