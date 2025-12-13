@@ -1,3 +1,7 @@
+# secrets.yaml für alle Knoten ignorieren
+ESP32-Knoten/zeltsensor/v2/secrets.yaml
+ESP32-Knoten/zeltsensor/v1/secrets.yaml
+secrets.yaml
 # ESPHome Build Artifacts
 .esphome/
 build/

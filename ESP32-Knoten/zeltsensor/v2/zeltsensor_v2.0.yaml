@@ -1,6 +1,5 @@
 esphome:
   name: zeltsensor
-  friendly_name: "Zeltsensor"
   comment: "Minimalprofil BMP280 + AS7341"
   project:
     name: "loserat.dixy_zeltsensor"
@@ -226,3 +225,7 @@ light:
     id: zeltlampe
 
 logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
