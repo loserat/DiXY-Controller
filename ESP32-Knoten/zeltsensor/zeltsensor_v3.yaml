@@ -1,6 +1,5 @@
 esphome:
   name: zeltsensor
-  friendly_name: "Zeltsensor"
   comment: "Minimalprofil BMP280 + AS7341"
   project:
     name: "loserat.dixy_zeltsensor"
@@ -41,6 +40,26 @@ sensor:
     atime: 100
     astep: 999
     gain: X128
+    f1:
+      name: "AS7341 415nm"
+    f2:
+      name: "AS7341 445nm"
+    f3:
+      name: "AS7341 480nm"
+    f4:
+      name: "AS7341 515nm"
+    f5:
+      name: "AS7341 555nm"
+    f6:
+      name: "AS7341 590nm"
+    f7:
+      name: "AS7341 630nm"
+    f8:
+      name: "AS7341 680nm"
+    clear:
+      name: "AS7341 Clear"
+    nir:
+      name: "AS7341 NIR"
 
   # Simulierter DS18B20 (Dummy)
   - platform: template

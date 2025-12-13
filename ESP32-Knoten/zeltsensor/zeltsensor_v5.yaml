@@ -1,0 +1,157 @@
+esphome:
+  name: zeltsensor
+  comment: "Minimalprofil BMP280 + AS7341"
+  project:
+    name: "loserat.dixy_zeltsensor"
+    version: "0.1"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "ZELTSENSOR_Fallback"
+    password: "12345678"
+
+ota:
+  platform: esphome
+  password: !secret zeltsensor_ota_password
+
+i2c:
+  sda: 21
+  scl: 22
+  scan: true
+
+sensor:
+  - platform: as7341
+    address: 0x39
+    atime: 100
+    astep: 999
+    gain: X128
+    f1:
+      name: "AS7341 415nm"
+      id: as7341_f1
+    f2:
+      name: "AS7341 445nm"
+      id: as7341_f2
+    f3:
+      name: "AS7341 480nm"
+      id: as7341_f3
+    f4:
+      name: "AS7341 515nm"
+      id: as7341_f4
+    f5:
+      name: "AS7341 555nm"
+      id: as7341_f5
+    f6:
+      name: "AS7341 590nm"
+      id: as7341_f6
+    f7:
+      name: "AS7341 630nm"
+      id: as7341_f7
+    f8:
+      name: "AS7341 680nm"
+      id: as7341_f8
+    clear:
+      name: "AS7341 Clear"
+    nir:
+      name: "AS7341 NIR"
+
+  - platform: bmp280_i2c
+    address: 0x76
+    temperature:
+      name: "BMP280 Temperatur"
+    pressure:
+      name: "BMP280 Luftdruck"
+    update_interval: 60s
+
+  - platform: template
+    name: "DS18B20 Dummy"
+    id: ds18b20_dummy
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      static float t = 22.0f;
+      t += (float((rand() % 20) - 10)) / 10.0f;
+      if (t < 20.0f) t = 20.0f;
+      if (t > 25.0f) t = 25.0f;
+      return t;
+
+  - platform: wifi_signal
+    name: "ESP WiFi Signal"
+    id: wifi_strength
+    update_interval: 60s
+
+  - platform: uptime
+    name: "ESP Uptime"
+    update_interval: 60s
+
+  - platform: template
+    name: "PPFD (µmol/m²s)"
+    id: ppfd
+    unit_of_measurement: "µmol/m²s"
+    lambda: |-
+      return (id(as7341_f2).state + id(as7341_f3).state + id(as7341_f4).state + id(as7341_f5).state + id(as7341_f6).state + id(as7341_f7).state + id(as7341_f8).state) * 0.5;
+    update_interval: 60s
+
+  - platform: template
+    name: "LUX (AS7341)"
+    id: lux
+    unit_of_measurement: "lx"
+    lambda: |-
+      return (id(as7341_f1).state + id(as7341_f2).state + id(as7341_f3).state + id(as7341_f4).state + id(as7341_f5).state + id(as7341_f6).state + id(as7341_f7).state + id(as7341_f8).state) * 2.0;
+    update_interval: 60s
+
+  - platform: template
+    name: "DLI (mol/m²d)"
+    id: dli
+    unit_of_measurement: "mol/m²d"
+    lambda: |-
+      return id(ppfd).state * 0.0864;
+    update_interval: 60s
+
+logger:
+api:
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "ESP IP Adresse"
+    ssid:
+      name: "ESP WiFi SSID"
+    bssid:
+      name: "ESP WiFi BSSID"
+    mac_address:
+      name: "ESP MAC Adresse"
+
+binary_sensor:
+  - platform: status
+    name: "ESP Status"
+
+status_led:
+  pin: 2
+
+
+
+
+
+output:
+  - platform: ledc
+    pin: 25
+    id: zeltlampe_pwm
+
+light:
+  - platform: monochromatic
+    name: "Zeltlampe"
+    output: zeltlampe_pwm
+    id: zeltlampe
+
+
+
+
+

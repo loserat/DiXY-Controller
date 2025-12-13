@@ -1,0 +1,45 @@
+esphome:
+  name: zeltsensor
+  friendly_name: "Zeltsensor"
+  comment: "Minimalprofil BMP280 + AS7341"
+  project:
+    name: "loserat.dixy_zeltsensor"
+    version: "0.1"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "ZELTSENSOR_Fallback"
+    password: "12345678"
+
+ota:
+  platform: esphome
+  password: !secret zeltsensor_ota_password
+
+i2c:
+  sda: 21
+  scl: 22
+  scan: true
+
+sensor:
+  - platform: bmp280_i2c
+    address: 0x76
+    temperature:
+      name: "BMP280 Temperatur"
+    pressure:
+      name: "BMP280 Luftdruck"
+    update_interval: 60s
+
+  - platform: as7341
+    address: 0x39
+    atime: 100
+    astep: 999
+    gain: X128
+
+logger:

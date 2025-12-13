@@ -34,7 +34,7 @@
         "id": "3a9ad7a92ac9c6f0",
         "type": "tab",
         "label": "03_PH Dosierung",
-        "disabled": false,
+        "disabled": true,
         "info": "",
         "env": []
     },
@@ -896,416 +896,6 @@
         "statusHourCycle": "default",
         "statusTimeFormat": "h:m",
         "enableGlobalContextStore": false
-    },
-    {
-        "id": "f6825236a30a57f1",
-        "type": "ha-entity-config",
-        "server": "3cb6c486a041ece4",
-        "deviceConfig": "",
-        "name": "Test",
-        "version": 6,
-        "entityType": "button",
-        "haConfig": [
-            {
-                "property": "name",
-                "value": ""
-            },
-            {
-                "property": "icon",
-                "value": ""
-            },
-            {
-                "property": "entity_picture",
-                "value": ""
-            },
-            {
-                "property": "entity_category",
-                "value": ""
-            },
-            {
-                "property": "device_class",
-                "value": ""
-            }
-        ],
-        "resend": false,
-        "debugEnabled": false
-    },
-    {
-        "id": "d0dc788a45421840",
-        "type": "ha-entity-config",
-        "server": "3cb6c486a041ece4",
-        "deviceConfig": "71abb8972bc0b7e1",
-        "name": "NumbersInputTest",
-        "version": 6,
-        "entityType": "number",
-        "haConfig": [
-            {
-                "property": "name",
-                "value": "NumbersInputTest"
-            },
-            {
-                "property": "icon",
-                "value": ""
-            },
-            {
-                "property": "entity_picture",
-                "value": ""
-            },
-            {
-                "property": "entity_category",
-                "value": ""
-            },
-            {
-                "property": "device_class",
-                "value": "pressure"
-            },
-            {
-                "property": "unit_of_measurement",
-                "value": "cbar"
-            },
-            {
-                "property": "min_value",
-                "value": 1
-            },
-            {
-                "property": "max_value",
-                "value": 30
-            },
-            {
-                "property": "step_value",
-                "value": 1
-            },
-            {
-                "property": "mode",
-                "value": "slider"
-            }
-        ],
-        "resend": false,
-        "debugEnabled": false
-    },
-    {
-        "id": "71abb8972bc0b7e1",
-        "type": "ha-device-config",
-        "name": "NumbersInput",
-        "hwVersion": "Version1",
-        "manufacturer": "Node-RED",
-        "model": "Testmodell",
-        "swVersion": "Version1"
-    },
-    {
-        "id": "86c2cb26269a0ec5",
-        "type": "ha-entity-config",
-        "server": "3cb6c486a041ece4",
-        "deviceConfig": "",
-        "name": "Beleuchtungsmodus",
-        "version": 6,
-        "entityType": "select",
-        "haConfig": [
-            {
-                "property": "name",
-                "value": "Beleuchtungsmodus"
-            },
-            {
-                "property": "icon",
-                "value": ""
-            },
-            {
-                "property": "entity_picture",
-                "value": ""
-            },
-            {
-                "property": "entity_category",
-                "value": ""
-            },
-            {
-                "property": "options",
-                "value": [
-                    "Automatisch",
-                    "Manuell",
-                    "Aus"
-                ]
-            }
-        ],
-        "resend": false,
-        "debugEnabled": false
-    },
-    {
-        "id": "f7b00b77998433fb",
-        "type": "ha-entity-config",
-        "server": "3cb6c486a041ece4",
-        "deviceConfig": "",
-        "name": "Startzeit Beleuchtung",
-        "version": 6,
-        "entityType": "time",
-        "haConfig": [
-            {
-                "property": "name",
-                "value": "Startzeit Beleuchtung"
-            },
-            {
-                "property": "icon",
-                "value": ""
-            },
-            {
-                "property": "entity_picture",
-                "value": ""
-            }
-        ],
-        "resend": false,
-        "debugEnabled": false
-    },
-    {
-        "id": "4923d92ef2c0f1d8",
-        "type": "ha-entity-config",
-        "server": "3cb6c486a041ece4",
-        "deviceConfig": "",
-        "name": "Endzeit Beleuchtung",
-        "version": 6,
-        "entityType": "time",
-        "haConfig": [
-            {
-                "property": "name",
-                "value": "Endzeit Beleuchtung"
-            },
-            {
-                "property": "icon",
-                "value": ""
-            },
-            {
-                "property": "entity_picture",
-                "value": ""
-            }
-        ],
-        "resend": false,
-        "debugEnabled": false
-    },
-    {
-        "id": "2011a920e4622357",
-        "type": "ha-button",
-        "z": "82d96c185ae68455",
-        "name": "NODE RED Button 1",
-        "version": 0,
-        "debugenabled": false,
-        "outputs": 1,
-        "entityConfig": "f6825236a30a57f1",
-        "outputProperties": [
-            {
-                "property": "payload",
-                "propertyType": "msg",
-                "value": "string",
-                "valueType": "entityState"
-            },
-            {
-                "property": "topic",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "triggerId"
-            },
-            {
-                "property": "data",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "entity"
-            }
-        ],
-        "x": 250,
-        "y": 240,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "04bbe5f568cf9543",
-        "type": "ha-number",
-        "z": "82d96c185ae68455",
-        "name": "Numbers Input",
-        "version": 1,
-        "debugenabled": false,
-        "inputs": 0,
-        "outputs": 1,
-        "entityConfig": "d0dc788a45421840",
-        "exposeAsEntityConfig": "",
-        "mode": "listen",
-        "value": "payload",
-        "valueType": "msg",
-        "outputProperties": [
-            {
-                "property": "payload",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "value"
-            },
-            {
-                "property": "previousValue",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "previousValue"
-            }
-        ],
-        "x": 240,
-        "y": 320,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "9a1c71dd829d41cd",
-        "type": "ha-select",
-        "z": "82d96c185ae68455",
-        "name": "Beleuchtungsmodus",
-        "version": 1,
-        "debugenabled": false,
-        "inputs": 0,
-        "outputs": 1,
-        "entityConfig": "86c2cb26269a0ec5",
-        "exposeAsEntityConfig": "",
-        "mode": "listen",
-        "value": "payload",
-        "valueType": "msg",
-        "outputProperties": [
-            {
-                "property": "payload",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "value"
-            },
-            {
-                "property": "previousValue",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "previousValue"
-            }
-        ],
-        "x": 490,
-        "y": 420,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "0c9c9e2aeecd7c7a",
-        "type": "ha-time-entity",
-        "z": "82d96c185ae68455",
-        "name": "Startzeit Beleuchtung",
-        "version": 0,
-        "debugenabled": false,
-        "inputs": 0,
-        "outputs": 1,
-        "entityConfig": "f7b00b77998433fb",
-        "exposeAsEntityConfig": "",
-        "mode": "listen",
-        "value": "payload",
-        "valueType": "msg",
-        "outputProperties": [
-            {
-                "property": "payload",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "value"
-            },
-            {
-                "property": "previousValue",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "previousValue"
-            }
-        ],
-        "x": 320,
-        "y": 520,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "0663ef80ee6b1548",
-        "type": "ha-time-entity",
-        "z": "82d96c185ae68455",
-        "name": "Endzeit Beleuchtung",
-        "version": 0,
-        "debugenabled": false,
-        "inputs": 0,
-        "outputs": 1,
-        "entityConfig": "4923d92ef2c0f1d8",
-        "exposeAsEntityConfig": "",
-        "mode": "listen",
-        "value": "payload",
-        "valueType": "msg",
-        "outputProperties": [
-            {
-                "property": "payload",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "value"
-            },
-            {
-                "property": "previousValue",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "previousValue"
-            }
-        ],
-        "x": 310,
-        "y": 600,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "d830fad462574192",
-        "type": "poll-state",
-        "z": "82d96c185ae68455",
-        "name": "Temperatur",
-        "server": "3cb6c486a041ece4",
-        "version": 3,
-        "exposeAsEntityConfig": "",
-        "updateInterval": "60",
-        "updateIntervalType": "num",
-        "updateIntervalUnits": "seconds",
-        "outputInitially": false,
-        "outputOnChanged": false,
-        "entityId": "sensor.zeltsensor_zelt_temperatur",
-        "stateType": "str",
-        "ifState": "",
-        "ifStateType": "str",
-        "ifStateOperator": "is",
-        "outputs": 1,
-        "outputProperties": [
-            {
-                "property": "payload",
-                "propertyType": "msg",
-                "value": "string",
-                "valueType": "entityState"
-            },
-            {
-                "property": "data",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "entity"
-            },
-            {
-                "property": "topic",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "triggerId"
-            }
-        ],
-        "x": 310,
-        "y": 140,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "c37dbd18b41ff731",
-        "type": "link in",
-        "z": "82d96c185ae68455",
-        "name": "link in 1",
-        "links": [],
-        "x": 685,
-        "y": 220,
-        "wires": [
-            []
-        ]
     },
     {
         "id": "d15588e869158c21",
@@ -3615,8 +3205,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1190,
-        "y": 480,
+        "x": 1415,
+        "y": 717,
         "wires": [
             [
                 "fd31f07b5c0c34a2",
@@ -3634,15 +3224,15 @@
         "type": "function",
         "z": "8b56c5a208b005fb",
         "name": "Manuellbetrieb",
-        "func": "flow.set(\"licht_modus\", msg.payload);\nnode.status({ fill: msg.payload ? \"green\" : \"grey\", shape: \"dot\", text: msg.payload ? \"Manuell\" : \"Automatik\" });\nreturn null;",
+        "func": "let modus = msg.payload;\nif (typeof modus === \"object\" && modus !== null) {\n    if (typeof modus.value !== \"undefined\") modus = modus.value;\n}\nif (modus === true || modus === \"true\" || modus === 1 || modus === \"1\") {\n    flow.set(\"licht_modus\", true);\n    node.status({ fill: \"green\", shape: \"dot\", text: \"Manuell\" });\n} else if (modus === false || modus === \"false\" || modus === 0 || modus === \"0\") {\n    flow.set(\"licht_modus\", false);\n    node.status({ fill: \"grey\", shape: \"dot\", text: \"Automatik\" });\n}\nreturn null;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 620,
-        "y": 160,
+        "x": 859,
+        "y": 323,
         "wires": [
             [
                 "592cd08fe6dfb0b0",
@@ -3655,15 +3245,15 @@
         "type": "function",
         "z": "8b56c5a208b005fb",
         "name": "Lichthellligkeit_Manuell",
-        "func": "flow.set(\"licht_helligkeit_manuell\", msg.payload);\nreturn null;",
+        "func": "flow.set(\"helligkeit_manuell\", msg.payload);\nreturn null;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 550,
-        "y": 760,
+        "x": 775,
+        "y": 1124,
         "wires": [
             [
                 "592cd08fe6dfb0b0"
@@ -3682,8 +3272,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 580,
-        "y": 880,
+        "x": 805,
+        "y": 1244,
         "wires": [
             [
                 "592cd08fe6dfb0b0"
@@ -3695,15 +3285,15 @@
         "type": "function",
         "z": "8b56c5a208b005fb",
         "name": "SA-Automatik Aktiv",
-        "func": "flow.set(\"licht_sonnenaufgang_aktiv\", msg.payload);\nnode.status({ fill: msg.payload ? \"blue\" : \"grey\", shape: \"dot\", text: \"SA/SU \" + (msg.payload ? \"aktiv\" : \"aus\") });\nreturn null;",
+        "func": "let sa_su = msg.payload;\nif (typeof sa_su === \"object\" && sa_su !== null) {\n    if (typeof sa_su.value !== \"undefined\") sa_su = sa_su.value;\n}\nif (sa_su === true || sa_su === \"true\" || sa_su === 1 || sa_su === \"1\") {\n    flow.set(\"licht_sonnenaufgang_aktiv\", true);\n    node.status({ fill: \"blue\", shape: \"dot\", text: \"SA/SU aktiv\" });\n} else if (sa_su === false || sa_su === \"false\" || sa_su === 0 || sa_su === \"0\") {\n    flow.set(\"licht_sonnenaufgang_aktiv\", false);\n    node.status({ fill: \"grey\", shape: \"dot\", text: \"SA/SU aus\" });\n}\nreturn null;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 630,
-        "y": 260,
+        "x": 613,
+        "y": 456,
         "wires": [
             [
                 "592cd08fe6dfb0b0",
@@ -3723,8 +3313,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 550,
-        "y": 420,
+        "x": 815,
+        "y": 684,
         "wires": [
             [
                 "592cd08fe6dfb0b0"
@@ -3743,8 +3333,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 550,
-        "y": 520,
+        "x": 775,
+        "y": 824,
         "wires": [
             [
                 "592cd08fe6dfb0b0"
@@ -3764,8 +3354,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 610,
-        "y": 220,
+        "x": 907,
+        "y": 437,
         "wires": []
     },
     {
@@ -3773,7 +3363,7 @@
         "type": "debug",
         "z": "8b56c5a208b005fb",
         "name": "SA-Automatik Aktiv",
-        "active": false,
+        "active": true,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -3781,8 +3371,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 630,
-        "y": 320,
+        "x": 641,
+        "y": 549,
         "wires": []
     },
     {
@@ -3798,8 +3388,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 650,
-        "y": 120,
+        "x": 869,
+        "y": 268,
         "wires": []
     },
     {
@@ -3814,8 +3404,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 560,
-        "y": 640,
+        "x": 785,
+        "y": 1004,
         "wires": [
             [
                 "592cd08fe6dfb0b0"
@@ -3835,8 +3425,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1190,
-        "y": 540,
+        "x": 1441,
+        "y": 793,
         "wires": []
     },
     {
@@ -3853,8 +3443,8 @@
         "correl": "",
         "expiry": "",
         "broker": "924c3f197169acb5",
-        "x": 590,
-        "y": 920,
+        "x": 815,
+        "y": 1284,
         "wires": []
     },
     {
@@ -3871,8 +3461,8 @@
         "correl": "",
         "expiry": "",
         "broker": "924c3f197169acb5",
-        "x": 560,
-        "y": 800,
+        "x": 785,
+        "y": 1164,
         "wires": []
     },
     {
@@ -3889,8 +3479,8 @@
         "correl": "",
         "expiry": "",
         "broker": "924c3f197169acb5",
-        "x": 560,
-        "y": 460,
+        "x": 822,
+        "y": 741,
         "wires": []
     },
     {
@@ -3907,8 +3497,8 @@
         "correl": "",
         "expiry": "",
         "broker": "924c3f197169acb5",
-        "x": 570,
-        "y": 560,
+        "x": 794,
+        "y": 874,
         "wires": []
     },
     {
@@ -3925,8 +3515,8 @@
         "correl": "",
         "expiry": "",
         "broker": "924c3f197169acb5",
-        "x": 600,
-        "y": 680,
+        "x": 825,
+        "y": 1044,
         "wires": []
     },
     {
@@ -3943,8 +3533,8 @@
         "correl": "",
         "expiry": "",
         "broker": "924c3f197169acb5",
-        "x": 630,
-        "y": 360,
+        "x": 641,
+        "y": 589,
         "wires": []
     },
     {
@@ -3960,8 +3550,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 970,
-        "y": 80,
+        "x": 1464,
+        "y": 144,
         "wires": [
             [
                 "8798f028a52901e2"
@@ -3981,8 +3571,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 1220,
-        "y": 220,
+        "x": 1478,
+        "y": 266,
         "wires": [
             [
                 "c66dc7716b2ae5fa"
@@ -4001,8 +3591,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1530,
-        "y": 220,
+        "x": 1788,
+        "y": 266,
         "wires": [
             [
                 "172d21fdc8709932"
@@ -4021,8 +3611,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1540,
-        "y": 160,
+        "x": 1798,
+        "y": 206,
         "wires": [
             [
                 "29a33eb1ec36d33e"
@@ -4042,8 +3632,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 1210,
-        "y": 160,
+        "x": 1468,
+        "y": 206,
         "wires": [
             [
                 "63c7f59f2e8d8202"
@@ -4075,8 +3665,8 @@
         "iconPosition": "left",
         "iconInnerPosition": "inside",
         "spinner": "default",
-        "x": 280,
-        "y": 640,
+        "x": 505,
+        "y": 1004,
         "wires": [
             [
                 "0f956de3c8e56da5",
@@ -4089,7 +3679,7 @@
         "type": "ui-number-input",
         "z": "8b56c5a208b005fb",
         "group": "c2ce95d126219142",
-        "name": "licht_helligkeit_manuell",
+        "name": "helligkeit_manuell",
         "label": "Beleuchtungsstärke Manuell",
         "order": 11,
         "width": 0,
@@ -4109,8 +3699,8 @@
         "iconPosition": "left",
         "iconInnerPosition": "inside",
         "spinner": "default",
-        "x": 290,
-        "y": 760,
+        "x": 495,
+        "y": 1124,
         "wires": [
             [
                 "1b369cec6c3305f4",
@@ -4143,8 +3733,8 @@
         "iconPosition": "left",
         "iconInnerPosition": "inside",
         "spinner": "default",
-        "x": 270,
-        "y": 880,
+        "x": 495,
+        "y": 1244,
         "wires": [
             [
                 "344ee7b6c05587af",
@@ -4177,8 +3767,8 @@
         "icon": "",
         "iconPosition": "left",
         "iconInnerPosition": "inside",
-        "x": 240,
-        "y": 420,
+        "x": 505,
+        "y": 724,
         "wires": [
             [
                 "0ea19c9462dab206",
@@ -4211,8 +3801,8 @@
         "icon": "",
         "iconPosition": "left",
         "iconInnerPosition": "inside",
-        "x": 250,
-        "y": 520,
+        "x": 515,
+        "y": 864,
         "wires": [
             [
                 "f4891d26f73f441e",
@@ -4230,7 +3820,7 @@
         "order": 10,
         "width": 0,
         "height": 0,
-        "passthru": false,
+        "passthru": true,
         "decouple": false,
         "topic": "licht_modus",
         "topicType": "str",
@@ -4246,8 +3836,8 @@
         "offvalueType": "bool",
         "officon": "",
         "offcolor": "",
-        "x": 240,
-        "y": 160,
+        "x": 573,
+        "y": 342,
         "wires": [
             [
                 "bf264928d8ca0faf"
@@ -4280,12 +3870,12 @@
         "offvalueType": "bool",
         "officon": "",
         "offcolor": "",
-        "x": 250,
-        "y": 280,
+        "x": 298,
+        "y": 513,
         "wires": [
             [
-                "19aeb44827180842",
-                "9ddfbf20da4466d0"
+                "9ddfbf20da4466d0",
+                "19aeb44827180842"
             ]
         ]
     },
@@ -4315,8 +3905,8 @@
         "offvalueType": "bool",
         "officon": "",
         "offcolor": "",
-        "x": 640,
-        "y": 60,
+        "x": 839,
+        "y": 208,
         "wires": [
             [
                 "592cd08fe6dfb0b0",
@@ -4341,8 +3931,8 @@
         "color": "#000000",
         "wrapText": false,
         "className": "",
-        "x": 1540,
-        "y": 400,
+        "x": 1765,
+        "y": 644,
         "wires": []
     },
     {
@@ -4362,8 +3952,8 @@
         "color": "#000000",
         "wrapText": false,
         "className": "",
-        "x": 1730,
-        "y": 220,
+        "x": 1988,
+        "y": 266,
         "wires": []
     },
     {
@@ -4384,8 +3974,8 @@
         "color": "#717171",
         "wrapText": false,
         "className": "",
-        "x": 1730,
-        "y": 160,
+        "x": 1988,
+        "y": 206,
         "wires": []
     },
     {
@@ -4444,8 +4034,8 @@
         "height": "6",
         "className": "",
         "interpolation": "linear",
-        "x": 1590,
-        "y": 520,
+        "x": 1815,
+        "y": 764,
         "wires": [
             []
         ]
@@ -4506,42 +4096,298 @@
         "height": "6",
         "className": "",
         "interpolation": "linear",
-        "x": 1190,
-        "y": 100,
+        "x": 1969,
+        "y": 145,
         "wires": [
             []
         ]
     },
     {
-        "id": "5f93b5852e3f617a",
-        "type": "ha-select",
+        "id": "dcdce045294223e8",
+        "type": "server-state-changed",
         "z": "8b56c5a208b005fb",
-        "name": "Beleuchtungsmodus",
-        "version": 1,
-        "debugenabled": false,
-        "inputs": 0,
+        "name": "Manuell Aktivieren",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
         "outputs": 1,
-        "entityConfig": "86c2cb26269a0ec5",
         "exposeAsEntityConfig": "",
-        "mode": "listen",
-        "value": "payload",
-        "valueType": "msg",
+        "entities": {
+            "entity": [
+                "input_boolean.manuell"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
         "outputProperties": [
             {
                 "property": "payload",
                 "propertyType": "msg",
-                "value": "",
-                "valueType": "value"
+                "value": "boolean",
+                "valueType": "entityState"
             },
             {
-                "property": "previousValue",
+                "property": "data",
                 "propertyType": "msg",
                 "value": "",
-                "valueType": "previousValue"
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
             }
         ],
-        "x": 130,
-        "y": 220,
+        "x": 369,
+        "y": 248,
+        "wires": [
+            [
+                "bf264928d8ca0faf"
+            ]
+        ]
+    },
+    {
+        "id": "a428ce2609296c75",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "SA / SU Aktivieren",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_boolean.sa_su_automatik"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "boolean",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 223,
+        "y": 399,
+        "wires": [
+            [
+                "19aeb44827180842"
+            ]
+        ]
+    },
+    {
+        "id": "11aaefdeac314789",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "Einschaltzeit Zeitschaluhr",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_datetime.einschaltzeit"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "number",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 281,
+        "y": 665,
+        "wires": [
+            [
+                "0ea19c9462dab206",
+                "8c0ab62a08cd873d"
+            ]
+        ]
+    },
+    {
+        "id": "0be89c8e2e832857",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "Ausschaltzeit Zeitschaltuhr",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_datetime.ausschaltzeit"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 270,
+        "y": 798,
+        "wires": [
+            [
+                "f4891d26f73f441e",
+                "050fce4b2e5e2e96"
+            ]
+        ]
+    },
+    {
+        "id": "eb74550a2e56ed31",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "HA Zeitschaltuhr Aktivieren",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_boolean.zeitschaltuhr"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "boolean",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 779,
+        "y": 133,
         "wires": [
             []
         ]
@@ -5791,62 +5637,6 @@
         ]
     },
     {
-        "id": "5235d1fd97baa81c",
-        "type": "rpi-gpio in",
-        "z": "7b6e510609ee9a6d",
-        "name": "Temp-1",
-        "pin": "16",
-        "intype": "up",
-        "debounce": "25",
-        "read": false,
-        "bcm": true,
-        "x": 230,
-        "y": 260,
-        "wires": [
-            [
-                "a2ed65458ce67d9e"
-            ]
-        ]
-    },
-    {
-        "id": "0e1b2953d5c3dcca",
-        "type": "rpi-gpio in",
-        "z": "7b6e510609ee9a6d",
-        "name": "Temp-2",
-        "pin": "20",
-        "intype": "up",
-        "debounce": "25",
-        "read": false,
-        "bcm": true,
-        "x": 210,
-        "y": 560,
-        "wires": [
-            [
-                "2c7b88812b2627e1",
-                "8386cf8ac28a3cdb"
-            ]
-        ]
-    },
-    {
-        "id": "8503bac38e9d129b",
-        "type": "rpi-gpio in",
-        "z": "7b6e510609ee9a6d",
-        "name": "Temp-3",
-        "pin": "21",
-        "intype": "up",
-        "debounce": "25",
-        "read": false,
-        "bcm": true,
-        "x": 210,
-        "y": 680,
-        "wires": [
-            [
-                "f58e142ff7c937c5",
-                "e0729a920616515c"
-            ]
-        ]
-    },
-    {
         "id": "6001f97b18c74078",
         "type": "mqtt in",
         "z": "3a9ad7a92ac9c6f0",
@@ -5859,13 +5649,14 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 130,
-        "y": 120,
+        "x": 330,
+        "y": 320,
         "wires": [
             [
                 "4df702a6293f043f",
                 "61338484336a7d7a",
-                "d507c867ee511c16"
+                "d507c867ee511c16",
+                "0c490d6984325f8d"
             ]
         ]
     },
@@ -5881,8 +5672,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 450,
-        "y": 260,
+        "x": 650,
+        "y": 460,
         "wires": [
             [
                 "2a48544c7fecab78"
@@ -5901,8 +5692,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 440,
-        "y": 500,
+        "x": 640,
+        "y": 700,
         "wires": [
             [
                 "2a48544c7fecab78"
@@ -5921,8 +5712,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 740,
-        "y": 380,
+        "x": 940,
+        "y": 580,
         "wires": [
             [
                 "1ca2668acab12d24"
@@ -5945,8 +5736,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 750,
-        "y": 460,
+        "x": 1090,
+        "y": 740,
         "wires": []
     },
     {
@@ -5961,8 +5752,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1170,
-        "y": 460,
+        "x": 1370,
+        "y": 660,
         "wires": [
             [
                 "84db8729a8d30b4c"
@@ -5981,48 +5772,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 470,
-        "y": 440,
-        "wires": [
-            [
-                "2a48544c7fecab78"
-            ]
-        ]
-    },
-    {
-        "id": "5c7bc4cb28d334f8",
-        "type": "function",
-        "z": "3a9ad7a92ac9c6f0",
-        "name": "PH Wirkung Up",
-        "func": "",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 460,
-        "y": 660,
-        "wires": [
-            [
-                "2a48544c7fecab78"
-            ]
-        ]
-    },
-    {
-        "id": "9042b3b243efb655",
-        "type": "function",
-        "z": "3a9ad7a92ac9c6f0",
-        "name": "PH Wirkung Down",
-        "func": "",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 450,
-        "y": 720,
+        "x": 670,
+        "y": 640,
         "wires": [
             [
                 "2a48544c7fecab78"
@@ -6041,8 +5792,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1350,
-        "y": 560,
+        "x": 1550,
+        "y": 760,
         "wires": [
             []
         ]
@@ -6061,8 +5812,8 @@
         "correl": "",
         "expiry": "",
         "broker": "924c3f197169acb5",
-        "x": 440,
-        "y": 560,
+        "x": 660,
+        "y": 760,
         "wires": []
     },
     {
@@ -6079,8 +5830,8 @@
         "correl": "",
         "expiry": "",
         "broker": "924c3f197169acb5",
-        "x": 900,
-        "y": 120,
+        "x": 1140,
+        "y": 260,
         "wires": []
     },
     {
@@ -6108,8 +5859,8 @@
         "iconPosition": "left",
         "iconInnerPosition": "inside",
         "spinner": "default",
-        "x": 200,
-        "y": 500,
+        "x": 340,
+        "y": 700,
         "wires": [
             [
                 "f23d8c2276615c7c",
@@ -6143,8 +5894,8 @@
         "iconPosition": "left",
         "iconInnerPosition": "inside",
         "spinner": "default",
-        "x": 250,
-        "y": 440,
+        "x": 330,
+        "y": 640,
         "wires": [
             [
                 "c275fb4ccd12205e"
@@ -6176,8 +5927,8 @@
         "iconPosition": "left",
         "iconInnerPosition": "inside",
         "spinner": "default",
-        "x": 720,
-        "y": 60,
+        "x": 920,
+        "y": 260,
         "wires": [
             [
                 "dbcab0cdd4213c37"
@@ -6202,8 +5953,8 @@
         "color": "#717171",
         "wrapText": false,
         "className": "",
-        "x": 1460,
-        "y": 460,
+        "x": 1660,
+        "y": 660,
         "wires": []
     },
     {
@@ -6262,8 +6013,8 @@
         "height": 8,
         "className": "",
         "interpolation": "linear",
-        "x": 510,
-        "y": 40,
+        "x": 710,
+        "y": 240,
         "wires": [
             []
         ]
@@ -6333,10 +6084,211 @@
         "styleRounded": true,
         "styleGlow": false,
         "className": "",
-        "x": 500,
-        "y": 100,
+        "x": 700,
+        "y": 300,
         "wires": [
             []
+        ]
+    },
+    {
+        "id": "708ebc8c1a274718",
+        "type": "server-state-changed",
+        "z": "3a9ad7a92ac9c6f0",
+        "name": "",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "sensor.hydroknoten_ph_wert"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 230,
+        "y": 240,
+        "wires": [
+            [
+                "4df702a6293f043f"
+            ]
+        ]
+    },
+    {
+        "id": "0c490d6984325f8d",
+        "type": "debug",
+        "z": "3a9ad7a92ac9c6f0",
+        "name": "debug 3",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 530,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "ac5ecc569ef212c7",
+        "type": "inject",
+        "z": "3a9ad7a92ac9c6f0",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "10",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 290,
+        "y": 440,
+        "wires": [
+            [
+                "2a48544c7fecab78"
+            ]
+        ]
+    },
+    {
+        "id": "f1856712fd3e3f9d",
+        "type": "function",
+        "z": "3a9ad7a92ac9c6f0",
+        "name": "ph_up_pro_ml",
+        "func": "\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 880,
+        "wires": [
+            [
+                "2a48544c7fecab78"
+            ]
+        ]
+    },
+    {
+        "id": "f6fc3dd964411b6c",
+        "type": "function",
+        "z": "3a9ad7a92ac9c6f0",
+        "name": "ph_down_pro_ml",
+        "func": "\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 960,
+        "wires": [
+            [
+                "2a48544c7fecab78"
+            ]
+        ]
+    },
+    {
+        "id": "eda417e4a9a45415",
+        "type": "server-state-changed",
+        "z": "3a9ad7a92ac9c6f0",
+        "name": "",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_number.ph_soll"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "num",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "number",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 250,
+        "y": 760,
+        "wires": [
+            [
+                "f23d8c2276615c7c"
+            ]
         ]
     },
     {
@@ -12017,8 +11969,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 660,
-        "y": 260,
+        "x": 1080,
+        "y": 240,
         "wires": []
     },
     {
@@ -13304,7 +13256,7 @@
         ]
     },
     {
-        "id": "477de59a6ff15a2e",
+        "id": "7d5cac6b9e2d05e7",
         "type": "global-config",
         "env": [],
         "modules": {

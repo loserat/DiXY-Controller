@@ -874,6 +874,13 @@ Siehe: `docs/GITHUB_UPLOAD_GUIDE.md` für detaillierte Anleitung
 
 ---
 
-**Last Updated**: 06.12.2025  
-**Current Version**: v0.1-beta  
-**Maintainer**: DiXY RDWC Project
+### v0.2 (Release Date: 2025-12-09)
+**Changes from v0.1:**
+- ✅ Zentrale secrets.yaml für alle ESP32-Knoten eingeführt
+- ✅ YAML-Refaktor: alle Knoten nur noch mit realer Hardware konfiguriert
+- ✅ Minimalistischer Simulationsknoten (hydroknoten_sim_v2.yaml) mit Dummy-pH, EC, Temperatur
+- ✅ OTA-Konfiguration vereinheitlicht und Fehlerbehebung (platform: esphome)
+- ✅ Base64-API-Key-Validierung und Hilfestellung
+- ✅ Alle Template/Dummy-Sensoren für Simulation getestet
+- 🐛 Diverse YAML-Syntax- und Pointer-Fehler behoben
+- 📝 Dokumentation und Quickstart aktualisiert

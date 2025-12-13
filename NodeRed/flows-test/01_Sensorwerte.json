@@ -1,0 +1,1989 @@
+[
+    {
+        "id": "7b6e510609ee9a6d",
+        "type": "tab",
+        "label": "02_Sensorwerte",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "23f84055dc32f788",
+        "type": "mqtt in",
+        "z": "7b6e510609ee9a6d",
+        "d": true,
+        "name": "",
+        "topic": "grow/temp1",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "924c3f197169acb5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 177,
+        "y": 760,
+        "wires": [
+            [
+                "512fb60f0c44f582",
+                "d97526443224e3ba",
+                "c3380ad3dd9c9a4a",
+                "a2ed65458ce67d9e"
+            ]
+        ]
+    },
+    {
+        "id": "9fba2cf6e4f57f5c",
+        "type": "mqtt in",
+        "z": "7b6e510609ee9a6d",
+        "d": true,
+        "name": "",
+        "topic": "dixy/zelt/rlf_ist",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "924c3f197169acb5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 189,
+        "y": 456,
+        "wires": [
+            [
+                "ff959d750d9a081b",
+                "5cb0d5401112f2be",
+                "43f679e746695603",
+                "c7aed3a91f9e2803"
+            ]
+        ]
+    },
+    {
+        "id": "e6cc4b5c3559201b",
+        "type": "mqtt in",
+        "z": "7b6e510609ee9a6d",
+        "d": true,
+        "name": "",
+        "topic": "dixy/zelt/co_ist",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "924c3f197169acb5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 251,
+        "y": 1197,
+        "wires": [
+            [
+                "86e2aedd649dd35a",
+                "7ffe2fa3f0f148ab"
+            ]
+        ]
+    },
+    {
+        "id": "a72085de91e70716",
+        "type": "mqtt in",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/ist/temp/ds18b20_1/",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "924c3f197169acb5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 346,
+        "y": 1691,
+        "wires": [
+            [
+                "f58e142ff7c937c5",
+                "e0729a920616515c"
+            ]
+        ]
+    },
+    {
+        "id": "a23901c83f2fc12d",
+        "type": "function",
+        "z": "7b6e510609ee9a6d",
+        "name": "VPD Berechnung",
+        "func": "let T = msg.payload.temp1;\nlet RH = msg.payload.rh;\n\nif (T == null || RH == null) {\n    return null;  // abbrechen, wenn ein Wert fehlt\n}\n\nlet svp = 0.6108 * Math.exp((17.27 * T) / (T + 237.3));\nlet avp = svp * (RH / 100);\nlet vpd = svp - avp;\n\n// Für Gauge oder Chart: Nur den VPD-Wert zurückgeben\nlet vpd_only = parseFloat(vpd.toFixed(2));\n\nlet msg_gauge = { payload: vpd_only };        // für Chart oder Gauge\nlet msg_full = {\n    payload: {\n        temperature: T,\n        humidity: RH,\n        vpd: vpd_only\n    }\n};  // für Debug oder OLED\n\nreturn [msg_gauge, msg_full];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1230,
+        "y": 513,
+        "wires": [
+            [
+                "c45f1feaba0e7739",
+                "6dc88a96b73b6996"
+            ],
+            [
+                "38d055a9277c6687"
+            ]
+        ]
+    },
+    {
+        "id": "43f679e746695603",
+        "type": "debug",
+        "z": "7b6e510609ee9a6d",
+        "name": "RLF",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 723,
+        "y": 266,
+        "wires": []
+    },
+    {
+        "id": "38d055a9277c6687",
+        "type": "debug",
+        "z": "7b6e510609ee9a6d",
+        "name": "VPD Wert",
+        "active": false,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1628,
+        "y": 551,
+        "wires": []
+    },
+    {
+        "id": "c3380ad3dd9c9a4a",
+        "type": "debug",
+        "z": "7b6e510609ee9a6d",
+        "name": "Zelttemperatur",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 737,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "c7aed3a91f9e2803",
+        "type": "function",
+        "z": "7b6e510609ee9a6d",
+        "name": "RLF",
+        "func": "flow.set(\"rh\", msg.payload);     // Wert speichern\nlet temp1 = flow.get(\"temp1\");   // Temp abrufen\n\nif (temp1 !== undefined) {\n    return { payload: { temp1: temp1, rh: msg.payload } };\n}\nreturn null;  // Temperatur noch nicht da",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 719,
+        "y": 442,
+        "wires": [
+            [
+                "a23901c83f2fc12d"
+            ]
+        ]
+    },
+    {
+        "id": "a2ed65458ce67d9e",
+        "type": "function",
+        "z": "7b6e510609ee9a6d",
+        "name": "Zelttemperatur",
+        "func": "flow.set(\"temp1\", msg.payload);  // Wert speichern\nlet rh = flow.get(\"rh\");         // RLF abrufen\n\nif (rh !== undefined) {\n    return { payload: { temp1: msg.payload, rh: rh } };\n}\nreturn null;  // RLF noch nicht da",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 737,
+        "y": 589,
+        "wires": [
+            [
+                "a23901c83f2fc12d"
+            ]
+        ]
+    },
+    {
+        "id": "64106123cc8cd60b",
+        "type": "mqtt in",
+        "z": "7b6e510609ee9a6d",
+        "d": true,
+        "name": "",
+        "topic": "dixy/hydo/ph_ist",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "924c3f197169acb5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 156,
+        "y": 950,
+        "wires": [
+            [
+                "0791b9fbc5e40923",
+                "3627e30eee9d44de"
+            ]
+        ]
+    },
+    {
+        "id": "7ffe2fa3f0f148ab",
+        "type": "ui-chart",
+        "z": "7b6e510609ee9a6d",
+        "group": "1606461d011cba0f",
+        "name": "CO2 Sensor",
+        "label": "CO2 Sensor",
+        "order": 1,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "ppm",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "",
+        "ymax": "2000",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "20",
+        "colors": [
+            "#0095ff",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 6,
+        "height": 8,
+        "className": "",
+        "interpolation": "linear",
+        "x": 695,
+        "y": 1102,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3627e30eee9d44de",
+        "type": "ui-chart",
+        "z": "7b6e510609ee9a6d",
+        "group": "1606461d011cba0f",
+        "name": "PH-Wert",
+        "label": "PH-Wert",
+        "order": 7,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "linear",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "",
+        "ymax": "3",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "",
+        "colors": [
+            "#0095ff",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 6,
+        "height": 8,
+        "className": "",
+        "interpolation": "linear",
+        "x": 516,
+        "y": 874,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e0729a920616515c",
+        "type": "ui-chart",
+        "z": "7b6e510609ee9a6d",
+        "group": "1606461d011cba0f",
+        "name": "Wassertemperatur System",
+        "label": "Wassertemperatur System",
+        "order": 6,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "Grad Celsius",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "",
+        "ymax": "30",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "20",
+        "colors": [
+            "#0095ff",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 6,
+        "height": 8,
+        "className": "",
+        "interpolation": "linear",
+        "x": 698,
+        "y": 1696,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5cb0d5401112f2be",
+        "type": "ui-chart",
+        "z": "7b6e510609ee9a6d",
+        "group": "1606461d011cba0f",
+        "name": "Luftfeuchtigkeit im Zelt",
+        "label": "Luftfeuchtigkeit im Zelt",
+        "order": 4,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "rlf",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "",
+        "ymax": "100",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "20",
+        "colors": [
+            "#0095ff",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 6,
+        "height": 8,
+        "className": "",
+        "interpolation": "linear",
+        "x": 783,
+        "y": 380,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d97526443224e3ba",
+        "type": "ui-chart",
+        "z": "7b6e510609ee9a6d",
+        "group": "1606461d011cba0f",
+        "name": "Lufttemperatur im Zelt",
+        "label": "Lufttemperatur im Zelt",
+        "order": 5,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "Grad Celsius",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "",
+        "ymax": "50",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "20",
+        "colors": [
+            "#0095ff",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 6,
+        "height": 8,
+        "className": "",
+        "interpolation": "linear",
+        "x": 755,
+        "y": 703,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "6dc88a96b73b6996",
+        "type": "ui-chart",
+        "z": "7b6e510609ee9a6d",
+        "group": "1606461d011cba0f",
+        "name": "VPD Verlauf",
+        "label": "VPD Verlauf",
+        "order": 8,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "VPD Verlauf",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "HH:mm",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "",
+        "ymax": "",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": "3",
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "100",
+        "colors": [
+            "#0095ff",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 6,
+        "height": 8,
+        "className": "",
+        "interpolation": "linear",
+        "x": 1628,
+        "y": 437,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "512fb60f0c44f582",
+        "type": "ui-gauge",
+        "z": "7b6e510609ee9a6d",
+        "name": "Zelttemperatur",
+        "group": "51c342eaa6033c48",
+        "order": 1,
+        "width": 3,
+        "height": 3,
+        "gtype": "gauge-34",
+        "gstyle": "needle",
+        "title": "Zelttemperatur",
+        "units": "Grad Celsius",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#ff2600"
+            },
+            {
+                "from": "10",
+                "color": "#ff9300"
+            },
+            {
+                "from": "18",
+                "color": "#00f900"
+            },
+            {
+                "from": "24",
+                "color": "#ff9300"
+            },
+            {
+                "from": "28",
+                "color": "#ff2600"
+            }
+        ],
+        "min": 0,
+        "max": "60",
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 737,
+        "y": 646,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2c7b88812b2627e1",
+        "type": "ui-gauge",
+        "z": "7b6e510609ee9a6d",
+        "name": "Wassertemperatur",
+        "group": "51c342eaa6033c48",
+        "order": 5,
+        "width": 3,
+        "height": 3,
+        "gtype": "gauge-34",
+        "gstyle": "needle",
+        "title": "Wassertemperatur",
+        "units": "Grad Celsius",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#ff2600"
+            },
+            {
+                "from": "14",
+                "color": "#ff9300"
+            },
+            {
+                "from": "20",
+                "color": "#5cd65c"
+            },
+            {
+                "from": "21",
+                "color": "#ff9300"
+            },
+            {
+                "from": "22",
+                "color": "#ff2600"
+            }
+        ],
+        "min": 0,
+        "max": "30",
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 717,
+        "y": 1292,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ff959d750d9a081b",
+        "type": "ui-gauge",
+        "z": "7b6e510609ee9a6d",
+        "name": "RLF",
+        "group": "51c342eaa6033c48",
+        "order": 2,
+        "width": 3,
+        "height": 3,
+        "gtype": "gauge-34",
+        "gstyle": "needle",
+        "title": "RLF",
+        "units": "RLF",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#ea5353"
+            },
+            {
+                "from": "30",
+                "color": "#ff9300"
+            },
+            {
+                "from": "40",
+                "color": "#5cd65c"
+            },
+            {
+                "from": "60",
+                "color": "#ff9300"
+            },
+            {
+                "from": "80",
+                "color": "#ff2600"
+            }
+        ],
+        "min": 0,
+        "max": "100",
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 723,
+        "y": 323,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "86e2aedd649dd35a",
+        "type": "ui-gauge",
+        "z": "7b6e510609ee9a6d",
+        "name": "CO2",
+        "group": "51c342eaa6033c48",
+        "order": 8,
+        "width": 3,
+        "height": 3,
+        "gtype": "gauge-half",
+        "gstyle": "needle",
+        "title": "CO2",
+        "units": "ppm",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "200",
+                "color": "#ea5353"
+            },
+            {
+                "from": "400",
+                "color": "#ffc800"
+            },
+            {
+                "from": "600",
+                "color": "#fffb00"
+            },
+            {
+                "from": "1200",
+                "color": "#00f900"
+            },
+            {
+                "from": "1800",
+                "color": "#ff2600"
+            }
+        ],
+        "min": "200",
+        "max": "2000",
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 670,
+        "y": 1045,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0791b9fbc5e40923",
+        "type": "ui-gauge",
+        "z": "7b6e510609ee9a6d",
+        "name": "PH Wert",
+        "group": "51c342eaa6033c48",
+        "order": 7,
+        "width": 3,
+        "height": 3,
+        "gtype": "gauge-34",
+        "gstyle": "needle",
+        "title": "PH Wert",
+        "units": "PH",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "1",
+                "color": "#ff2600"
+            },
+            {
+                "from": "4",
+                "color": "#ff9300"
+            },
+            {
+                "from": "5",
+                "color": "#fffb00"
+            },
+            {
+                "from": "6",
+                "color": "#00f900"
+            },
+            {
+                "from": "7",
+                "color": "#ff9300"
+            },
+            {
+                "from": "8",
+                "color": "#ff2600"
+            }
+        ],
+        "min": "0",
+        "max": "10",
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 516,
+        "y": 817,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f58e142ff7c937c5",
+        "type": "ui-gauge",
+        "z": "7b6e510609ee9a6d",
+        "name": "Wassertemperatur 2",
+        "group": "51c342eaa6033c48",
+        "order": 6,
+        "width": 3,
+        "height": 3,
+        "gtype": "gauge-34",
+        "gstyle": "needle",
+        "title": "Wassertemperatur 2",
+        "units": "Grad Celsius",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#ff2600"
+            },
+            {
+                "from": "14",
+                "color": "#ff9300"
+            },
+            {
+                "from": "20",
+                "color": "#5cd65c"
+            },
+            {
+                "from": "21",
+                "color": "#ff9300"
+            },
+            {
+                "from": "22",
+                "color": "#ff2600"
+            }
+        ],
+        "min": 0,
+        "max": "30",
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 679,
+        "y": 1634,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c45f1feaba0e7739",
+        "type": "ui-gauge",
+        "z": "7b6e510609ee9a6d",
+        "name": "VPD",
+        "group": "51c342eaa6033c48",
+        "order": 4,
+        "width": 3,
+        "height": 3,
+        "gtype": "gauge-34",
+        "gstyle": "needle",
+        "title": "VPD",
+        "units": "VPD",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#ea5353"
+            },
+            {
+                "from": "1",
+                "color": "#77bb41"
+            },
+            {
+                "from": "3",
+                "color": "#ff2600"
+            }
+        ],
+        "min": 0,
+        "max": "3",
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 1608,
+        "y": 492,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c71098362c2c0e5f",
+        "type": "mqtt in",
+        "z": "7b6e510609ee9a6d",
+        "d": true,
+        "name": "",
+        "topic": "grow/ec",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "924c3f197169acb5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 1150,
+        "y": 1007,
+        "wires": [
+            [
+                "fb19bb5a6bf18482",
+                "11b3a723439983ca",
+                "85a0af7ad82ff5fb"
+            ]
+        ]
+    },
+    {
+        "id": "11b3a723439983ca",
+        "type": "ui-chart",
+        "z": "7b6e510609ee9a6d",
+        "group": "1606461d011cba0f",
+        "name": "EC Wert",
+        "label": "EC Wert",
+        "order": 3,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "ppm",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "",
+        "ymax": "3.5",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "40",
+        "colors": [
+            "#0095ff",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 6,
+        "height": 8,
+        "className": "",
+        "interpolation": "linear",
+        "x": 1403,
+        "y": 950,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "85a0af7ad82ff5fb",
+        "type": "ui-chart",
+        "z": "7b6e510609ee9a6d",
+        "group": "7fab1009c248e13c",
+        "name": "EC Wert",
+        "label": "EC Wert",
+        "order": 1,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "ppm",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "",
+        "ymax": "4",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "40",
+        "colors": [
+            "#0095ff",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 6,
+        "height": 8,
+        "className": "",
+        "interpolation": "linear",
+        "x": 1403,
+        "y": 1007,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fb19bb5a6bf18482",
+        "type": "ui-gauge",
+        "z": "7b6e510609ee9a6d",
+        "name": "EC Wert",
+        "group": "51c342eaa6033c48",
+        "order": 3,
+        "width": 3,
+        "height": 3,
+        "gtype": "gauge-34",
+        "gstyle": "needle",
+        "title": "EC Wert",
+        "units": "EC",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#ff2600"
+            },
+            {
+                "from": "0.3",
+                "color": "#ff9300"
+            },
+            {
+                "from": "0.6",
+                "color": "#00f900"
+            },
+            {
+                "from": "12",
+                "color": "#ff9300"
+            },
+            {
+                "from": "1.6",
+                "color": "#ff2600"
+            }
+        ],
+        "min": "0",
+        "max": "2",
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 1403,
+        "y": 893,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "60dd9088bc441d99",
+        "type": "server-state-changed",
+        "z": "7b6e510609ee9a6d",
+        "name": "Luftfeuchtigkeit Zelt Innen",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "sensor.simulation_sim_rlf"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "boolean",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 194,
+        "y": 266,
+        "wires": [
+            [
+                "c7aed3a91f9e2803",
+                "43f679e746695603",
+                "ff959d750d9a081b",
+                "5cb0d5401112f2be",
+                "42d49c15ae17b39c"
+            ]
+        ]
+    },
+    {
+        "id": "7c9a46c6c0272cf1",
+        "type": "server-state-changed",
+        "z": "7b6e510609ee9a6d",
+        "name": "PH IST",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "sensor.simulation_sim_ph"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "number",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 121,
+        "y": 817,
+        "wires": [
+            [
+                "0791b9fbc5e40923",
+                "3627e30eee9d44de",
+                "982ef2aa93f1169f"
+            ]
+        ]
+    },
+    {
+        "id": "e5c6fe19cf7f57b6",
+        "type": "server-state-changed",
+        "z": "7b6e510609ee9a6d",
+        "name": "Temperatur Zelt Innen",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "sensor.simulation_sim_temperatur"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "number",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 185,
+        "y": 589,
+        "wires": [
+            [
+                "a2ed65458ce67d9e",
+                "fb4fc3c101241640",
+                "512fb60f0c44f582",
+                "d97526443224e3ba",
+                "c3380ad3dd9c9a4a"
+            ]
+        ]
+    },
+    {
+        "id": "fb4fc3c101241640",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/zelt/lufttemp_ist",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 271,
+        "y": 684,
+        "wires": []
+    },
+    {
+        "id": "42d49c15ae17b39c",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/zelt/rlf_ist",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 243,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "dcda9601f4202d2a",
+        "type": "server-state-changed",
+        "z": "7b6e510609ee9a6d",
+        "name": "EC IST",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "sensor.simulation_sim_ec"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 875,
+        "y": 893,
+        "wires": [
+            [
+                "fb19bb5a6bf18482",
+                "d3df597ca1911a25"
+            ]
+        ]
+    },
+    {
+        "id": "d3df597ca1911a25",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/hydro/ec_ist",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 1139,
+        "y": 950,
+        "wires": []
+    },
+    {
+        "id": "982ef2aa93f1169f",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/hydro/ph_ist",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 195,
+        "y": 893,
+        "wires": []
+    },
+    {
+        "id": "2004a2ededeecbb0",
+        "type": "server-state-changed",
+        "z": "7b6e510609ee9a6d",
+        "name": "CO2 IST",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "sensor.hydroknoten_ph_wert"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "ha_boolean",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 135,
+        "y": 1045,
+        "wires": [
+            [
+                "86e2aedd649dd35a",
+                "7ffe2fa3f0f148ab",
+                "eacdd34e1cf6a98a"
+            ]
+        ]
+    },
+    {
+        "id": "eacdd34e1cf6a98a",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/zelt/co_ist",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 262,
+        "y": 1121,
+        "wires": []
+    },
+    {
+        "id": "2c26e60b96a31cd0",
+        "type": "mqtt in",
+        "z": "7b6e510609ee9a6d",
+        "d": true,
+        "name": "",
+        "topic": "dixy/ist/temp/ds18b20_1/",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "924c3f197169acb5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 327,
+        "y": 1444,
+        "wires": [
+            [
+                "2c7b88812b2627e1",
+                "8386cf8ac28a3cdb"
+            ]
+        ]
+    },
+    {
+        "id": "8386cf8ac28a3cdb",
+        "type": "ui-chart",
+        "z": "7b6e510609ee9a6d",
+        "group": "1606461d011cba0f",
+        "name": "Wassertemperatur Nährstofftank",
+        "label": "Wassertemperatur Nährstofftank",
+        "order": 2,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "Grad Celsius",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "",
+        "ymax": "30",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "20",
+        "colors": [
+            "#0095ff",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 6,
+        "height": 8,
+        "className": "",
+        "interpolation": "linear",
+        "x": 767,
+        "y": 1444,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "580c2e51e7462743",
+        "type": "server-state-changed",
+        "z": "7b6e510609ee9a6d",
+        "name": "Wassertemperatur 1",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "sensor.simulation_sim_wassertemperatur"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "ha_boolean",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 166,
+        "y": 1292,
+        "wires": [
+            [
+                "2c7b88812b2627e1",
+                "b94b55c00f94f7f8"
+            ]
+        ]
+    },
+    {
+        "id": "b94b55c00f94f7f8",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/hydro/wasser_1_temp",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 329,
+        "y": 1368,
+        "wires": []
+    },
+    {
+        "id": "924c3f197169acb5",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "localhost",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "1606461d011cba0f",
+        "type": "ui-group",
+        "name": "Charts",
+        "page": "6911e1bccedc2c8e",
+        "width": 6,
+        "height": 1,
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "51c342eaa6033c48",
+        "type": "ui-group",
+        "name": "Sensorwerte",
+        "page": "2d1f765e35b19555",
+        "width": "10",
+        "height": "10",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "7fab1009c248e13c",
+        "type": "ui-group",
+        "name": "EC Verlauf",
+        "page": "d58ad032c314041a",
+        "width": 6,
+        "height": 1,
+        "order": 6,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "3cb6c486a041ece4",
+        "type": "server",
+        "name": "Home Assistant",
+        "version": 6,
+        "addon": false,
+        "rejectUnauthorizedCerts": true,
+        "ha_boolean": [
+            "y",
+            "yes",
+            "true",
+            "on",
+            "home",
+            "open"
+        ],
+        "connectionDelay": true,
+        "cacheJson": true,
+        "heartbeat": false,
+        "heartbeatInterval": 30,
+        "areaSelector": "friendlyName",
+        "deviceSelector": "friendlyName",
+        "entitySelector": "friendlyName",
+        "statusSeparator": ": ",
+        "statusYear": "hidden",
+        "statusMonth": "short",
+        "statusDay": "numeric",
+        "statusHourCycle": "default",
+        "statusTimeFormat": "h:m",
+        "enableGlobalContextStore": false
+    },
+    {
+        "id": "6911e1bccedc2c8e",
+        "type": "ui-page",
+        "name": "Sensorstatstiken",
+        "ui": "ee3f04b817a0e363",
+        "path": "/page3",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "d37448bd34397e5e",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 9,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "2d1f765e35b19555",
+        "type": "ui-page",
+        "name": "Sensorwerte",
+        "ui": "ee3f04b817a0e363",
+        "path": "/page2",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "d37448bd34397e5e",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 8,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "d58ad032c314041a",
+        "type": "ui-page",
+        "name": "Düngerdosierung",
+        "ui": "ee3f04b817a0e363",
+        "path": "/page4",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "d37448bd34397e5e",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 5,
+        "className": "",
+        "visible": true,
+        "disabled": false
+    },
+    {
+        "id": "ee3f04b817a0e363",
+        "type": "ui-base",
+        "name": "DIXY - Grow Controller",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "dashboard",
+        "navigationStyle": "temporary",
+        "titleBarStyle": "fixed",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": "4",
+        "showDisconnectNotification": true,
+        "allowInstall": false
+    },
+    {
+        "id": "d37448bd34397e5e",
+        "type": "ui-theme",
+        "name": "Grow Controller v1",
+        "colors": {
+            "surface": "#669c35",
+            "primary": "#77bb41",
+            "bgPage": "#b1dd8c",
+            "groupBg": "#b1dd8c",
+            "groupOutline": "#cccccc"
+        },
+        "sizes": {
+            "density": "comfortable",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "a63181939f56c2e4",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.29.0",
+            "node-red-contrib-home-assistant-websocket": "0.80.3"
+        }
+    }
+]

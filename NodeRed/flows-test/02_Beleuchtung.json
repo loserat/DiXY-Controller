@@ -1,0 +1,1736 @@
+[
+    {
+        "id": "592cd08fe6dfb0b0",
+        "type": "function",
+        "z": "8b56c5a208b005fb",
+        "name": "Beleuchtungssteuerung PWM",
+        "func": "// Werte laden\nconst istAktiv = flow.get(\"licht_aktiv\") ?? true;\nconst modusSA_SU = flow.get(\"licht_sonnenaufgang_aktiv\") ?? false;\nconst manuell = flow.get(\"licht_modus\") ?? true;\nconst start = flow.get(\"licht_start\") ?? \"00:00\";\nconst ende = flow.get(\"licht_ende\") ?? \"23:59\";\nconst sunrise = parseInt(flow.get(\"licht_sonnenaufgang\") ?? 0, 10);\nconst helligkeit_auto = flow.get(\"licht_helligkeit_auto\") ?? 100;\nconst helligkeit_manuell = flow.get(\"licht_helligkeit_manuell\") ?? 100;\n\n// Uhrzeit berechnen\nconst jetzt = new Date();\nconst jetztMin = jetzt.getHours() * 60 + jetzt.getMinutes();\nconst startSplit = start.split(\":\");\nconst endeSplit = ende.split(\":\");\nconst startMin = parseInt(startSplit[0], 10) * 60 + parseInt(startSplit[1], 10);\nconst endeMin = parseInt(endeSplit[0], 10) * 60 + parseInt(endeSplit[1], 10);\n\n// Licht aktiv während Zeitfenster?\nlet lichtAn = istAktiv && (jetztMin >= startMin && jetztMin <= endeMin);\n\n// Zielhelligkeit: je nach Modus\nlet zielwert = manuell ? helligkeit_manuell : helligkeit_auto;\n\n// Sonnenaufgang/-untergang (wenn aktiv & Auto)\nif (lichtAn && !manuell && modusSA_SU && sunrise > 0) {\n    const t = jetztMin - startMin;\n    const gesamt = endeMin - startMin;\n\n    if (t < sunrise) {\n        zielwert = Math.round(zielwert * (t / sunrise));\n    } else if (t > gesamt - sunrise) {\n        zielwert = Math.round(zielwert * ((gesamt - t) / sunrise));\n    }\n}\n\n// Wenn außerhalb Lichtzeit: aus\nif (!lichtAn) zielwert = 0;\n\n// Begrenzen (Sicherheitsgrenze)\nzielwert = Math.max(0, Math.min(100, zielwert));\n\n// Anzeige im Node\nnode.status({\n    fill: lichtAn ? \"green\" : \"grey\",\n    shape: \"dot\",\n    text: (manuell ? \"Manuell: \" : \"Auto: \") + zielwert + \"%\"\n});\n\n// Ausgabe für Anzeige (Text mit Prozent)\nlet anzeige = zielwert + \" %\";\n\n// Ausgabe für PWM (Skala 0–255)\nlet pwm = Math.round(zielwert * 2.55);\n\n// Zwei Ausgänge:\nreturn [\n    { payload: anzeige },  // → ui-text für Prozentanzeige\n    { payload: pwm }       // → PWM-Ausgang\n];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1460,
+        "y": 1078,
+        "wires": [
+            [
+                "fd31f07b5c0c34a2",
+                "467544a5987d1b51",
+                "1936250a1ef30ba6"
+            ],
+            [
+                "1936250a1ef30ba6",
+                "fd31f07b5c0c34a2"
+            ]
+        ]
+    },
+    {
+        "id": "bf264928d8ca0faf",
+        "type": "function",
+        "z": "8b56c5a208b005fb",
+        "name": "Manuellbetrieb",
+        "func": "let modus = msg.payload;\nif (typeof modus === \"object\" && modus !== null) {\n    if (typeof modus.value !== \"undefined\") modus = modus.value;\n}\nif (modus === true || modus === \"true\" || modus === 1 || modus === \"1\") {\n    flow.set(\"licht_modus\", true);\n    node.status({ fill: \"green\", shape: \"dot\", text: \"Manuell\" });\n} else if (modus === false || modus === \"false\" || modus === 0 || modus === \"0\") {\n    flow.set(\"licht_modus\", false);\n    node.status({ fill: \"grey\", shape: \"dot\", text: \"Automatik\" });\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 877,
+        "y": 703,
+        "wires": [
+            [
+                "592cd08fe6dfb0b0",
+                "b38a665f8c26227d"
+            ]
+        ]
+    },
+    {
+        "id": "1b369cec6c3305f4",
+        "type": "function",
+        "z": "8b56c5a208b005fb",
+        "name": "Lichthellligkeit_Manuell",
+        "func": "// ...bestehender Code...\nlet wert = msg.payload;\nif (typeof wert === 'object' && wert !== null) {\n    if (typeof wert.value !== 'undefined') wert = wert.value;\n}\nwert = Number(wert);\nif (!isNaN(wert)) {\n    flow.set(\"helligkeit_manuell\", wert);\n    node.warn(\"Helligkeit manuell gespeichert: \" + wert);\n}\nreturn null;\n// ...bestehender Code...",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 820,
+        "y": 1485,
+        "wires": [
+            [
+                "592cd08fe6dfb0b0"
+            ]
+        ]
+    },
+    {
+        "id": "344ee7b6c05587af",
+        "type": "function",
+        "z": "8b56c5a208b005fb",
+        "name": "Lichthellligkeit_Auto",
+        "func": "// ...bestehender Code...\nlet wert = msg.payload;\nif (typeof wert === 'object' && wert !== null) {\n    if (typeof wert.value !== 'undefined') wert = wert.value;\n}\nwert = Number(wert);\nif (!isNaN(wert)) {\n    flow.set(\"licht_helligkeit_auto\", wert);\n    node.warn(\"Helligkeit auto gespeichert: \" + wert);\n}\nreturn null;\n// ...bestehender Code...",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 850,
+        "y": 1605,
+        "wires": [
+            [
+                "592cd08fe6dfb0b0"
+            ]
+        ]
+    },
+    {
+        "id": "19aeb44827180842",
+        "type": "function",
+        "z": "8b56c5a208b005fb",
+        "name": "SA-Automatik Aktiv",
+        "func": "let sa_su = msg.payload;\nif (typeof sa_su === \"object\" && sa_su !== null) {\n    if (typeof sa_su.value !== \"undefined\") sa_su = sa_su.value;\n}\nif (sa_su === true || sa_su === \"true\" || sa_su === 1 || sa_su === \"1\") {\n    flow.set(\"licht_sonnenaufgang_aktiv\", true);\n    node.status({ fill: \"blue\", shape: \"dot\", text: \"SA/SU aktiv\" });\n} else if (sa_su === false || sa_su === \"false\" || sa_su === 0 || sa_su === \"0\") {\n    flow.set(\"licht_sonnenaufgang_aktiv\", false);\n    node.status({ fill: \"grey\", shape: \"dot\", text: \"SA/SU aus\" });\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 658,
+        "y": 817,
+        "wires": [
+            [
+                "592cd08fe6dfb0b0",
+                "116ca2df5d5ac988"
+            ]
+        ]
+    },
+    {
+        "id": "0ea19c9462dab206",
+        "type": "function",
+        "z": "8b56c5a208b005fb",
+        "name": "Startzeit speichern",
+        "func": "if (typeof msg.payload === \"string\" && msg.payload.includes(\":\")) {\n    flow.set(\"licht_start\", msg.payload);\n    node.warn(\"Startzeit gespeichert: \" + msg.payload);\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 860,
+        "y": 1045,
+        "wires": [
+            [
+                "592cd08fe6dfb0b0"
+            ]
+        ]
+    },
+    {
+        "id": "f4891d26f73f441e",
+        "type": "function",
+        "z": "8b56c5a208b005fb",
+        "name": "Endzeit speichern",
+        "func": "if (typeof msg.payload === \"string\" && msg.payload.includes(\":\")) {\n    flow.set(\"licht_ende\", msg.payload);\n    node.warn(\"Endzeit gespeichert: \" + msg.payload);\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 820,
+        "y": 1185,
+        "wires": [
+            [
+                "592cd08fe6dfb0b0"
+            ]
+        ]
+    },
+    {
+        "id": "b38a665f8c26227d",
+        "type": "debug",
+        "z": "8b56c5a208b005fb",
+        "name": "Automatikbetrieb",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 952,
+        "y": 798,
+        "wires": []
+    },
+    {
+        "id": "116ca2df5d5ac988",
+        "type": "debug",
+        "z": "8b56c5a208b005fb",
+        "name": "SA-Automatik Aktiv",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 686,
+        "y": 910,
+        "wires": []
+    },
+    {
+        "id": "9ec60a0d23a42c5c",
+        "type": "debug",
+        "z": "8b56c5a208b005fb",
+        "name": "Zeitschaltuhr Aktiv",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 914,
+        "y": 629,
+        "wires": []
+    },
+    {
+        "id": "0f956de3c8e56da5",
+        "type": "function",
+        "z": "8b56c5a208b005fb",
+        "name": "Sonnenzeit speichern",
+        "func": "// Sonnenaufgangszeit speichern\nlet zeit = msg.payload;\nif (typeof zeit === \"object\" && zeit !== null) {\n    if (typeof zeit.time !== \"undefined\") zeit = zeit.time;\n    else if (typeof zeit.value !== \"undefined\") zeit = zeit.value;\n}\nif (typeof zeit === \"number\") {\n    // z.B. Minuten seit Mitternacht in Zahl\n    let h = Math.floor(zeit / 60).toString().padStart(2, '0');\n    let m = (zeit % 60).toString().padStart(2, '0');\n    zeit = h + ':' + m;\n}\nflow.set(\"licht_sonnenaufgang\", zeit);\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 1365,
+        "wires": [
+            [
+                "592cd08fe6dfb0b0"
+            ]
+        ]
+    },
+    {
+        "id": "467544a5987d1b51",
+        "type": "debug",
+        "z": "8b56c5a208b005fb",
+        "name": "Beleuchtungssteuerung",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1599,
+        "y": 1178,
+        "wires": []
+    },
+    {
+        "id": "0bb622bb12018754",
+        "type": "mqtt out",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "topic": "dixy/zelt/light/lichwert_zeit",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 870,
+        "y": 1645,
+        "wires": []
+    },
+    {
+        "id": "d7bc1af6c7a411ef",
+        "type": "mqtt out",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "topic": "dixy/zelt/light/lichtwert_manuell",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 840,
+        "y": 1525,
+        "wires": []
+    },
+    {
+        "id": "43eaade41fd43e7d",
+        "type": "mqtt out",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "topic": "dixy/zelt/light/startzeit",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 867,
+        "y": 1102,
+        "wires": []
+    },
+    {
+        "id": "7f02bee24487370e",
+        "type": "mqtt out",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "topic": "dixy/zelt/light/endzeit",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 829,
+        "y": 1235,
+        "wires": []
+    },
+    {
+        "id": "8248c9051d3cb621",
+        "type": "mqtt out",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "topic": "dixy/zelt/light/sonnenaufganszeit",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 870,
+        "y": 1405,
+        "wires": []
+    },
+    {
+        "id": "9ddfbf20da4466d0",
+        "type": "mqtt out",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "topic": "dixy/zelt/light/sa_su_aktiv",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 706,
+        "y": 950,
+        "wires": []
+    },
+    {
+        "id": "6a74d385843dc965",
+        "type": "ui-number-input",
+        "z": "8b56c5a208b005fb",
+        "group": "c2ce95d126219142",
+        "name": "Sonnenautomatik Zeit ",
+        "label": "SA und SU Zeit in Minuten",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "topic": "licht_sonnenaufgang",
+        "topicType": "str",
+        "min": 0,
+        "max": "30",
+        "step": 1,
+        "tooltip": "",
+        "passthru": true,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "clearable": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "spinner": "default",
+        "x": 496,
+        "y": 1368,
+        "wires": [
+            [
+                "0f956de3c8e56da5",
+                "8248c9051d3cb621"
+            ]
+        ]
+    },
+    {
+        "id": "bb1f6e2ba82fae08",
+        "type": "ui-number-input",
+        "z": "8b56c5a208b005fb",
+        "group": "c2ce95d126219142",
+        "name": "helligkeit_manuell",
+        "label": "Beleuchtungsstärke Manuell",
+        "order": 11,
+        "width": 0,
+        "height": 0,
+        "topic": "licht_helligkeit_manuell",
+        "topicType": "str",
+        "min": 0,
+        "max": "100",
+        "step": 1,
+        "tooltip": "",
+        "passthru": true,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "clearable": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "spinner": "default",
+        "x": 515,
+        "y": 1501,
+        "wires": [
+            [
+                "1b369cec6c3305f4",
+                "d7bc1af6c7a411ef"
+            ]
+        ]
+    },
+    {
+        "id": "0a2fbd03167418f8",
+        "type": "ui-number-input",
+        "z": "8b56c5a208b005fb",
+        "group": "c2ce95d126219142",
+        "name": "licht_helligkeit_auto",
+        "label": "Beleuchtungsstärke Automatik",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "topic": "licht_helligkeit_auto",
+        "topicType": "str",
+        "min": 0,
+        "max": "100",
+        "step": 1,
+        "tooltip": "",
+        "passthru": true,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "clearable": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "spinner": "default",
+        "x": 525,
+        "y": 1634,
+        "wires": [
+            [
+                "344ee7b6c05587af",
+                "0bb622bb12018754"
+            ]
+        ]
+    },
+    {
+        "id": "8c0ab62a08cd873d",
+        "type": "ui-text-input",
+        "z": "8b56c5a208b005fb",
+        "group": "c2ce95d126219142",
+        "name": "licht_start",
+        "label": "Beleuchtung Beginn",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "topic": "licht_start",
+        "topicType": "str",
+        "mode": "time",
+        "tooltip": "Beleuchtung Beginn",
+        "delay": 300,
+        "passthru": true,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "clearable": false,
+        "sendOnClear": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "x": 580,
+        "y": 1102,
+        "wires": [
+            [
+                "0ea19c9462dab206",
+                "43eaade41fd43e7d"
+            ]
+        ]
+    },
+    {
+        "id": "050fce4b2e5e2e96",
+        "type": "ui-text-input",
+        "z": "8b56c5a208b005fb",
+        "group": "c2ce95d126219142",
+        "name": "licht_ende",
+        "label": " Endzeit",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "topic": "licht_ende",
+        "topicType": "str",
+        "mode": "time",
+        "tooltip": " Endzeit",
+        "delay": 300,
+        "passthru": true,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "clearable": false,
+        "sendOnClear": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "x": 560,
+        "y": 1225,
+        "wires": [
+            [
+                "f4891d26f73f441e",
+                "7f02bee24487370e"
+            ]
+        ]
+    },
+    {
+        "id": "7c2dbb999735b90e",
+        "type": "ui-switch",
+        "z": "8b56c5a208b005fb",
+        "name": "Manuell",
+        "label": "Manuell",
+        "group": "c2ce95d126219142",
+        "order": 10,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "decouple": false,
+        "topic": "licht_modus",
+        "topicType": "str",
+        "style": "",
+        "className": "",
+        "layout": "row-spread",
+        "clickableArea": "switch",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "x": 618,
+        "y": 703,
+        "wires": [
+            [
+                "bf264928d8ca0faf"
+            ]
+        ]
+    },
+    {
+        "id": "37e99cbdef80ab9d",
+        "type": "ui-switch",
+        "z": "8b56c5a208b005fb",
+        "name": "SA/SU Aktiv",
+        "label": "SA/SU Aktiv",
+        "group": "c2ce95d126219142",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": false,
+        "topic": "licht_sa_su",
+        "topicType": "msg",
+        "style": "",
+        "className": "",
+        "layout": "row-spread",
+        "clickableArea": "switch",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "x": 343,
+        "y": 874,
+        "wires": [
+            [
+                "9ddfbf20da4466d0",
+                "19aeb44827180842"
+            ]
+        ]
+    },
+    {
+        "id": "14831d6afed7c151",
+        "type": "ui-switch",
+        "z": "8b56c5a208b005fb",
+        "name": "Beleuchtungssteuerung Aktivieren",
+        "label": "Zeitschaltuhr Aktivieren",
+        "group": "c2ce95d126219142",
+        "order": 9,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": false,
+        "topic": "licht_aktiv",
+        "topicType": "str",
+        "style": "",
+        "className": "",
+        "layout": "row-spread",
+        "clickableArea": "switch",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "x": 884,
+        "y": 569,
+        "wires": [
+            [
+                "592cd08fe6dfb0b0",
+                "9ec60a0d23a42c5c"
+            ]
+        ]
+    },
+    {
+        "id": "fd31f07b5c0c34a2",
+        "type": "ui-text",
+        "z": "8b56c5a208b005fb",
+        "group": "c2ce95d126219142",
+        "order": 13,
+        "width": 6,
+        "height": 1,
+        "name": "Helligkeit",
+        "label": "Helligkeit: ",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": "",
+        "color": "#000000",
+        "wrapText": false,
+        "className": "",
+        "x": 1810,
+        "y": 1005,
+        "wires": []
+    },
+    {
+        "id": "1936250a1ef30ba6",
+        "type": "ui-chart",
+        "z": "8b56c5a208b005fb",
+        "group": "c2ce95d126219142",
+        "name": "Helligkeit Verlauf",
+        "label": "Helligkeit Verlauf",
+        "order": 12,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "Helligkeit in %",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "Helligkeit in %",
+        "yAxisProperty": "payload",
+        "yAxisPropertyType": "msg",
+        "ymin": "0",
+        "ymax": "100",
+        "bins": 10,
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": "60",
+        "removeOlderUnit": "60",
+        "removeOlderPoints": "100",
+        "colors": [
+            "#00a3d7",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": "3",
+        "height": "6",
+        "className": "",
+        "interpolation": "linear",
+        "x": 1860,
+        "y": 1125,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "dcdce045294223e8",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "Manuell Aktivieren",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_boolean.manuell"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "ha_boolean",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 449,
+        "y": 551,
+        "wires": [
+            [
+                "bf264928d8ca0faf",
+                "6b9ea7b3d93f5dd4"
+            ]
+        ]
+    },
+    {
+        "id": "a428ce2609296c75",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "SA / SU Aktivieren",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_boolean.sa_su_automatik"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "ha_boolean",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 268,
+        "y": 760,
+        "wires": [
+            [
+                "19aeb44827180842",
+                "9ddfbf20da4466d0"
+            ]
+        ]
+    },
+    {
+        "id": "11aaefdeac314789",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "Einschaltzeit Zeitschaluhr",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_datetime.einschaltzeit"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 429,
+        "y": 1026,
+        "wires": [
+            [
+                "0ea19c9462dab206",
+                "8c0ab62a08cd873d",
+                "43eaade41fd43e7d"
+            ]
+        ]
+    },
+    {
+        "id": "0be89c8e2e832857",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "Ausschaltzeit Zeitschaltuhr",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_datetime.ausschaltzeit"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 429,
+        "y": 1159,
+        "wires": [
+            [
+                "f4891d26f73f441e",
+                "050fce4b2e5e2e96",
+                "7f02bee24487370e"
+            ]
+        ]
+    },
+    {
+        "id": "eb74550a2e56ed31",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "HA Zeitschaltuhr Aktivieren",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_boolean.zeitschaltuhr"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "ha_boolean",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 824,
+        "y": 494,
+        "wires": [
+            [
+                "0479d2d3cc0eb474",
+                "592cd08fe6dfb0b0"
+            ]
+        ]
+    },
+    {
+        "id": "c9f4c57b0a8e1d2b",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "Helligkeit Zeitschaltbetrieb",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_number.lichtwert_zeitschaltuhr"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "number",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 448,
+        "y": 1577,
+        "wires": [
+            [
+                "344ee7b6c05587af",
+                "0bb622bb12018754"
+            ]
+        ]
+    },
+    {
+        "id": "3e62aa6fd5defa1a",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "Manuelle Helligkeit",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_number.helligkeit_manuell"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "number",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 420,
+        "y": 1444,
+        "wires": [
+            [
+                "1b369cec6c3305f4",
+                "d7bc1af6c7a411ef"
+            ]
+        ]
+    },
+    {
+        "id": "13e7770d54f5ccfe",
+        "type": "server-state-changed",
+        "z": "8b56c5a208b005fb",
+        "name": "Ausschaltzeit Zeitschaltuhr",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "input_number.sonnenaufgangszeit"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "number",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 459,
+        "y": 1311,
+        "wires": [
+            [
+                "0f956de3c8e56da5",
+                "8248c9051d3cb621"
+            ]
+        ]
+    },
+    {
+        "id": "0479d2d3cc0eb474",
+        "type": "mqtt out",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "topic": "dixy/zelt/light/zeitschaltuhr_aktiv ",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 1154,
+        "y": 494,
+        "wires": []
+    },
+    {
+        "id": "6b9ea7b3d93f5dd4",
+        "type": "mqtt out",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "topic": "dixy/zelt/light/manuell_aktiv",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 533,
+        "y": 646,
+        "wires": []
+    },
+    {
+        "id": "b0a27873c84cad6d",
+        "type": "api-current-state",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "server": "3cb6c486a041ece4",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "halt_if_compare": "is",
+        "entity_id": "input_boolean.manuell",
+        "state_type": "str",
+        "blockInputOverrides": true,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entity"
+            }
+        ],
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "override_topic": false,
+        "state_location": "payload",
+        "override_payload": "msg",
+        "entity_location": "data",
+        "override_data": "msg",
+        "x": 1048,
+        "y": 76,
+        "wires": [
+            [
+                "2adc6874c0e6c8c8"
+            ]
+        ]
+    },
+    {
+        "id": "12cd0b486f6d25d9",
+        "type": "inject",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "3",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 243,
+        "y": 190,
+        "wires": [
+            [
+                "b0a27873c84cad6d",
+                "c49583976bcba8ea",
+                "a8216fab66c69b76",
+                "592cd08fe6dfb0b0",
+                "bf264928d8ca0faf",
+                "19aeb44827180842",
+                "c229e73a575ad673",
+                "58273d190d2e5041",
+                "df88e4f7a9bbf817",
+                "da03c53efd0d510f"
+            ]
+        ]
+    },
+    {
+        "id": "2adc6874c0e6c8c8",
+        "type": "function",
+        "z": "8b56c5a208b005fb",
+        "name": "Werte nach Deploy neu schreiben",
+        "func": "// ---------- Entität bestimmen ----------\nconst entityId =\n    msg.data?.entity_id ||\n    msg.data?.entityId ||\n    msg.data?.entity_id;\n\nif (!entityId) {\n    node.warn(\"Keine entity_id gefunden\");\n    return null;\n}\n\n// ---------- Mapping ----------\nlet flowKey;\nlet label;\nlet value;\n\n// ---------- input_boolean ----------\nif (entityId.startsWith(\"input_boolean.\")) {\n    value = msg.payload === \"on\";\n\n    switch (entityId) {\n        case \"input_boolean.manuell\":\n            flowKey = \"licht_modus\";\n            label = \"Manuell\";\n            break;\n\n        case \"input_boolean.sa_su_automatik\":\n            flowKey = \"licht_sonnenaufgang_aktiv\";\n            label = \"SA/SU\";\n            break;\n\n        case \"input_boolean.zeitschaltuhr\":\n            flowKey = \"licht_aktiv\";\n            label = \"Zeitschaltuhr\";\n            break;\n    }\n}\n\n// ---------- input_number ----------\nelse if (entityId.startsWith(\"input_number.\")) {\n    value = Number(msg.payload);\n\n    switch (entityId) {\n        case \"input_number.helligkeit_manuell\":\n            flowKey = \"licht_helligkeit_manuell\";\n            label = \"Helligkeit Manuell\";\n            break;\n\n        case \"input_number.lichtwert_zeitschaltuhr\":\n            flowKey = \"licht_helligkeit_auto\";\n            label = \"Helligkeit Auto\";\n            break;\n    }\n}\n\n// ---------- input_datetime ----------\nelse if (entityId.startsWith(\"input_datetime.\")) {\n    const ts = msg.data?.attributes?.timestamp;\n    if (!ts) {\n        node.warn(\"Kein Timestamp für \" + entityId);\n        return null;\n    }\n\n    const d = new Date(ts * 1000);\n    const hh = String(d.getHours()).padStart(2, \"0\");\n    const mm = String(d.getMinutes()).padStart(2, \"0\");\n    value = `${hh}:${mm}`;\n\n    switch (entityId) {\n        case \"input_datetime.einschaltzeit\":\n            flowKey = \"licht_start\";\n            label = \"Startzeit\";\n            break;\n\n        case \"input_datetime.ausschaltzeit\":\n            flowKey = \"licht_ende\";\n            label = \"Endzeit\";\n            break;\n    }\n}\n\n// ---------- Unbekannt ----------\nif (!flowKey) {\n    node.warn(\"Nicht gemappte Entität: \" + entityId);\n    return null;\n}\n\n// ---------- Wert speichern ----------\nflow.set(flowKey, value);\n\n// ---------- Status ----------\nnode.status({\n    fill: \"green\",\n    shape: \"dot\",\n    text: `${label}: ${value}`\n});\n\n// ---------- Debug ----------\nnode.debug({\n    entity: entityId,\n    flowKey,\n    value\n});\n\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1665,
+        "y": 133,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c49583976bcba8ea",
+        "type": "api-current-state",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "server": "3cb6c486a041ece4",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "halt_if_compare": "is",
+        "entity_id": "input_boolean.sa_su_automatik",
+        "state_type": "str",
+        "blockInputOverrides": true,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entity"
+            }
+        ],
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "override_topic": false,
+        "state_location": "payload",
+        "override_payload": "msg",
+        "entity_location": "data",
+        "override_data": "msg",
+        "x": 1075,
+        "y": 133,
+        "wires": [
+            [
+                "2adc6874c0e6c8c8"
+            ]
+        ]
+    },
+    {
+        "id": "a8216fab66c69b76",
+        "type": "api-current-state",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "server": "3cb6c486a041ece4",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "halt_if_compare": "is",
+        "entity_id": "input_boolean.zeitschaltuhr",
+        "state_type": "str",
+        "blockInputOverrides": true,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entity"
+            }
+        ],
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "override_topic": false,
+        "state_location": "payload",
+        "override_payload": "msg",
+        "entity_location": "data",
+        "override_data": "msg",
+        "x": 1057,
+        "y": 190,
+        "wires": [
+            [
+                "2adc6874c0e6c8c8"
+            ]
+        ]
+    },
+    {
+        "id": "58273d190d2e5041",
+        "type": "api-current-state",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "server": "3cb6c486a041ece4",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "halt_if_compare": "is",
+        "entity_id": "input_datetime.ausschaltzeit",
+        "state_type": "str",
+        "blockInputOverrides": true,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entity"
+            }
+        ],
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "override_topic": false,
+        "state_location": "payload",
+        "override_payload": "msg",
+        "entity_location": "data",
+        "override_data": "msg",
+        "x": 1066,
+        "y": 304,
+        "wires": [
+            [
+                "2adc6874c0e6c8c8"
+            ]
+        ]
+    },
+    {
+        "id": "c229e73a575ad673",
+        "type": "api-current-state",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "server": "3cb6c486a041ece4",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "halt_if_compare": "is",
+        "entity_id": "input_datetime.einschaltzeit",
+        "state_type": "str",
+        "blockInputOverrides": true,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entity"
+            }
+        ],
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "override_topic": false,
+        "state_location": "payload",
+        "override_payload": "msg",
+        "entity_location": "data",
+        "override_data": "msg",
+        "x": 1066,
+        "y": 247,
+        "wires": [
+            [
+                "2adc6874c0e6c8c8"
+            ]
+        ]
+    },
+    {
+        "id": "df88e4f7a9bbf817",
+        "type": "api-current-state",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "server": "3cb6c486a041ece4",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "halt_if_compare": "is",
+        "entity_id": "input_number.helligkeit_manuell",
+        "state_type": "str",
+        "blockInputOverrides": true,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entity"
+            }
+        ],
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "override_topic": false,
+        "state_location": "payload",
+        "override_payload": "msg",
+        "entity_location": "data",
+        "override_data": "msg",
+        "x": 1074,
+        "y": 361,
+        "wires": [
+            [
+                "2adc6874c0e6c8c8"
+            ]
+        ]
+    },
+    {
+        "id": "da03c53efd0d510f",
+        "type": "api-current-state",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "server": "3cb6c486a041ece4",
+        "version": 3,
+        "outputs": 1,
+        "halt_if": "",
+        "halt_if_type": "str",
+        "halt_if_compare": "is",
+        "entity_id": "input_number.lichtwert_zeitschaltuhr",
+        "state_type": "str",
+        "blockInputOverrides": true,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "entity"
+            }
+        ],
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "override_topic": false,
+        "state_location": "payload",
+        "override_payload": "msg",
+        "entity_location": "data",
+        "override_data": "msg",
+        "x": 1083,
+        "y": 418,
+        "wires": [
+            [
+                "2adc6874c0e6c8c8"
+            ]
+        ]
+    },
+    {
+        "id": "924c3f197169acb5",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "localhost",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "c2ce95d126219142",
+        "type": "ui-group",
+        "name": "Beleuchtung",
+        "page": "3b17bb9318b748c4",
+        "width": "3",
+        "height": "2",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "3cb6c486a041ece4",
+        "type": "server",
+        "name": "Home Assistant",
+        "version": 6,
+        "addon": false,
+        "rejectUnauthorizedCerts": true,
+        "ha_boolean": [
+            "y",
+            "yes",
+            "true",
+            "on",
+            "home",
+            "open"
+        ],
+        "connectionDelay": true,
+        "cacheJson": true,
+        "heartbeat": false,
+        "heartbeatInterval": 30,
+        "areaSelector": "friendlyName",
+        "deviceSelector": "friendlyName",
+        "entitySelector": "friendlyName",
+        "statusSeparator": ": ",
+        "statusYear": "hidden",
+        "statusMonth": "short",
+        "statusDay": "numeric",
+        "statusHourCycle": "default",
+        "statusTimeFormat": "h:m",
+        "enableGlobalContextStore": false
+    },
+    {
+        "id": "3b17bb9318b748c4",
+        "type": "ui-page",
+        "name": "Beleuchtung",
+        "ui": "ee3f04b817a0e363",
+        "path": "/page5",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "d37448bd34397e5e",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 10,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "ee3f04b817a0e363",
+        "type": "ui-base",
+        "name": "DIXY - Grow Controller",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "dashboard",
+        "navigationStyle": "temporary",
+        "titleBarStyle": "fixed",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": "4",
+        "showDisconnectNotification": true,
+        "allowInstall": false
+    },
+    {
+        "id": "d37448bd34397e5e",
+        "type": "ui-theme",
+        "name": "Grow Controller v1",
+        "colors": {
+            "surface": "#669c35",
+            "primary": "#77bb41",
+            "bgPage": "#b1dd8c",
+            "groupBg": "#b1dd8c",
+            "groupOutline": "#cccccc"
+        },
+        "sizes": {
+            "density": "comfortable",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "307d8f34050a9e57",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.29.0",
+            "node-red-contrib-home-assistant-websocket": "0.80.3"
+        }
+    }
+]

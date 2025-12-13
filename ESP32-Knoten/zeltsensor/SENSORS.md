@@ -1,5 +1,25 @@
 # Zeltsensor v2 – Sensor-Dokumentation
 
+## Pinout & Hardware-Zuordnung
+
+**Hinweis:** Die physische Pin-Nummer (z. B. „Pin 14“) entspricht der Position auf der 2x15-Stiftleiste des DevKit. Die Zuordnung zu GPIOs kann je nach Board-Layout abweichen! YAML und Verdrahtung müssen übereinstimmen.
+
+### Pin-zu-GPIO-Tabelle (Beispiel, bitte anpassen!)
+
+| Funktion         | Physischer Pin | GPIO   | Bemerkung                |
+|------------------|---------------|--------|--------------------------|
+| I2C SDA          | Pin 11        | GPIO21 | Datenleitung             |
+| I2C SCL          | Pin 14        | GPIO22 | Clock, laut User         |
+| SPI SCK          | Pin 9         | GPIO18 | Serial Clock             |
+| SPI MOSI/SDI     | Pin 16        | GPIO23 | Serial Data In           |
+| PWM Dimmer LED   | Pin XX        | GPIO27 | LM358, 0–10V Dimmung     |
+| CO₂ Sensor RX    | Pin 7         | GPIO16 | UART2 RX, MH-Z19B        |
+| CO₂ Sensor TX    | Pin 6         | GPIO17 | UART2 TX, MH-Z19B        |
+
+Bitte ggf. weitere Pins (z. B. MISO, CS, Tacho) ergänzen und die physische Pin-Nummer an dein Board anpassen!
+
+---
+
 ## Licht-Spektralsensor (AS7341)
 
 ### Entity-IDs: Spektral-Kanäle
@@ -157,7 +177,17 @@ else:
 |-----------|---------|--------|
 | `sensor.zeltsensor_v2_co2_ppm` | 400–5000 ppm | 30s |
 
-**UART:** GPIO16 (RX) / GPIO17 (TX), 9600 baud
+
+**UART:**
+- RX (ESP32, empfängt vom Sensor): GPIO16 (Pin 7)
+- TX (ESP32, sendet an Sensor):    GPIO17 (Pin 6)
+- Baudrate: 9600
+
+**Verdrahtung:**
+- Sensor TX → ESP32 RX2 (GPIO16, Pin 7)
+- Sensor RX → ESP32 TX2 (GPIO17, Pin 6)
+
+**Hinweis:** RX/TX können je nach Board-Layout abweichen. YAML muss zu deiner Verkabelung passen!
 
 **Kalibrierung:**
 - Outdoor Zero (400 ppm): Button "CO₂ Zero Cal"

@@ -1,4 +1,4 @@
-# Zeltsensor v2 – Spektral-Lichtanalyse & Klima-Monitoring
+# Zeltsensor – Spektral-Lichtanalyse & Klima-Monitoring
 
 ## Funktion
 Misst Lichtspektrum (AS7341 11-Kanal), Temperatur, Luftfeuchte, Luftdruck und berechnet PPFD/PAR/DLI/VPD. Optionale PWM-Steuerung von Inline-Lüfter.
@@ -54,8 +54,46 @@ substitutions:
   - Keine Abhängigkeit von anderen Knoten
   - Dient als Basis für Klimaknoten (wenn nicht vorhanden)
 
+
 ## YAML-Varianten
-- **`zeltsensor_v2.yaml`** – Produktiv (mit Hardware)
+- **`zeltsensor_v1.yaml`** – Minimalprofil, nur BMP280
+- **`zeltsensor_v2.yaml`** – BMP280, AS7341, Diagnosesensoren
+- **`zeltsensor_v3.yaml`** – AS7341 HACS-kompatibel, alle Kanäle als eigene Entitäten
+- **`zeltsensor_v4.yaml`** – WLAN-Status-LED, PPFD/Lux/DLI-Berechnung, Button entfernt
+- **`zeltsensor_v5.yaml`** – AS7341, BMP280, Dummy-Outputs, mehrere Lampen- und Simulationsoptionen, OLED-Display (experimentell)
+- **`zeltsensor_v6.yaml`** – Minimalprofil mit nur einer dimmbaren Zeltlampe (GPIO25, PWM, monochromatic), keine Display- oder Simulationsfunktionen, Home Assistant ready
+
+## Changelog
+### v5
+- Dummy-Outputs für Lampen-Simulation
+- Zwei Light-Entitäten (Zeltlampe, Grow Lampe), Simulations-Number, OLED-Display-Integration (experimentell)
+- Komplexe Display-Lambdas, mehrere Sensor-Templates
+
+### v6
+- Minimalistische Version: Nur noch eine dimmbare Zeltlampe (GPIO25, PWM, monochromatic)
+- Keine Display- oder Simulationsfunktionen mehr
+- Fokus auf Home Assistant Integration und Zuverlässigkeit
+
+### v1
+- Minimalprofil, nur BMP280 (Temperatur, Luftdruck)
+
+### v2
+- Hinzugefügt: AS7341 (alle Kanäle), Diagnosesensoren (WiFi, Uptime, Status)
+
+### v3
+- AS7341-Kanäle HACS-kompatibel (f1–f8, clear, nir)
+- YAML-Bereinigung, Home Assistant Integration optimiert
+
+### v4
+- Restart-Button entfernt
+- WLAN-Status-LED (Onboard, GPIO2) hinzugefügt
+- Template-Sensoren für PPFD, Lux, DLI (aus AS7341)
+- README und Dokumentation aktualisiert
+## Neue Features in v4
+
+- **WLAN-Status-LED:** Die Onboard-LED (GPIO2) zeigt den WLAN-Status an (blinkt bei Verbindungsproblemen, leuchtet bei Verbindung).
+- **PPFD, Lux, DLI:** Neue Template-Sensoren berechnen PPFD (µmol/m²s), Lux (lx) und DLI (mol/m²d) aus den AS7341-Kanälen. Die Formeln sind im YAML kommentiert und können angepasst werden.
+- **Button entfernt:** Der Restart-Button ist nicht mehr enthalten, da OTA und Web-UI für Neustarts genutzt werden können.
 
 ## Sensor-Dokumentation
 → Detaillierte Berechnung von PPFD/DLI/VPD, Entity-IDs siehe [`SENSORS.md`](SENSORS.md)

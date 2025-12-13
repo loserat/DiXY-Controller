@@ -1,0 +1,6 @@
+# Arial 12pt (Basic Latin, nur als Platzhalter)
+# Für ESPHome-Tests: https://github.com/esphome/esphome-fonts
+# Du kannst später eine eigene TTF/OTF ersetzen!
+
+# Diese Datei ist KEIN echter Font, sondern ein Platzhalter.
+# Bitte ersetze sie durch eine echte Arial.ttf oder nutze einen ESPHome-Standardfont.
