@@ -1,10 +1,10 @@
 esphome:
-
   name: zeltsensor
+  friendly_name: "Zeltsensor"
   comment: "Minimalprofil BMP280 + AS7341"
   project:
     name: "loserat.dixy_zeltsensor"
-    version: "0.1"
+    version: "2.0"
 
 esp32:
   board: esp32dev
@@ -22,10 +22,6 @@ ota:
   platform: esphome
   password: !secret zeltsensor_ota_password
 
-logger:
-
-api:
-
 i2c:
   sda: 21
   scl: 22
@@ -39,7 +35,6 @@ sensor:
     unit_of_measurement: "mS/cm"
     accuracy_decimals: 2
     state_class: measurement
-    # unique_id entfernt, da nicht unterstützt
     update_interval: 10s
     lambda: |-
       static float ec = 1.8f;
@@ -63,7 +58,6 @@ sensor:
       if (rlf < 40.0f) rlf = 40.0f;
       if (rlf > 80.0f) rlf = 80.0f;
       return rlf;
-
 
   - platform: template
     name: "pH Dummy"
@@ -93,8 +87,6 @@ sensor:
       if (co2 > 800) co2 = 800;
       return co2;
 
-
-
   - platform: template
     name: "Zeltlampe Helligkeit"
     id: zeltlampe_brightness_sensor
@@ -110,14 +102,46 @@ sensor:
       }
 
   # --- Diagnose-Sensoren (Diagnose-Tab in HA) ---
-
-
   - platform: bmp280_i2c
     address: 0x76
     temperature:
       name: "BMP280 Temperatur"
     pressure:
       name: "BMP280 Luftdruck"
+    update_interval: 60s
+
+  # --- AS7341 Spektralsensor: Alle Kanäle als Sensoren ---
+  - platform: as7341
+    address: 0x39
+    id: as7341_sensor
+    f1:
+      name: "AS7341 F1 (415nm)"
+      id: as7341_f1
+    f2:
+      name: "AS7341 F2 (445nm)"
+      id: as7341_f2
+    f3:
+      name: "AS7341 F3 (480nm)"
+      id: as7341_f3
+    f4:
+      name: "AS7341 F4 (515nm)"
+      id: as7341_f4
+    f5:
+      name: "AS7341 F5 (555nm)"
+      id: as7341_f5
+    f6:
+      name: "AS7341 F6 (590nm)"
+      id: as7341_f6
+    f7:
+      name: "AS7341 F7 (630nm)"
+      id: as7341_f7
+    f8:
+      name: "AS7341 F8 (680nm)"
+      id: as7341_f8
+    clear:
+      name: "AS7341 Clear"
+    nir:
+      name: "AS7341 NIR"
     update_interval: 60s
 
   - platform: template
@@ -167,6 +191,13 @@ sensor:
     update_interval: 60s
 
 text_sensor:
+  - platform: template
+    name: "Zeltsensor Version"
+    id: zeltsensor_version
+    icon: "mdi:tag"
+    lambda: |-
+      return {"2.0"};
+    update_interval: 3600s
   - platform: wifi_info
     ip_address:
       name: "ESP IP Adresse"
@@ -176,7 +207,6 @@ text_sensor:
       name: "ESP WiFi BSSID"
     mac_address:
       name: "ESP MAC Adresse"
-
 binary_sensor:
   - platform: status
     name: "ESP Status"
@@ -194,3 +224,5 @@ light:
     name: "Zeltlampe"
     output: zeltlampe_pwm
     id: zeltlampe
+
+logger:

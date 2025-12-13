@@ -1,0 +1,229 @@
+esphome:
+  name: zeltsensor
+  comment: "Minimalprofil BMP280 + AS7341"
+  project:
+    name: "loserat.dixy_zeltsensor"
+    version: "0.1"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "ZELTSENSOR_Fallback"
+    password: "12345678"
+
+ota:
+  platform: esphome
+  password: !secret zeltsensor_ota_password
+
+logger:
+
+api:
+
+i2c:
+  sda: 21
+  scl: 22
+  scan: true
+
+sensor:
+  # Simulierter EC-Sensor (elektrische Leitfähigkeit)
+  - platform: template
+    name: "EC Dummy"
+    id: ec_dummy
+    unit_of_measurement: "mS/cm"
+    accuracy_decimals: 2
+    state_class: measurement
+    # unique_id entfernt, da nicht unterstützt
+    update_interval: 10s
+    lambda: |-
+      static float ec = 1.8f;
+      ec += (float((rand() % 21) - 10)) / 100.0f; // ±0.10
+      if (ec < 1.0f) ec = 1.0f;
+      if (ec > 2.5f) ec = 2.5f;
+      return ec;
+
+  # --- Messsensoren (Sensoren-Tab in HA) ---
+  - platform: template
+    name: "Relative Luftfeuchte"
+    id: rlf_dummy
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      static float rlf = 60.0f;
+      rlf += (float((rand() % 20) - 10)) / 10.0f;
+      if (rlf < 40.0f) rlf = 40.0f;
+      if (rlf > 80.0f) rlf = 80.0f;
+      return rlf;
+
+
+  - platform: template
+    name: "pH Dummy"
+    id: ph_dummy
+    unit_of_measurement: "pH"
+    accuracy_decimals: 2
+    state_class: measurement
+    update_interval: 10s
+    lambda: |-
+      static float ph = 6.2f;
+      ph += (float((rand() % 21) - 10)) / 100.0f;
+      if (ph < 5.5f) ph = 5.5f;
+      if (ph > 7.0f) ph = 7.0f;
+      return ph;
+
+  - platform: template
+    name: "CO2 Dummy"
+    id: co2_dummy
+    unit_of_measurement: "ppm"
+    accuracy_decimals: 0
+    state_class: measurement
+    update_interval: 10s
+    lambda: |-
+      static int co2 = 600;
+      co2 += (rand() % 11) - 5;
+      if (co2 < 500) co2 = 500;
+      if (co2 > 800) co2 = 800;
+      return co2;
+
+
+
+  - platform: template
+    name: "Zeltlampe Helligkeit"
+    id: zeltlampe_brightness_sensor
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    state_class: measurement
+    update_interval: 2s
+    lambda: |-
+      if (id(zeltlampe).current_values.is_on()) {
+        return id(zeltlampe).current_values.get_brightness() * 100.0f;
+      } else {
+        return 0.0f;
+      }
+
+  # --- Diagnose-Sensoren (Diagnose-Tab in HA) ---
+
+
+  - platform: bmp280_i2c
+    address: 0x76
+    temperature:
+      name: "BMP280 Temperatur"
+    pressure:
+      name: "BMP280 Luftdruck"
+    update_interval: 60s
+
+  # --- AS7341 Spektralsensor: Alle Kanäle als Sensoren ---
+  - platform: as7341
+    address: 0x39
+    id: as7341_sensor
+    f1:
+      name: "AS7341 F1 (415nm)"
+      id: as7341_f1
+    f2:
+      name: "AS7341 F2 (445nm)"
+      id: as7341_f2
+    f3:
+      name: "AS7341 F3 (480nm)"
+      id: as7341_f3
+    f4:
+      name: "AS7341 F4 (515nm)"
+      id: as7341_f4
+    f5:
+      name: "AS7341 F5 (555nm)"
+      id: as7341_f5
+    f6:
+      name: "AS7341 F6 (590nm)"
+      id: as7341_f6
+    f7:
+      name: "AS7341 F7 (630nm)"
+      id: as7341_f7
+    f8:
+      name: "AS7341 F8 (680nm)"
+      id: as7341_f8
+    clear:
+      name: "AS7341 Clear"
+    nir:
+      name: "AS7341 NIR"
+    update_interval: 60s
+
+  - platform: template
+    name: "DS18B20 Dummy"
+    id: ds18b20_dummy
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      static float t = 22.0f;
+      t += (float((rand() % 20) - 10)) / 10.0f;
+      if (t < 20.0f) t = 20.0f;
+      if (t > 25.0f) t = 25.0f;
+      return t;
+
+  - platform: wifi_signal
+    name: "ESP WiFi Signal"
+    id: wifi_strength
+    update_interval: 60s
+
+  - platform: uptime
+    name: "ESP Uptime"
+    update_interval: 60s
+
+  - platform: template
+    name: "PPFD (µmol/m²s)"
+    id: ppfd
+    unit_of_measurement: "µmol/m²s"
+    lambda: |-
+      return (id(as7341_f2).state + id(as7341_f3).state + id(as7341_f4).state + id(as7341_f5).state + id(as7341_f6).state + id(as7341_f7).state + id(as7341_f8).state) * 0.5;
+    update_interval: 60s
+
+  - platform: template
+    name: "LUX (AS7341)"
+    id: lux
+    unit_of_measurement: "lx"
+    lambda: |-
+      return (id(as7341_f1).state + id(as7341_f2).state + id(as7341_f3).state + id(as7341_f4).state + id(as7341_f5).state + id(as7341_f6).state + id(as7341_f7).state + id(as7341_f8).state) * 2.0;
+    update_interval: 60s
+
+  - platform: template
+    name: "DLI (mol/m²d)"
+    id: dli
+    unit_of_measurement: "mol/m²d"
+    lambda: |-
+      return id(ppfd).state * 0.0864;
+    update_interval: 60s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "ESP IP Adresse"
+    ssid:
+      name: "ESP WiFi SSID"
+    bssid:
+      name: "ESP WiFi BSSID"
+    mac_address:
+      name: "ESP MAC Adresse"
+
+binary_sensor:
+  - platform: status
+    name: "ESP Status"
+
+status_led:
+  pin: 2
+
+output:
+  - platform: ledc
+    pin: 25
+    id: zeltlampe_pwm
+
+light:
+  - platform: monochromatic
+    name: "Zeltlampe"
+    output: zeltlampe_pwm
+    id: zeltlampe

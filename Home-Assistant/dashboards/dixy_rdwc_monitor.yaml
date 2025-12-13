@@ -60,7 +60,10 @@ views:
         show_icon: true
         entity: sensor.zeltsensor_zeltsensor_bmp280_luftdruck
       - type: entity
-        entity: sensor.zeltsensor_projekt_version
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: text_sensor.zeltsensor_version
     cards: []
   - type: sections
     max_columns: 4
