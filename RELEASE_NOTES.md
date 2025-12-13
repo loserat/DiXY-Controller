@@ -61,15 +61,28 @@
 
 ## 📝 Future Versions (Planned)
 
-### v0.2 (Planned: Dec 15, 2025)
-**Focus:** Node-Red integration + HA automation
+
+### v0.2 (Release Date: 2025-12-13)
+**Focus:** Node-RED Integration, ESPHome Cleanup, Doku-Update**
+
+**Changes from v0.1:**
+- ✅ Node-RED Flows in `NodeRed/flows-test/` produktiv übernommen (Sensorwerte, Beleuchtung, gemischte Flows)
+- ✅ PWM- und Lichtsteuerung in Node-RED getestet und debuggt
+- ✅ Readmes für Hauptprojekt, Zeltsensor, Home Assistant und Node-RED aktualisiert/erstellt
+- ✅ ESPHome YAMLs (zeltsensor_v6.yaml etc.) aufgeräumt, Dummy-Sensoren und Diagnose sauber getrennt
+- ✅ Struktur und Dateinamen im Repository vereinheitlicht, Altlasten entfernt
+- 🐛 Diverse Bugfixes und Verbesserungen in den Flows und YAMLs
+- 📝 RELEASE_NOTES.md und Dokumentation auf aktuellen Stand gebracht
+
+---
+
+### v0.3 (Planned: Dec 22, 2025)
+**Focus:** HACS Custom Integration
 
 **Planned changes:**
-- [ ] Move Node-Red flows to production
-- [ ] Validate lighting, dosing, climate automation flows
-- [ ] Create ha_helpers.yaml with input_select, input_number, etc.
-- [ ] Implement Docker-Compose stack
-- [ ] Build install.sh script
+- [ ] Develop custom_components/dixy_controller/
+- [ ] Auto-discovery of nodes via MQTT
+- [ ] Unified dashboard auto-generation
 
 ### v0.3 (Planned: Dec 22, 2025)
 **Focus:** HACS Custom Integration

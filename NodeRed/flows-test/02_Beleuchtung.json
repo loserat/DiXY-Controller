@@ -4,20 +4,21 @@
         "type": "function",
         "z": "8b56c5a208b005fb",
         "name": "Beleuchtungssteuerung PWM",
-        "func": "// Werte laden\nconst istAktiv = flow.get(\"licht_aktiv\") ?? true;\nconst modusSA_SU = flow.get(\"licht_sonnenaufgang_aktiv\") ?? false;\nconst manuell = flow.get(\"licht_modus\") ?? true;\nconst start = flow.get(\"licht_start\") ?? \"00:00\";\nconst ende = flow.get(\"licht_ende\") ?? \"23:59\";\nconst sunrise = parseInt(flow.get(\"licht_sonnenaufgang\") ?? 0, 10);\nconst helligkeit_auto = flow.get(\"licht_helligkeit_auto\") ?? 100;\nconst helligkeit_manuell = flow.get(\"licht_helligkeit_manuell\") ?? 100;\n\n// Uhrzeit berechnen\nconst jetzt = new Date();\nconst jetztMin = jetzt.getHours() * 60 + jetzt.getMinutes();\nconst startSplit = start.split(\":\");\nconst endeSplit = ende.split(\":\");\nconst startMin = parseInt(startSplit[0], 10) * 60 + parseInt(startSplit[1], 10);\nconst endeMin = parseInt(endeSplit[0], 10) * 60 + parseInt(endeSplit[1], 10);\n\n// Licht aktiv während Zeitfenster?\nlet lichtAn = istAktiv && (jetztMin >= startMin && jetztMin <= endeMin);\n\n// Zielhelligkeit: je nach Modus\nlet zielwert = manuell ? helligkeit_manuell : helligkeit_auto;\n\n// Sonnenaufgang/-untergang (wenn aktiv & Auto)\nif (lichtAn && !manuell && modusSA_SU && sunrise > 0) {\n    const t = jetztMin - startMin;\n    const gesamt = endeMin - startMin;\n\n    if (t < sunrise) {\n        zielwert = Math.round(zielwert * (t / sunrise));\n    } else if (t > gesamt - sunrise) {\n        zielwert = Math.round(zielwert * ((gesamt - t) / sunrise));\n    }\n}\n\n// Wenn außerhalb Lichtzeit: aus\nif (!lichtAn) zielwert = 0;\n\n// Begrenzen (Sicherheitsgrenze)\nzielwert = Math.max(0, Math.min(100, zielwert));\n\n// Anzeige im Node\nnode.status({\n    fill: lichtAn ? \"green\" : \"grey\",\n    shape: \"dot\",\n    text: (manuell ? \"Manuell: \" : \"Auto: \") + zielwert + \"%\"\n});\n\n// Ausgabe für Anzeige (Text mit Prozent)\nlet anzeige = zielwert + \" %\";\n\n// Ausgabe für PWM (Skala 0–255)\nlet pwm = Math.round(zielwert * 2.55);\n\n// Zwei Ausgänge:\nreturn [\n    { payload: anzeige },  // → ui-text für Prozentanzeige\n    { payload: pwm }       // → PWM-Ausgang\n];",
+        "func": "// Werte laden\nconst istAktiv = flow.get(\"licht_aktiv\") ?? true;\nconst modusSA_SU = flow.get(\"licht_sonnenaufgang_aktiv\") ?? false;\nconst manuell = flow.get(\"licht_modus\") ?? true;\nconst start = flow.get(\"licht_start\") ?? \"00:00\";\nconst ende = flow.get(\"licht_ende\") ?? \"23:59\";\nconst sunrise = parseInt(flow.get(\"licht_sonnenaufgang\") ?? 0, 10);\nconst helligkeit_auto = flow.get(\"licht_helligkeit_auto\") ?? 100;\nconst helligkeit_manuell = flow.get(\"licht_helligkeit_manuell\") ?? 100;\n\n// Debug: Eingangs- und Flowwerte\nnode.warn({\n    istAktiv, modusSA_SU, manuell, start, ende, sunrise, helligkeit_auto, helligkeit_manuell\n});\n\n// Uhrzeit berechnen\nconst jetzt = new Date();\nconst jetztMin = jetzt.getHours() * 60 + jetzt.getMinutes();\nconst startSplit = start.split(\":\");\nconst endeSplit = ende.split(\":\");\nconst startMin = parseInt(startSplit[0], 10) * 60 + parseInt(startSplit[1], 10);\nconst endeMin = parseInt(endeSplit[0], 10) * 60 + parseInt(endeSplit[1], 10);\n\n// Debug: Zeitwerte\nnode.warn({ jetztMin, startMin, endeMin });\n\n// Licht aktiv während Zeitfenster?\nlet lichtAn = istAktiv && (jetztMin >= startMin && jetztMin <= endeMin);\nnode.warn({ lichtAn });\n\n// Zielhelligkeit: je nach Modus\nlet zielwert = manuell ? helligkeit_manuell : helligkeit_auto;\nnode.warn({ zielwert_vor_SA_SU: zielwert });\n\n// Sonnenaufgang/-untergang (wenn aktiv & Auto)\nif (lichtAn && !manuell && modusSA_SU && sunrise > 0) {\n    const t = jetztMin - startMin;\n    const gesamt = endeMin - startMin;\n    node.warn({ t, gesamt });\n    if (t < sunrise) {\n        zielwert = Math.round(zielwert * (t / sunrise));\n        node.warn({ phase: 'Sonnenaufgang', zielwert });\n    } else if (t > gesamt - sunrise) {\n        zielwert = Math.round(zielwert * ((gesamt - t) / sunrise));\n        node.warn({ phase: 'Sonnenuntergang', zielwert });\n    }\n}\n\n// Wenn außerhalb Lichtzeit: aus\nif (!lichtAn) {\n    zielwert = 0;\n    node.warn({ phase: 'außerhalb Zeit', zielwert });\n}\n\n// Begrenzen (Sicherheitsgrenze)\nzielwert = Math.max(0, Math.min(100, zielwert));\nnode.warn({ zielwert_final: zielwert });\n\n// Anzeige im Node\nnode.status({\n    fill: lichtAn ? \"green\" : \"grey\",\n    shape: \"dot\",\n    text: (manuell ? \"Manuell: \" : \"Auto: \") + zielwert + \"%\"\n});\n\n// Ausgabe für Anzeige (Text mit Prozent)\nlet anzeige = zielwert + \" %\";\n\n// Ausgabe für PWM (Skala 0–255)\nlet pwm = Math.round(zielwert * 2.55);\nnode.warn({ anzeige, pwm });\n\n// Zwei Ausgänge:\nreturn [\n    { payload: anzeige },  // → ui-text für Prozentanzeige\n    { payload: pwm }       // → PWM-Ausgang\n];",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1460,
-        "y": 1078,
+        "x": 1479,
+        "y": 1083,
         "wires": [
             [
                 "fd31f07b5c0c34a2",
                 "467544a5987d1b51",
-                "1936250a1ef30ba6"
+                "1936250a1ef30ba6",
+                "d0584ba1c6f38c8d"
             ],
             [
                 "1936250a1ef30ba6",
@@ -112,7 +113,7 @@
         "type": "function",
         "z": "8b56c5a208b005fb",
         "name": "Startzeit speichern",
-        "func": "if (typeof msg.payload === \"string\" && msg.payload.includes(\":\")) {\n    flow.set(\"licht_start\", msg.payload);\n    node.warn(\"Startzeit gespeichert: \" + msg.payload);\n}\nreturn null;",
+        "func": "// Vollständiges Debug\nnode.warn({\n    payload: msg.payload,\n    payload_typ: typeof msg.payload,\n    attributes: msg.data?.attributes\n});\n\nconst attr = msg.data?.attributes;\nlet zeit;\n\n// Fall 1: Datum + Zeit → timestamp vorhanden\nif (typeof attr?.timestamp === \"number\") {\n    const d = new Date(attr.timestamp * 1000);\n    const hh = String(d.getHours()).padStart(2, \"0\");\n    const mm = String(d.getMinutes()).padStart(2, \"0\");\n    zeit = `${hh}:${mm}`;\n}\n\n// Fall 2: Nur Zeit → hour/minute\nelse if (attr?.has_time && typeof attr.hour === \"number\") {\n    const hh = String(attr.hour).padStart(2, \"0\");\n    const mm = String(attr.minute ?? 0).padStart(2, \"0\");\n    zeit = `${hh}:${mm}`;\n}\n\n// Ungültig\nelse {\n    node.warn({\n        status: \"FEHLER\",\n        grund: \"Keine Zeitinformationen gefunden\",\n        attributes: attr\n    });\n    return null;\n}\n\n// Speichern\nflow.set(\"licht_start\", zeit);\n\nnode.status({\n    fill: \"green\",\n    shape: \"dot\",\n    text: \"Startzeit: \" + zeit\n});\n\nnode.warn({\n    status: \"OK\",\n    gespeichert: zeit\n});\n\nreturn null;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -152,7 +153,7 @@
         "type": "debug",
         "z": "8b56c5a208b005fb",
         "name": "Automatikbetrieb",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -160,8 +161,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 952,
-        "y": 798,
+        "x": 1382,
+        "y": 703,
         "wires": []
     },
     {
@@ -186,7 +187,7 @@
         "type": "debug",
         "z": "8b56c5a208b005fb",
         "name": "Zeitschaltuhr Aktiv",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -194,8 +195,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 914,
-        "y": 629,
+        "x": 1363,
+        "y": 570,
         "wires": []
     },
     {
@@ -608,8 +609,8 @@
         "offvalueType": "bool",
         "officon": "",
         "offcolor": "",
-        "x": 884,
-        "y": 569,
+        "x": 924,
+        "y": 570,
         "wires": [
             [
                 "592cd08fe6dfb0b0",
@@ -634,8 +635,8 @@
         "color": "#000000",
         "wrapText": false,
         "className": "",
-        "x": 1810,
-        "y": 1005,
+        "x": 1935,
+        "y": 1083,
         "wires": []
     },
     {
@@ -694,8 +695,8 @@
         "height": "6",
         "className": "",
         "interpolation": "linear",
-        "x": 1860,
-        "y": 1125,
+        "x": 1895,
+        "y": 1178,
         "wires": [
             []
         ]
@@ -852,7 +853,7 @@
             {
                 "property": "payload",
                 "propertyType": "msg",
-                "value": "string",
+                "value": "ha_boolean",
                 "valueType": "entityState"
             },
             {
@@ -912,7 +913,7 @@
             {
                 "property": "payload",
                 "propertyType": "msg",
-                "value": "string",
+                "value": "ha_boolean",
                 "valueType": "entityState"
             },
             {
@@ -988,7 +989,7 @@
                 "valueType": "triggerId"
             }
         ],
-        "x": 824,
+        "x": 943,
         "y": 494,
         "wires": [
             [
@@ -1188,7 +1189,7 @@
         "correl": "",
         "expiry": "",
         "broker": "924c3f197169acb5",
-        "x": 1154,
+        "x": 1318,
         "y": 494,
         "wires": []
     },
@@ -1282,13 +1283,11 @@
                 "b0a27873c84cad6d",
                 "c49583976bcba8ea",
                 "a8216fab66c69b76",
-                "592cd08fe6dfb0b0",
-                "bf264928d8ca0faf",
-                "19aeb44827180842",
                 "c229e73a575ad673",
                 "58273d190d2e5041",
                 "df88e4f7a9bbf817",
-                "da03c53efd0d510f"
+                "da03c53efd0d510f",
+                "592cd08fe6dfb0b0"
             ]
         ]
     },
@@ -1304,7 +1303,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1665,
+        "x": 1779,
         "y": 133,
         "wires": [
             []
@@ -1575,6 +1574,55 @@
         ]
     },
     {
+        "id": "d0584ba1c6f38c8d",
+        "type": "api-call-service",
+        "z": "8b56c5a208b005fb",
+        "name": "",
+        "server": "3cb6c486a041ece4",
+        "version": 7,
+        "debugenabled": false,
+        "action": "light.turn_on",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [
+            "60442187e63c251c30b8dc7a2ba22ecf"
+        ],
+        "entityId": [],
+        "labelId": [],
+        "data": "",
+        "dataType": "jsonata",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "queue": "none",
+        "blockInputOverrides": true,
+        "domain": "light",
+        "service": "turn_on",
+        "x": 1982,
+        "y": 836,
+        "wires": [
+            [
+                "32fa30c2e14ea245"
+            ]
+        ]
+    },
+    {
+        "id": "32fa30c2e14ea245",
+        "type": "debug",
+        "z": "8b56c5a208b005fb",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2296,
+        "y": 703,
+        "wires": []
+    },
+    {
         "id": "924c3f197169acb5",
         "type": "mqtt-broker",
         "name": "",
@@ -1725,7 +1773,7 @@
         }
     },
     {
-        "id": "307d8f34050a9e57",
+        "id": "eb092d155f3c3c51",
         "type": "global-config",
         "env": [],
         "modules": {

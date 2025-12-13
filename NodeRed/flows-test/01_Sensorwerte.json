@@ -1,19 +1,11 @@
 [
     {
-        "id": "7b6e510609ee9a6d",
-        "type": "tab",
-        "label": "02_Sensorwerte",
-        "disabled": false,
-        "info": "",
-        "env": []
-    },
-    {
         "id": "23f84055dc32f788",
         "type": "mqtt in",
         "z": "7b6e510609ee9a6d",
         "d": true,
         "name": "",
-        "topic": "grow/temp1",
+        "topic": "dixy/sensor/zelt/lufttemp_ist",
         "qos": "2",
         "datatype": "auto-detect",
         "broker": "924c3f197169acb5",
@@ -21,7 +13,7 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 177,
+        "x": 227,
         "y": 760,
         "wires": [
             [
@@ -38,7 +30,7 @@
         "z": "7b6e510609ee9a6d",
         "d": true,
         "name": "",
-        "topic": "dixy/zelt/rlf_ist",
+        "topic": "dixy/sensors/zelt/rlf_ist",
         "qos": "2",
         "datatype": "auto-detect",
         "broker": "924c3f197169acb5",
@@ -46,7 +38,7 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 189,
+        "x": 209,
         "y": 456,
         "wires": [
             [
@@ -63,7 +55,7 @@
         "z": "7b6e510609ee9a6d",
         "d": true,
         "name": "",
-        "topic": "dixy/zelt/co_ist",
+        "topic": "dixy/sensors/zelt/co_ist",
         "qos": "2",
         "datatype": "auto-detect",
         "broker": "924c3f197169acb5",
@@ -71,8 +63,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 251,
-        "y": 1197,
+        "x": 290,
+        "y": 1273,
         "wires": [
             [
                 "86e2aedd649dd35a",
@@ -93,8 +85,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 346,
-        "y": 1691,
+        "x": 224,
+        "y": 1496,
         "wires": [
             [
                 "f58e142ff7c937c5",
@@ -107,7 +99,7 @@
         "type": "function",
         "z": "7b6e510609ee9a6d",
         "name": "VPD Berechnung",
-        "func": "let T = msg.payload.temp1;\nlet RH = msg.payload.rh;\n\nif (T == null || RH == null) {\n    return null;  // abbrechen, wenn ein Wert fehlt\n}\n\nlet svp = 0.6108 * Math.exp((17.27 * T) / (T + 237.3));\nlet avp = svp * (RH / 100);\nlet vpd = svp - avp;\n\n// Für Gauge oder Chart: Nur den VPD-Wert zurückgeben\nlet vpd_only = parseFloat(vpd.toFixed(2));\n\nlet msg_gauge = { payload: vpd_only };        // für Chart oder Gauge\nlet msg_full = {\n    payload: {\n        temperature: T,\n        humidity: RH,\n        vpd: vpd_only\n    }\n};  // für Debug oder OLED\n\nreturn [msg_gauge, msg_full];",
+        "func": "let T = msg.payload.temp1;\nlet RH = msg.payload.rh;\n\nif (T == null || RH == null) {\n    node.warn(\"VPD-Berechnung abgebrochen: Temperatur oder Luftfeuchte fehlt! T=\" + T + \", RH=\" + RH);\n    return [null, { payload: { error: \"Fehlende Werte\", temperature: T, humidity: RH } }];\n}\n\nlet svp = 0.6108 * Math.exp((17.27 * T) / (T + 237.3));\nlet avp = svp * (RH / 100);\nlet vpd = svp - avp;\n\nlet vpd_only = parseFloat(vpd.toFixed(2));\n\nlet msg_gauge = { payload: vpd_only };\nlet msg_full = {\n    payload: {\n        temperature: T,\n        humidity: RH,\n        vpd: vpd_only\n    }\n};\n\nreturn [msg_gauge, msg_full];",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
@@ -231,8 +223,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 156,
-        "y": 950,
+        "x": 270,
+        "y": 1007,
         "wires": [
             [
                 "0791b9fbc5e40923",
@@ -296,8 +288,8 @@
         "height": 8,
         "className": "",
         "interpolation": "linear",
-        "x": 695,
-        "y": 1102,
+        "x": 714,
+        "y": 1178,
         "wires": [
             []
         ]
@@ -358,8 +350,8 @@
         "height": 8,
         "className": "",
         "interpolation": "linear",
-        "x": 516,
-        "y": 874,
+        "x": 706,
+        "y": 950,
         "wires": [
             []
         ]
@@ -420,8 +412,8 @@
         "height": 8,
         "className": "",
         "interpolation": "linear",
-        "x": 698,
-        "y": 1696,
+        "x": 576,
+        "y": 1501,
         "wires": [
             []
         ]
@@ -710,8 +702,8 @@
         "styleRounded": true,
         "styleGlow": false,
         "className": "",
-        "x": 717,
-        "y": 1292,
+        "x": 1629,
+        "y": 1121,
         "wires": [
             []
         ]
@@ -814,8 +806,8 @@
         "styleRounded": true,
         "styleGlow": false,
         "className": "",
-        "x": 670,
-        "y": 1045,
+        "x": 689,
+        "y": 1121,
         "wires": [
             []
         ]
@@ -870,8 +862,8 @@
         "styleRounded": true,
         "styleGlow": false,
         "className": "",
-        "x": 516,
-        "y": 817,
+        "x": 700,
+        "y": 874,
         "wires": [
             []
         ]
@@ -922,8 +914,8 @@
         "styleRounded": true,
         "styleGlow": false,
         "className": "",
-        "x": 679,
-        "y": 1634,
+        "x": 557,
+        "y": 1439,
         "wires": [
             []
         ]
@@ -969,7 +961,9 @@
         "x": 1608,
         "y": 492,
         "wires": [
-            []
+            [
+                "a9b2cdff7eb4dc26"
+            ]
         ]
     },
     {
@@ -978,7 +972,7 @@
         "z": "7b6e510609ee9a6d",
         "d": true,
         "name": "",
-        "topic": "grow/ec",
+        "topic": "dixy/sensors/hydro/ec_ist",
         "qos": "2",
         "datatype": "auto-detect",
         "broker": "924c3f197169acb5",
@@ -986,8 +980,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 1150,
-        "y": 1007,
+        "x": 1295,
+        "y": 988,
         "wires": [
             [
                 "fb19bb5a6bf18482",
@@ -1052,8 +1046,8 @@
         "height": 8,
         "className": "",
         "interpolation": "linear",
-        "x": 1403,
-        "y": 950,
+        "x": 1599,
+        "y": 931,
         "wires": [
             []
         ]
@@ -1114,8 +1108,8 @@
         "height": 8,
         "className": "",
         "interpolation": "linear",
-        "x": 1403,
-        "y": 1007,
+        "x": 1599,
+        "y": 988,
         "wires": [
             []
         ]
@@ -1166,8 +1160,8 @@
         "styleRounded": true,
         "styleGlow": false,
         "className": "",
-        "x": 1403,
-        "y": 893,
+        "x": 1599,
+        "y": 874,
         "wires": [
             []
         ]
@@ -1176,14 +1170,14 @@
         "id": "60dd9088bc441d99",
         "type": "server-state-changed",
         "z": "7b6e510609ee9a6d",
-        "name": "Luftfeuchtigkeit Zelt Innen",
+        "name": "Luftfeuchtigkeit Zelt",
         "server": "3cb6c486a041ece4",
         "version": 6,
         "outputs": 1,
         "exposeAsEntityConfig": "",
         "entities": {
             "entity": [
-                "sensor.simulation_sim_rlf"
+                "sensor.zeltsensor_relative_luftfeuchte"
             ],
             "substring": [],
             "regex": []
@@ -1206,7 +1200,7 @@
             {
                 "property": "payload",
                 "propertyType": "msg",
-                "value": "boolean",
+                "value": "number",
                 "valueType": "entityState"
             },
             {
@@ -1222,7 +1216,7 @@
                 "valueType": "triggerId"
             }
         ],
-        "x": 194,
+        "x": 174,
         "y": 266,
         "wires": [
             [
@@ -1245,7 +1239,7 @@
         "exposeAsEntityConfig": "",
         "entities": {
             "entity": [
-                "sensor.simulation_sim_ph"
+                "sensor.zeltsensor_ph_dummy"
             ],
             "substring": [],
             "regex": []
@@ -1284,8 +1278,8 @@
                 "valueType": "triggerId"
             }
         ],
-        "x": 121,
-        "y": 817,
+        "x": 140,
+        "y": 874,
         "wires": [
             [
                 "0791b9fbc5e40923",
@@ -1305,200 +1299,7 @@
         "exposeAsEntityConfig": "",
         "entities": {
             "entity": [
-                "sensor.simulation_sim_temperatur"
-            ],
-            "substring": [],
-            "regex": []
-        },
-        "outputInitially": false,
-        "stateType": "str",
-        "ifState": "",
-        "ifStateType": "str",
-        "ifStateOperator": "is",
-        "outputOnlyOnStateChange": false,
-        "for": "0",
-        "forType": "num",
-        "forUnits": "minutes",
-        "ignorePrevStateNull": false,
-        "ignorePrevStateUnknown": false,
-        "ignorePrevStateUnavailable": false,
-        "ignoreCurrentStateUnknown": false,
-        "ignoreCurrentStateUnavailable": false,
-        "outputProperties": [
-            {
-                "property": "payload",
-                "propertyType": "msg",
-                "value": "number",
-                "valueType": "entityState"
-            },
-            {
-                "property": "data",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "eventData"
-            },
-            {
-                "property": "topic",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "triggerId"
-            }
-        ],
-        "x": 185,
-        "y": 589,
-        "wires": [
-            [
-                "a2ed65458ce67d9e",
-                "fb4fc3c101241640",
-                "512fb60f0c44f582",
-                "d97526443224e3ba",
-                "c3380ad3dd9c9a4a"
-            ]
-        ]
-    },
-    {
-        "id": "fb4fc3c101241640",
-        "type": "mqtt out",
-        "z": "7b6e510609ee9a6d",
-        "name": "",
-        "topic": "dixy/zelt/lufttemp_ist",
-        "qos": "",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "924c3f197169acb5",
-        "x": 271,
-        "y": 684,
-        "wires": []
-    },
-    {
-        "id": "42d49c15ae17b39c",
-        "type": "mqtt out",
-        "z": "7b6e510609ee9a6d",
-        "name": "",
-        "topic": "dixy/zelt/rlf_ist",
-        "qos": "",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "924c3f197169acb5",
-        "x": 243,
-        "y": 380,
-        "wires": []
-    },
-    {
-        "id": "dcda9601f4202d2a",
-        "type": "server-state-changed",
-        "z": "7b6e510609ee9a6d",
-        "name": "EC IST",
-        "server": "3cb6c486a041ece4",
-        "version": 6,
-        "outputs": 1,
-        "exposeAsEntityConfig": "",
-        "entities": {
-            "entity": [
-                "sensor.simulation_sim_ec"
-            ],
-            "substring": [],
-            "regex": []
-        },
-        "outputInitially": false,
-        "stateType": "str",
-        "ifState": "",
-        "ifStateType": "str",
-        "ifStateOperator": "is",
-        "outputOnlyOnStateChange": true,
-        "for": "0",
-        "forType": "num",
-        "forUnits": "minutes",
-        "ignorePrevStateNull": false,
-        "ignorePrevStateUnknown": false,
-        "ignorePrevStateUnavailable": false,
-        "ignoreCurrentStateUnknown": false,
-        "ignoreCurrentStateUnavailable": false,
-        "outputProperties": [
-            {
-                "property": "payload",
-                "propertyType": "msg",
-                "value": "string",
-                "valueType": "entityState"
-            },
-            {
-                "property": "data",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "eventData"
-            },
-            {
-                "property": "topic",
-                "propertyType": "msg",
-                "value": "",
-                "valueType": "triggerId"
-            }
-        ],
-        "x": 875,
-        "y": 893,
-        "wires": [
-            [
-                "fb19bb5a6bf18482",
-                "d3df597ca1911a25"
-            ]
-        ]
-    },
-    {
-        "id": "d3df597ca1911a25",
-        "type": "mqtt out",
-        "z": "7b6e510609ee9a6d",
-        "name": "",
-        "topic": "dixy/hydro/ec_ist",
-        "qos": "",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "924c3f197169acb5",
-        "x": 1139,
-        "y": 950,
-        "wires": []
-    },
-    {
-        "id": "982ef2aa93f1169f",
-        "type": "mqtt out",
-        "z": "7b6e510609ee9a6d",
-        "name": "",
-        "topic": "dixy/hydro/ph_ist",
-        "qos": "",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "924c3f197169acb5",
-        "x": 195,
-        "y": 893,
-        "wires": []
-    },
-    {
-        "id": "2004a2ededeecbb0",
-        "type": "server-state-changed",
-        "z": "7b6e510609ee9a6d",
-        "name": "CO2 IST",
-        "server": "3cb6c486a041ece4",
-        "version": 6,
-        "outputs": 1,
-        "exposeAsEntityConfig": "",
-        "entities": {
-            "entity": [
-                "sensor.hydroknoten_ph_wert"
+                "sensor.zeltsensor_bmp280_temperatur"
             ],
             "substring": [],
             "regex": []
@@ -1537,8 +1338,201 @@
                 "valueType": "triggerId"
             }
         ],
-        "x": 135,
-        "y": 1045,
+        "x": 185,
+        "y": 589,
+        "wires": [
+            [
+                "a2ed65458ce67d9e",
+                "fb4fc3c101241640",
+                "512fb60f0c44f582",
+                "d97526443224e3ba",
+                "c3380ad3dd9c9a4a"
+            ]
+        ]
+    },
+    {
+        "id": "fb4fc3c101241640",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/sensors/zelt/lufttemp_ist",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 301,
+        "y": 684,
+        "wires": []
+    },
+    {
+        "id": "42d49c15ae17b39c",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/sensors/zelt/rlf_ist",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 273,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "dcda9601f4202d2a",
+        "type": "server-state-changed",
+        "z": "7b6e510609ee9a6d",
+        "name": "EC IST",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "sensor.zeltsensor_ec_dummy"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "string",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 970,
+        "y": 874,
+        "wires": [
+            [
+                "fb19bb5a6bf18482",
+                "d3df597ca1911a25"
+            ]
+        ]
+    },
+    {
+        "id": "d3df597ca1911a25",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/sensors/hydro/ec_ist",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 1239,
+        "y": 931,
+        "wires": []
+    },
+    {
+        "id": "982ef2aa93f1169f",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/sensors/hydro/ph_ist",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 319,
+        "y": 950,
+        "wires": []
+    },
+    {
+        "id": "2004a2ededeecbb0",
+        "type": "server-state-changed",
+        "z": "7b6e510609ee9a6d",
+        "name": "CO2 IST",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "sensor.zeltsensor_co2_dummy"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": false,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "ha_boolean",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 154,
+        "y": 1121,
         "wires": [
             [
                 "86e2aedd649dd35a",
@@ -1552,7 +1546,7 @@
         "type": "mqtt out",
         "z": "7b6e510609ee9a6d",
         "name": "",
-        "topic": "dixy/zelt/co_ist",
+        "topic": "dixy/sensors/zelt/co_ist",
         "qos": "",
         "retain": "",
         "respTopic": "",
@@ -1561,8 +1555,8 @@
         "correl": "",
         "expiry": "",
         "broker": "924c3f197169acb5",
-        "x": 262,
-        "y": 1121,
+        "x": 311,
+        "y": 1197,
         "wires": []
     },
     {
@@ -1579,8 +1573,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 327,
-        "y": 1444,
+        "x": 1269,
+        "y": 1273,
         "wires": [
             [
                 "2c7b88812b2627e1",
@@ -1644,8 +1638,8 @@
         "height": 8,
         "className": "",
         "interpolation": "linear",
-        "x": 767,
-        "y": 1444,
+        "x": 1679,
+        "y": 1273,
         "wires": [
             []
         ]
@@ -1684,7 +1678,7 @@
             {
                 "property": "payload",
                 "propertyType": "msg",
-                "value": "ha_boolean",
+                "value": "number",
                 "valueType": "entityState"
             },
             {
@@ -1700,8 +1694,8 @@
                 "valueType": "triggerId"
             }
         ],
-        "x": 166,
-        "y": 1292,
+        "x": 1007,
+        "y": 1121,
         "wires": [
             [
                 "2c7b88812b2627e1",
@@ -1714,7 +1708,7 @@
         "type": "mqtt out",
         "z": "7b6e510609ee9a6d",
         "name": "",
-        "topic": "dixy/hydro/wasser_1_temp",
+        "topic": "dixy/sensors/hydro/wasser1_temp",
         "qos": "",
         "retain": "",
         "respTopic": "",
@@ -1723,8 +1717,102 @@
         "correl": "",
         "expiry": "",
         "broker": "924c3f197169acb5",
-        "x": 329,
-        "y": 1368,
+        "x": 1223,
+        "y": 1197,
+        "wires": []
+    },
+    {
+        "id": "a9b2cdff7eb4dc26",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/zelt/vpd_ist",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 1885,
+        "y": 475,
+        "wires": []
+    },
+    {
+        "id": "ac411d38682673ed",
+        "type": "server-state-changed",
+        "z": "7b6e510609ee9a6d",
+        "name": "Luftdruck Zelt",
+        "server": "3cb6c486a041ece4",
+        "version": 6,
+        "outputs": 1,
+        "exposeAsEntityConfig": "",
+        "entities": {
+            "entity": [
+                "sensor.zeltsensor_bmp280_luftdruck"
+            ],
+            "substring": [],
+            "regex": []
+        },
+        "outputInitially": false,
+        "stateType": "str",
+        "ifState": "",
+        "ifStateType": "str",
+        "ifStateOperator": "is",
+        "outputOnlyOnStateChange": true,
+        "for": "0",
+        "forType": "num",
+        "forUnits": "minutes",
+        "ignorePrevStateNull": false,
+        "ignorePrevStateUnknown": false,
+        "ignorePrevStateUnavailable": false,
+        "ignoreCurrentStateUnknown": false,
+        "ignoreCurrentStateUnavailable": false,
+        "outputProperties": [
+            {
+                "property": "payload",
+                "propertyType": "msg",
+                "value": "number",
+                "valueType": "entityState"
+            },
+            {
+                "property": "data",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "eventData"
+            },
+            {
+                "property": "topic",
+                "propertyType": "msg",
+                "value": "",
+                "valueType": "triggerId"
+            }
+        ],
+        "x": 222,
+        "y": 57,
+        "wires": [
+            [
+                "6de1f90290627c08"
+            ]
+        ]
+    },
+    {
+        "id": "6de1f90290627c08",
+        "type": "mqtt out",
+        "z": "7b6e510609ee9a6d",
+        "name": "",
+        "topic": "dixy/sensors/zelt/luftdruck_ist",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "924c3f197169acb5",
+        "x": 361,
+        "y": 171,
         "wires": []
     },
     {
@@ -1978,7 +2066,7 @@
         }
     },
     {
-        "id": "a63181939f56c2e4",
+        "id": "d9f84a76b6a3ef4b",
         "type": "global-config",
         "env": [],
         "modules": {
