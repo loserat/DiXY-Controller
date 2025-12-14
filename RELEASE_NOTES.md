@@ -19,22 +19,43 @@
 
 ---
 
+
 ## 📊 Version Overview
 
 | Version | Status | Focus | Target |
 |---------|--------|-------|--------|
-| **v0.1** | 🟢 Current | Baseline - all nodes at v0.1 | Dec 08, 2025 |
-| **v0.2–0.9** | 🔄 Planned | Improvements + features | 2025-12-31 |
-| **v1.0–1.9** | 🔴 Planned | Dosierungsknoten (EC/pH Auto) | Jan 2026 |
-| **v2.0–2.9** | 🔴 Planned | KI-Anbindung (Plant Stress ML) | Feb 2026 |
-| **v3.0–3.9** | 🔴 Planned | Hardware-Optimierung (MQTT, PID, Multi-Zelt) | Mar 2026 |
+| **v0.2** | 🟢 Current | Node-RED, ESPHome Cleanup, Docs | Dec 14, 2025 |
+| **v0.1** | ⚪️ Baseline | All nodes at v0.1 | Dec 08, 2025 |
+| **v0.3** | 🔄 Planned | HACS Custom Integration | Dec 22, 2025 |
+| **v1.0** | 🔴 Planned | Production Release | Jan 2026 |
+| **v2.0** | 🔴 Planned | KI-Anbindung (Plant Stress ML) | Feb 2026 |
+| **v3.0** | 🔴 Planned | Hardware-Optimierung (MQTT, PID, Multi-Zelt) | Mar 2026 |
 | **v4.0+** | 🔴 Planned | Deep Learning (YOLOv8, Mobile App) | Q2+ 2026 |
+
+---
+
+
+---
+
+## 🚀 v0.2: Node-RED, ESPHome Cleanup, Docs
+
+**Status:** 🟢 Current  
+**Release Date:** Dec 14, 2025
+
+### Changes from v0.1
+- ✅ Node-RED Flows in `NodeRed/flows-test/` produktiv übernommen (Sensorwerte, Beleuchtung, gemischte Flows)
+- ✅ PWM- und Lichtsteuerung in Node-RED getestet und debuggt
+- ✅ Readmes für Hauptprojekt, Zeltsensor, Home Assistant und Node-RED aktualisiert/erstellt
+- ✅ ESPHome YAMLs (zeltsensor_v6.yaml etc.) aufgeräumt, Dummy-Sensoren und Diagnose sauber getrennt
+- ✅ Struktur und Dateinamen im Repository vereinheitlicht, Altlasten entfernt
+- 🐛 Diverse Bugfixes und Verbesserungen in den Flows und YAMLs
+- 📝 RELEASE_NOTES.md und Dokumentation auf aktuellen Stand gebracht
 
 ---
 
 ## 🚀 v0.1: Baseline Release
 
-**Status:** 🟢 Current  
+**Status:** ⚪️ Baseline  
 **Release Date:** Dec 08, 2025
 
 ### Components at v0.1
@@ -60,29 +81,6 @@
 ---
 
 ## 📝 Future Versions (Planned)
-
-
-### v0.2 (Release Date: 2025-12-13)
-**Focus:** Node-RED Integration, ESPHome Cleanup, Doku-Update**
-
-**Changes from v0.1:**
-- ✅ Node-RED Flows in `NodeRed/flows-test/` produktiv übernommen (Sensorwerte, Beleuchtung, gemischte Flows)
-- ✅ PWM- und Lichtsteuerung in Node-RED getestet und debuggt
-- ✅ Readmes für Hauptprojekt, Zeltsensor, Home Assistant und Node-RED aktualisiert/erstellt
-- ✅ ESPHome YAMLs (zeltsensor_v6.yaml etc.) aufgeräumt, Dummy-Sensoren und Diagnose sauber getrennt
-- ✅ Struktur und Dateinamen im Repository vereinheitlicht, Altlasten entfernt
-- 🐛 Diverse Bugfixes und Verbesserungen in den Flows und YAMLs
-- 📝 RELEASE_NOTES.md und Dokumentation auf aktuellen Stand gebracht
-
----
-
-### v0.3 (Planned: Dec 22, 2025)
-**Focus:** HACS Custom Integration
-
-**Planned changes:**
-- [ ] Develop custom_components/dixy_controller/
-- [ ] Auto-discovery of nodes via MQTT
-- [ ] Unified dashboard auto-generation
 
 ### v0.3 (Planned: Dec 22, 2025)
 **Focus:** HACS Custom Integration
@@ -115,9 +113,6 @@
 - [ ] Dashboard Template erstellt
 - [ ] Kalibrier-Buttons funktional
 - [ ] Offset-Anpassung getestet
-
-### v0.2 (Zeltsensor Integration)
-**Target:** Dec 14, 2025
 
 #### Features
 - [ ] AS7341 Spektralsensor (8 Kanäle: VN, BN, BLUE, CYAN, GREEN, YELLOW, ORANGE, RED, NIR)
