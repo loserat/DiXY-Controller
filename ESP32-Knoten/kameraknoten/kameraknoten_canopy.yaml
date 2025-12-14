@@ -27,8 +27,6 @@
 # - Automatische Flashlight-Steuerung
 ################################################################################
 
-Test
-
 substitutions:
   device_name: kameraknoten-canopy
   friendly_name: "Kamera Canopy"
