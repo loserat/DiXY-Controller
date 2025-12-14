@@ -35,3 +35,5 @@ select KNOTEN in $KNOTEN_DIRS; do
     echo "Ungültige Auswahl. Bitte erneut versuchen."
   fi
 done
+
+
