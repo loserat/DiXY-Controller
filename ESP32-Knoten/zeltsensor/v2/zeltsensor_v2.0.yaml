@@ -52,8 +52,11 @@ sensor:
     accuracy_decimals: 1
     update_interval: 10s
     lambda: |-
-      static float rlf = 60.0f;
-      rlf += (float((rand() % 20) - 10)) / 10.0f;
+      // Simuliere Tagesverlauf mit Sinusfunktion (max morgens, min nachmittags)
+      auto t = id(esphome_time).now().hour + id(esphome_time).now().minute / 60.0;
+      float amplitude = 20.0f; // Schwankung ±20%
+      float base = 60.0f;      // Mittelwert
+      float rlf = base + amplitude * sinf(3.14159 * (t - 6) / 12.0); // Maximum ca. 6 Uhr, Minimum ca. 18 Uhr
       if (rlf < 40.0f) rlf = 40.0f;
       if (rlf > 80.0f) rlf = 80.0f;
       return rlf;
@@ -81,10 +84,26 @@ sensor:
     update_interval: 30s
     lambda: |-
       static int co2 = 1200;
-      co2 += (rand() % 101) - 50; // ±50
+      co2 += (rand() % 21) - 10; // ±10
       if (co2 < 400) co2 = 400;
       if (co2 > 2000) co2 = 2000;
       return co2;
+
+  - platform: template
+    name: "VPD Dummy"
+    id: vpd_dummy
+    unit_of_measurement: "kPa"
+    accuracy_decimals: 2
+    state_class: measurement
+    update_interval: 30s
+    lambda: |-
+      // VPD-Berechnung aus Temperatur und Luftfeuchte
+      float temp = 24.0f; // Dummy-Wert, kann durch echten Sensor ersetzt werden
+      float rlf = 60.0f;  // Dummy-Wert, kann durch echten Sensor ersetzt werden
+      float es = 0.6108 * exp((17.27 * temp) / (temp + 237.3));
+      float ea = es * (rlf / 100.0f);
+      float vpd = es - ea;
+      return vpd;
 
   - platform: template
     name: "Zeltlampe Helligkeit"
