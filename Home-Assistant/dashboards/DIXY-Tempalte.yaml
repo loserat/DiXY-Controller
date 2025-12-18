@@ -1,0 +1,764 @@
+views:
+  - title: Dashboard
+    cards:
+      - type: custom:mini-graph-card
+        name: VPD-Wert Verlauf (48h)
+        entities:
+          - entity: sensor.zeltsensor_vpd_dummy
+            name: VPD
+          - entity: sensor.zeltsensor_relative_luftfeuchte
+            name: RLF
+          - entity: sensor.zeltsensor_bmp280_temperatur
+            name: Temp
+        hours_to_show: 48
+        points_per_hour: 4
+      - type: custom:mini-graph-card
+        name: EC-Wert Verlauf
+        entities:
+          - entity: sensor.zeltsensor_ec_dummy
+            name: Istwert
+          - entity: input_number.ph_soll
+            name: Sollwert
+        hours_to_show: 24
+        points_per_hour: 2
+      - type: custom:mini-graph-card
+        name: Temperatur-Verlauf Zelt (48h)
+        entities:
+          - entity: sensor.zeltsensor_bmp280_temperatur
+            name: IST
+          - entity: input_number.co2_soll
+            name: SOLL
+        hours_to_show: 48
+        points_per_hour: 2
+      - type: custom:mini-graph-card
+        name: PH-Wert Verlauf
+        entities:
+          - entity: sensor.zeltsensor_ph_dummy
+            name: Istwert
+          - entity: input_number.ph_soll
+            name: Sollwert
+        hours_to_show: 48
+        points_per_hour: 2
+      - type: custom:mini-graph-card
+        name: CO2-Verlauf SOLL/IST
+        entities:
+          - entity: sensor.zeltsensor_co2_dummy
+            name: IST
+          - entity: input_number.co2_soll
+            name: SOLL
+        hours_to_show: 48
+        points_per_hour: 2
+      - type: custom:mini-graph-card
+        name: Systemvolumen
+        entities:
+          - entity: sensor.vpd_ist
+            name: IST
+          - entity: input_number.vpd_soll
+            name: SOLL
+        hours_to_show: 48
+        points_per_hour: 2
+      - type: custom:mini-graph-card
+        name: Beleuchtungsverlauf (24h)
+        entities:
+          - entity: sensor.zeltsensor_zeltlampe_helligkeit
+            name: Helligkeit %
+          - entity: input_number.helligkeit_manuell
+            name: Helligkeit manuell
+        hours_to_show: 24
+        points_per_hour: 4
+      - type: custom:as7341-spectrum-card
+        title: Lichtspektrum Zeltsensor
+        entities:
+          f1: sensor.zeltsensor_as7341_f1_415nm
+          f2: sensor.zeltsensor_as7341_f2_445nm
+          f3: sensor.zeltsensor_as7341_f3_480nm
+          f4: sensor.zeltsensor_as7341_f4_515nm
+          f5: sensor.zeltsensor_as7341_f5_555nm
+          f6: sensor.zeltsensor_as7341_f6_590nm
+          f7: sensor.zeltsensor_as7341_f7_630nm
+          f8: sensor.zeltsensor_as7341_f8_680nm
+          clear: sensor.zeltsensor_as7341_clear
+          nir: sensor.zeltsensor_as7341_nir
+      - type: custom:ha-vpd-chart
+        vpd_phases:
+          - upper: 0
+            className: gray-danger-zone
+            color: '#999999'
+          - lower: 0
+            upper: 0.4
+            className: under-transpiration
+            color: '#1a6c9c'
+          - lower: 0.4
+            upper: 0.8
+            className: early-veg
+            color: '#22ab9c'
+          - lower: 0.8
+            upper: 1.2
+            className: late-veg
+            color: '#9cc55b'
+          - lower: 1.2
+            upper: 1.6
+            className: mid-late-flower
+            color: '#e7c12b'
+          - lower: 1.6
+            className: danger-zone
+            color: '#ce4234'
+        rooms:
+          - humidity: sensor.zeltsensor_relative_luftfeuchte
+            name: Zelt 1
+            temperature: sensor.zeltsensor_bmp280_temperatur
+            leaf_temperature: sensor.zeltsensor_bmp280_temperatur
+        is_bar_view: false
+        min_temperature: 5
+        max_temperature: 35
+        min_humidity: 10
+        max_humidity: 90
+        min_height: 200
+        leaf_temperature_offset: 2
+        enable_tooltip: false
+        leaf_text: Blatt
+        rh_text: RLF
+        kpa_text: kPa
+        enable_axes: true
+        enable_ghostclick: true
+        enable_ghostmap: false
+        enable_triangle: false
+        enable_crosshair: true
+        enable_zoom: true
+        enable_show_always_informations: false
+        enable_legend: false
+        ghostmap_hours: 24
+        antialiasing: 5
+        unit_temperature: °C
+        air_text: Luft
+    type: masonry
+    badges: []
+  - type: sections
+    max_columns: 4
+    title: Beleuchtung
+    path: beleuchtung
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Zeitschaltuhrbetrieb
+            heading_style: subtitle
+            icon: mdi:sun-clock
+          - type: custom:mushroom-light-card
+            entity: light.zeltsensor_zeltlampe
+            name: Zeltlampe SF-G3000
+            use_light_color: false
+            show_brightness_control: true
+            show_color_control: false
+            show_color_temp_control: false
+            collapsible_controls: true
+            fill_container: false
+            layout: horizontal
+            icon: mdi:lightbulb
+          - show_name: true
+            show_icon: true
+            type: button
+            entity: input_boolean.zeitschaltuhr
+            grid_options:
+              columns: 6
+              rows: 2
+          - type: tile
+            grid_options:
+              columns: 3
+              rows: 2
+            entity: input_datetime.einschaltzeit
+            vertical: true
+            features_position: bottom
+          - type: tile
+            grid_options:
+              columns: 3
+              rows: 2
+            entity: input_datetime.ausschaltzeit
+            vertical: true
+            features_position: bottom
+          - type: custom:mushroom-number-card
+            entity: input_number.lichtwert_zeitschaltuhr
+            icon_color: red
+            layout: horizontal
+            name: 'Beleuchtungstärke '
+          - graph: line
+            type: sensor
+            entity: input_number.helligkeit_manuell
+            detail: 1
+            grid_options:
+              columns: full
+      - type: grid
+        cards:
+          - type: heading
+            heading: Sonnenauf- & Untergangs Simulation
+            heading_style: subtitle
+            icon: mdi:sun-snowflake-variant
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: input_boolean.sa_su_automatik
+            grid_options:
+              columns: full
+              rows: 1
+            name: Sonnenauf- & Untergangs Simulation
+            theme: Mushroom
+          - type: custom:mushroom-number-card
+            entity: input_number.sonnenaufgangszeit
+            layout: horizontal
+            visibility:
+              - condition: state
+                entity: input_boolean.sa_su_automatik
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: input_number.sonnenuntergangszeit
+            layout: horizontal
+            visibility:
+              - condition: state
+                entity: input_boolean.sa_su_automatik
+                state: 'on'
+        column_span: 1
+      - type: grid
+        cards:
+          - type: heading
+            heading: Manueller Betrieb
+            heading_style: subtitle
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: input_boolean.manuell
+            icon: mdi:television-ambient-light
+            grid_options:
+              columns: 12
+              rows: 1
+            name: Manuelle Steuerung aktivieren
+          - type: custom:mushroom-number-card
+            entity: input_number.helligkeit_manuell
+            icon_color: red
+            layout: horizontal
+            name: 'Beleuchtungstärke '
+            icon: mdi:account-wrench
+            visibility:
+              - condition: state
+                entity: input_boolean.manuell
+                state: 'on'
+      - type: grid
+        cards:
+          - type: custom:as7341-spectrum-card
+            title: Lichtspektrum Zeltsensor
+            entities:
+              f1: sensor.zeltsensor_as7341_f1_415nm
+              f2: sensor.zeltsensor_as7341_f2_445nm
+              f3: sensor.zeltsensor_as7341_f3_480nm
+              f4: sensor.zeltsensor_as7341_f4_515nm
+              f5: sensor.zeltsensor_as7341_f5_555nm
+              f6: sensor.zeltsensor_as7341_f6_590nm
+              f7: sensor.zeltsensor_as7341_f7_630nm
+              f8: sensor.zeltsensor_as7341_f8_680nm
+              clear: sensor.zeltsensor_as7341_clear
+              nir: sensor.zeltsensor_as7341_nir
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_ppfd_mmol_m2s
+            detail: 1
+            grid_options:
+              columns: full
+              rows: 2
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_dli_mol_m2d
+            detail: 1
+            grid_options:
+              columns: full
+              rows: 2
+            name: DLI (48h)
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_lux_as7341
+            detail: 1
+            grid_options:
+              columns: full
+              rows: 2
+            name: Beleuchtungstärke
+            limits: {}
+    badges:
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.zeltsensor_dli_mol_m2d
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.zeltsensor_ppfd_mmol_m2s
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.zeltsensor_lux_as7341
+      - type: entity
+        entity: sensor.zeltsensor_zeltlampe_helligkeit
+  - type: sections
+    max_columns: 4
+    title: Zeltsensor
+    path: klima
+    sections:
+      - type: grid
+        cards:
+          - type: tile
+            entity: sensor.zeltsensor_bmp280_temperatur
+          - type: tile
+            entity: sensor.zeltsensor_bmp280_luftdruck
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_bmp280_temperatur
+            grid_options:
+              columns: full
+            detail: 1
+            limits: {}
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_bmp280_luftdruck
+            grid_options:
+              columns: full
+            detail: 1
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_ds18b20_dummy
+            grid_options:
+              columns: full
+            detail: 1
+          - type: custom:ha-vpd-chart
+            vpd_phases:
+              - upper: 0
+                className: gray-danger-zone
+                color: '#999999'
+              - lower: 0
+                upper: 0.4
+                className: under-transpiration
+                color: '#1a6c9c'
+              - lower: 0.4
+                upper: 0.8
+                className: early-veg
+                color: '#22ab9c'
+              - lower: 0.8
+                upper: 1.2
+                className: late-veg
+                color: '#9cc55b'
+              - lower: 1.2
+                upper: 1.6
+                className: mid-late-flower
+                color: '#e7c12b'
+              - lower: 1.6
+                className: danger-zone
+                color: '#ce4234'
+            rooms:
+              - humidity: sensor.zeltsensor_relative_luftfeuchte
+                name: Grow 1
+                temperature: sensor.zeltsensor_bmp280_temperatur
+            is_bar_view: false
+            min_temperature: 5
+            max_temperature: 35
+            min_humidity: 10
+            max_humidity: 90
+            min_height: 200
+            leaf_temperature_offset: 2
+            enable_tooltip: false
+            air_text: Air
+            leaf_text: Leaf
+            rh_text: RH
+            kpa_text: kPa
+            enable_axes: true
+            enable_ghostclick: true
+            enable_ghostmap: true
+            enable_triangle: false
+            enable_crosshair: true
+            enable_zoom: true
+            enable_show_always_informations: true
+            enable_legend: false
+            ghostmap_hours: 24
+            antialiasing: 5
+            unit_temperature: °C
+          - type: custom:mini-graph-card
+            name: 'PH-SOLL UND PH-IST:'
+            entities:
+              - entity: sensor.zeltsensor_
+                name: VPD-IST
+              - entity: input_number.vpd_soll
+                name: VPD-SOLL
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_co2_dummy
+            detail: 1
+            name: CO2-Verlauf (24h)
+            grid_options:
+              columns: 12
+              rows: 2
+            icon: mdi:molecule-co2
+    badges:
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.zeltsensor_bmp280_temperatur
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: false
+        entity: sensor.zeltsensor_bmp280_luftdruck
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: false
+        entity: sensor.vpd_ist
+        name: 'VPD:'
+        show_entity_picture: false
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: binary_sensor.zeltsensor_esp_status
+        color: green
+    cards: []
+  - type: sections
+    max_columns: 4
+    title: EC-Regelung
+    path: ec-regelung
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Neuer Abschnitt
+          - type: custom:mini-graph-card
+            name: EC-Wert Verlauf
+            entities:
+              - entity: sensor.zeltsensor_ec_dummy
+                name: Istwert
+              - entity: input_number.ph_soll
+                name: Sollwert
+            hours_to_show: 24
+            points_per_hour: 2
+  - type: sections
+    max_columns: 4
+    title: VPD-Regelung
+    path: vpd-regelung
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: VPD-Dosierungssteuerung
+            heading_style: subtitle
+          - type: custom:mini-graph-card
+            name: VPD-Wert Verlauf (48h)
+            entities:
+              - entity: sensor.vpd_ist
+                name: IST
+              - entity: input_number.vpd_soll
+                name: SOLL
+            hours_to_show: 48
+            points_per_hour: 2
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: input_boolean.vpd_regelung
+            grid_options:
+              columns: 12
+              rows: 1
+            name: VPD Reglegung aktivieren
+          - type: custom:mushroom-number-card
+            entity: input_number.vpd_soll
+            layout: horizontal
+            icon_color: light-blue
+            visibility:
+              - condition: state
+                entity: input_boolean.vpd_regelung
+                state: 'on'
+      - type: grid
+        cards:
+          - type: heading
+            heading: Sensorwerte für VPD
+            heading_style: subtitle
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_bmp280_temperatur
+            grid_options:
+              columns: full
+            detail: 1
+            limits: {}
+            hours_to_show: 48
+            name: Zelt-Innentemperatur (48h)
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_relative_luftfeuchte
+            grid_options:
+              columns: full
+            detail: 1
+            limits: {}
+            hours_to_show: 48
+            name: Zelt-Luftfeuchtigkeit (48h)
+          - type: custom:ha-vpd-chart
+            vpd_phases:
+              - upper: 0
+                className: gray-danger-zone
+                color: '#999999'
+              - lower: 0
+                upper: 0.4
+                className: under-transpiration
+                color: '#1a6c9c'
+              - lower: 0.4
+                upper: 0.8
+                className: early-veg
+                color: '#22ab9c'
+              - lower: 0.8
+                upper: 1.2
+                className: late-veg
+                color: '#9cc55b'
+              - lower: 1.2
+                upper: 1.6
+                className: mid-late-flower
+                color: '#e7c12b'
+              - lower: 1.6
+                className: danger-zone
+                color: '#ce4234'
+            rooms:
+              - humidity: sensor.zeltsensor_relative_luftfeuchte
+                name: Grow 1
+                temperature: sensor.zeltsensor_bmp280_temperatur
+            is_bar_view: false
+            min_temperature: 5
+            max_temperature: 35
+            min_humidity: 10
+            max_humidity: 90
+            min_height: 200
+            leaf_temperature_offset: 2
+            enable_tooltip: false
+            air_text: Luft
+            leaf_text: Blatt
+            rh_text: RLF
+            kpa_text: kPa
+            enable_axes: true
+            enable_ghostclick: true
+            enable_ghostmap: true
+            enable_triangle: false
+            enable_crosshair: true
+            enable_zoom: true
+            enable_show_always_informations: true
+            enable_legend: false
+            ghostmap_hours: 24
+            antialiasing: 5
+            unit_temperature: °C
+    dense_section_placement: true
+    cards: []
+  - type: sections
+    max_columns: 4
+    title: PH-Regelung
+    path: ph-regelung
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:ph
+            heading: PH-Dosierungssteuerung
+            heading_style: subtitle
+          - type: custom:mini-graph-card
+            name: PH-Wert Verlauf
+            entities:
+              - entity: sensor.zeltsensor_ph_dummy
+                name: PH-IST
+              - entity: input_number.ph_soll
+                name: PH-SOLL
+              - entity: sensor.zeltsensor_ec_dummy
+                name: EC
+            hours_to_show: 24
+            points_per_hour: 2
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: input_boolean.ph_regelung_aktivieren
+            grid_options:
+              rows: 1
+              columns: full
+          - type: custom:mushroom-number-card
+            entity: input_number.ph_soll
+            layout: horizontal
+            fill_container: false
+            secondary_info: state
+            display_mode: buttons
+            icon: mdi:ph
+            visibility:
+              - condition: state
+                entity: input_boolean.ph_regelung_aktivieren
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: input_number.ph_max_stoesse_tag
+            layout: horizontal
+            fill_container: false
+            secondary_info: state
+            icon: max
+            name: Maximale Dosierstöße
+            display_mode: buttons
+            visibility:
+              - condition: state
+                entity: input_boolean.ph_regelung_aktivieren
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: input_number.ph_je_liter_hersteller
+            layout: horizontal
+            fill_container: false
+            icon_color: cyan
+            secondary_info: state
+            display_mode: buttons
+            name: Dosierung PH-Minus
+            visibility:
+              - condition: state
+                entity: input_boolean.ph_regelung_aktivieren
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: input_number.rdwc_ruehrzeit
+            layout: horizontal
+            fill_container: false
+            secondary_info: state
+            display_mode: buttons
+            icon: ml
+            name: Wartezeit Dosierungen
+            visibility:
+              - condition: state
+                entity: input_boolean.ph_regelung_aktivieren
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: input_number.rdwc_ruehrzeit
+            layout: horizontal
+            fill_container: false
+            secondary_info: state
+            display_mode: buttons
+            icon: ml
+            name: Rührzeit
+            visibility:
+              - condition: state
+                entity: input_boolean.ph_regelung_aktivieren
+                state: 'on'
+        column_span: 1
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:molecule-co2
+            heading: Co2-Dosierungssteuerung
+            heading_style: subtitle
+          - type: custom:mini-graph-card
+            name: CO2-Verlauf SOLL/IST
+            entities:
+              - entity: sensor.zeltsensor_co2_dummy
+                name: IST
+              - entity: input_number.co2_soll
+                name: SOLL
+            hours_to_show: 48
+            points_per_hour: 6
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: input_boolean.co2_dosierung_aktivieren
+            grid_options:
+              rows: 1
+              columns: full
+          - type: custom:mushroom-number-card
+            entity: input_number.co2_soll
+            layout: horizontal
+            fill_container: false
+            secondary_info: state
+            display_mode: buttons
+            icon: mdi:molecule-co2
+            name: CO2-SOLLWERT
+            visibility:
+              - condition: state
+                entity: input_boolean.co2_dosierung_aktivieren
+                state: 'on'
+        column_span: 1
+    badges: []
+  - type: sections
+    max_columns: 4
+    title: Wassertank
+    path: wassertank
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: RDWC-Systemeinstellungen
+            heading_style: title
+          - type: custom:mini-graph-card
+            name: Systemvolumen
+            entities:
+              - entity: sensor.vpd_ist
+                name: IST
+              - entity: input_number.vpd_soll
+                name: SOLL
+            hours_to_show: 24
+            points_per_hour: 2
+          - type: custom:mushroom-number-card
+            entity: input_number.rdwc_liter
+            layout: horizontal
+            icon_color: light-blue
+          - type: custom:mushroom-number-card
+            entity: input_number.rdwc_ruehrzeit
+            layout: horizontal
+            icon_color: light-blue
+          - type: custom:mushroom-number-card
+            entity: input_number.rdwc_ruehrzeit
+            layout: horizontal
+            icon_color: light-blue
+            name: Pumpenleistung
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_ds18b20_dummy
+            grid_options:
+              columns: full
+            detail: 1
+            name: Wassertemperatur Tank
+            icon: mdi:temperature-celsius
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_ds18b20_dummy
+            grid_options:
+              columns: full
+            detail: 1
+            name: Wassertemperatur Zelt
+            icon: mdi:temperature-celsius
+    header:
+      layout: responsive
+      badges_position: bottom
+      badges_wrap: wrap
+    badges:
+      - type: entity
+        entity: sensor.ventilknoten_projekt_version
+  - type: sections
+    max_columns: 4
+    title: Status
+    path: status
+    sections:
+      - type: grid
+        cards:
+          - type: entities
+            entities:
+              - entity: binary_sensor.zeltsensor_esp_status
+                name: 'Status:'
+              - entity: sensor.zeltsensor_esp_wifi_ssid
+                name: 'Verbunden mit:'
+                icon: mdi:wifi
+              - entity: sensor.zeltsensor_zeltsensor_version
+                name: 'Firmware-Version: '
+              - entity: sensor.zeltsensor_esp_uptime
+                secondary_info: none
+                name: 'Online seit: '
+              - entity: sensor.zeltsensor_esp_ip_adresse
+                name: 'IP-Adresse:'
+            show_header_toggle: false
+            title: ESP-Zeltknoten
+            state_color: true
+  - type: sections
+    max_columns: 4
+    title: Menü
+    path: menu
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Neuer Abschnitt
