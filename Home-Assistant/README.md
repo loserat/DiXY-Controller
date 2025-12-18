@@ -33,7 +33,10 @@ script: !include scripts/dixy_scripts.yaml
 Developer Tools → YAML → Restart Home Assistant
 ```
 
+
 **Done!** Dashboard + Automations sind aktiv! 🎉
+
+**Hinweis:** Die Dummy-Sensorwerte werden mit der finalen Hardware automatisch durch echte Werte ersetzt. Die Simulation ist dann nicht mehr nötig.
 
 ---
 

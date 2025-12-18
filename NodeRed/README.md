@@ -17,6 +17,9 @@ Hier befinden sich alle Node-RED Flows für die DiXY-Controller-Umgebung. Die Fl
 - Für die Lichtsteuerung kann sowohl MQTT als auch das Home Assistant Plugin genutzt werden.
 - Weitere Beispiele und Dokumentation findest du im Haupt-README und in den jeweiligen Flow-Kommentaren.
 
+
 ---
 
-Letzte Aktualisierung: 13.12.2025
+**Hinweis:** Die aktuellen Flows unterstützen sowohl simulierte Dummy-Sensorwerte als auch echte Messwerte. Mit der fertigen PCB werden die Dummy-Flows nicht mehr benötigt.
+
+Letzte Aktualisierung: 18.12.2025

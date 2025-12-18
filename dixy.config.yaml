@@ -262,6 +262,10 @@ pins:
     ph_sensor_pin: "GPIO39"
     water_temp_pin: "GPIO4"
     status_led: "GPIO2"
+     button_1_pin: "GPIO33"
+     button_2_pin: "GPIO32"
+     button_3_pin: "GPIO35"
+     button_4_pin: "GPIO34"
     
   dosierung:
     description: "Dosing & Stir Motor Node"

@@ -28,7 +28,9 @@
 
 ---
 
+
 ## Hinweise
 
 - **Alle Änderungen, Bugfixes, Roadmap und ToDos findest du ab sofort ausschließlich in [RELEASE_NOTES.md](RELEASE_NOTES.md).**
 - Für detaillierte Anleitungen siehe [docs/](docs/) und [QUICKSTART.md](QUICKSTART.md).
+- **Hinweis:** Alle Dummy-Sensorwerte (Simulation) werden mit der fertigen PCB durch echte Messwerte ersetzt. Die Simulation entfällt dann vollständig.

@@ -58,6 +58,8 @@ substitutions:
 ## YAML-Varianten
 - **`zeltsensor_v1.yaml`** – Minimalprofil, nur BMP280
 - **`zeltsensor_v2.yaml`** – BMP280, AS7341, Diagnosesensoren
+
+**Hinweis:** Die Dummy-Sensorwerte (z. B. CO₂, Blatttemperatur, VPD) dienen aktuell der Simulation. Mit der fertigen PCB und Bestückung werden diese durch echte Messwerte ersetzt.
 - **`zeltsensor_v3.yaml`** – AS7341 HACS-kompatibel, alle Kanäle als eigene Entitäten
 - **`zeltsensor_v4.yaml`** – WLAN-Status-LED, PPFD/Lux/DLI-Berechnung, Button entfernt
 - **`zeltsensor_v5.yaml`** – AS7341, BMP280, Dummy-Outputs, mehrere Lampen- und Simulationsoptionen, OLED-Display (experimentell)
