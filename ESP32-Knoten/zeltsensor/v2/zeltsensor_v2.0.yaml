@@ -78,12 +78,12 @@ sensor:
     unit_of_measurement: "ppm"
     accuracy_decimals: 0
     state_class: measurement
-    update_interval: 10s
+    update_interval: 30s
     lambda: |-
-      static int co2 = 600;
-      co2 += (rand() % 11) - 5;
-      if (co2 < 500) co2 = 500;
-      if (co2 > 800) co2 = 800;
+      static int co2 = 1200;
+      co2 += (rand() % 101) - 50; // ±50
+      if (co2 < 400) co2 = 400;
+      if (co2 > 2000) co2 = 2000;
       return co2;
 
   - platform: template
@@ -141,7 +141,7 @@ sensor:
       name: "AS7341 Clear"
     nir:
       name: "AS7341 NIR"
-    update_interval: 60s
+    update_interval: 120s
 
   - platform: template
     name: "DS18B20 Dummy"
