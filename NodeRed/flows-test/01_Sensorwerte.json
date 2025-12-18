@@ -38,7 +38,7 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 209,
+        "x": 204,
         "y": 456,
         "wires": [
             [
@@ -111,7 +111,8 @@
         "wires": [
             [
                 "c45f1feaba0e7739",
-                "6dc88a96b73b6996"
+                "6dc88a96b73b6996",
+                "99e46cee2f76c887"
             ],
             [
                 "38d055a9277c6687"
@@ -1322,7 +1323,7 @@
             {
                 "property": "payload",
                 "propertyType": "msg",
-                "value": "ha_boolean",
+                "value": "number",
                 "valueType": "entityState"
             },
             {
@@ -1515,7 +1516,7 @@
             {
                 "property": "payload",
                 "propertyType": "msg",
-                "value": "ha_boolean",
+                "value": "number",
                 "valueType": "entityState"
             },
             {
@@ -1816,6 +1817,24 @@
         "wires": []
     },
     {
+        "id": "99e46cee2f76c887",
+        "type": "ha-sensor",
+        "z": "7b6e510609ee9a6d",
+        "name": "VPD",
+        "entityConfig": "e8294433ccb9beed",
+        "version": 0,
+        "state": "payload",
+        "stateType": "msg",
+        "attributes": [],
+        "inputOverride": "allow",
+        "outputProperties": [],
+        "x": 1589,
+        "y": 285,
+        "wires": [
+            []
+        ]
+    },
+    {
         "id": "924c3f197169acb5",
         "type": "mqtt-broker",
         "name": "",
@@ -1917,6 +1936,47 @@
         "statusHourCycle": "default",
         "statusTimeFormat": "h:m",
         "enableGlobalContextStore": false
+    },
+    {
+        "id": "e8294433ccb9beed",
+        "type": "ha-entity-config",
+        "server": "3cb6c486a041ece4",
+        "deviceConfig": "",
+        "name": "VPD",
+        "version": 6,
+        "entityType": "sensor",
+        "haConfig": [
+            {
+                "property": "name",
+                "value": "VPD-IST"
+            },
+            {
+                "property": "icon",
+                "value": ""
+            },
+            {
+                "property": "entity_picture",
+                "value": ""
+            },
+            {
+                "property": "entity_category",
+                "value": ""
+            },
+            {
+                "property": "device_class",
+                "value": ""
+            },
+            {
+                "property": "unit_of_measurement",
+                "value": ""
+            },
+            {
+                "property": "state_class",
+                "value": ""
+            }
+        ],
+        "resend": false,
+        "debugEnabled": false
     },
     {
         "id": "6911e1bccedc2c8e",
@@ -2066,7 +2126,7 @@
         }
     },
     {
-        "id": "d9f84a76b6a3ef4b",
+        "id": "2f14ea01a10f0f74",
         "type": "global-config",
         "env": [],
         "modules": {

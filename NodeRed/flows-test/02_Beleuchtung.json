@@ -51,7 +51,7 @@
         "id": "1b369cec6c3305f4",
         "type": "function",
         "z": "8b56c5a208b005fb",
-        "name": "Lichthellligkeit_Manuell",
+        "name": "Lichtwert_Manuell",
         "func": "// ...bestehender Code...\nlet wert = msg.payload;\nif (typeof wert === 'object' && wert !== null) {\n    if (typeof wert.value !== 'undefined') wert = wert.value;\n}\nwert = Number(wert);\nif (!isNaN(wert)) {\n    flow.set(\"helligkeit_manuell\", wert);\n    node.warn(\"Helligkeit manuell gespeichert: \" + wert);\n}\nreturn null;\n// ...bestehender Code...",
         "outputs": 1,
         "timeout": 0,
@@ -59,7 +59,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 820,
+        "x": 800,
         "y": 1485,
         "wires": [
             [
@@ -71,7 +71,7 @@
         "id": "344ee7b6c05587af",
         "type": "function",
         "z": "8b56c5a208b005fb",
-        "name": "Lichthellligkeit_Auto",
+        "name": "Lichtwert_Auto",
         "func": "// ...bestehender Code...\nlet wert = msg.payload;\nif (typeof wert === 'object' && wert !== null) {\n    if (typeof wert.value !== 'undefined') wert = wert.value;\n}\nwert = Number(wert);\nif (!isNaN(wert)) {\n    flow.set(\"licht_helligkeit_auto\", wert);\n    node.warn(\"Helligkeit auto gespeichert: \" + wert);\n}\nreturn null;\n// ...bestehender Code...",
         "outputs": 1,
         "timeout": 0,
@@ -79,7 +79,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 850,
+        "x": 830,
         "y": 1605,
         "wires": [
             [
@@ -161,7 +161,7 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1382,
+        "x": 2228,
         "y": 703,
         "wires": []
     },
@@ -178,15 +178,15 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 686,
-        "y": 910,
+        "x": 2228,
+        "y": 817,
         "wires": []
     },
     {
         "id": "9ec60a0d23a42c5c",
         "type": "debug",
         "z": "8b56c5a208b005fb",
-        "name": "Zeitschaltuhr Aktiv",
+        "name": "Zeitschaltuhr/Beleuchtungsregelung Aktiv",
         "active": false,
         "tosidebar": true,
         "console": false,
@@ -195,7 +195,7 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1363,
+        "x": 2289,
         "y": 570,
         "wires": []
     },
@@ -232,8 +232,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1599,
-        "y": 1178,
+        "x": 2246,
+        "y": 1007,
         "wires": []
     },
     {
@@ -574,7 +574,7 @@
         "offvalueType": "bool",
         "officon": "",
         "offcolor": "",
-        "x": 343,
+        "x": 374,
         "y": 874,
         "wires": [
             [
@@ -609,7 +609,7 @@
         "offvalueType": "bool",
         "officon": "",
         "offcolor": "",
-        "x": 924,
+        "x": 1014,
         "y": 570,
         "wires": [
             [
@@ -751,12 +751,12 @@
                 "valueType": "triggerId"
             }
         ],
-        "x": 449,
-        "y": 551,
+        "x": 299,
+        "y": 703,
         "wires": [
             [
-                "bf264928d8ca0faf",
-                "6b9ea7b3d93f5dd4"
+                "6b9ea7b3d93f5dd4",
+                "7c2dbb999735b90e"
             ]
         ]
     },
@@ -810,12 +810,13 @@
                 "valueType": "triggerId"
             }
         ],
-        "x": 268,
-        "y": 760,
+        "x": 242,
+        "y": 817,
         "wires": [
             [
                 "19aeb44827180842",
-                "9ddfbf20da4466d0"
+                "9ddfbf20da4466d0",
+                "37e99cbdef80ab9d"
             ]
         ]
     },
@@ -994,7 +995,7 @@
         "wires": [
             [
                 "0479d2d3cc0eb474",
-                "592cd08fe6dfb0b0"
+                "14831d6afed7c151"
             ]
         ]
     },
@@ -1272,7 +1273,7 @@
         "repeat": "",
         "crontab": "",
         "once": true,
-        "onceDelay": "3",
+        "onceDelay": "10",
         "topic": "",
         "payload": "",
         "payloadType": "date",
@@ -1577,6 +1578,7 @@
         "id": "d0584ba1c6f38c8d",
         "type": "api-call-service",
         "z": "8b56c5a208b005fb",
+        "d": true,
         "name": "",
         "server": "3cb6c486a041ece4",
         "version": 7,
@@ -1599,7 +1601,7 @@
         "domain": "light",
         "service": "turn_on",
         "x": 1982,
-        "y": 836,
+        "y": 893,
         "wires": [
             [
                 "32fa30c2e14ea245"
@@ -1610,16 +1612,17 @@
         "id": "32fa30c2e14ea245",
         "type": "debug",
         "z": "8b56c5a208b005fb",
+        "d": true,
         "name": "debug 4",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 2296,
-        "y": 703,
+        "x": 2163,
+        "y": 893,
         "wires": []
     },
     {
@@ -1773,7 +1776,7 @@
         }
     },
     {
-        "id": "eb092d155f3c3c51",
+        "id": "5c0850a799367f05",
         "type": "global-config",
         "env": [],
         "modules": {
