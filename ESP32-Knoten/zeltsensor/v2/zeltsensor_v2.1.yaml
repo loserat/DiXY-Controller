@@ -1,12 +1,13 @@
-time:
-  - platform: sntp
-    id: esphome_time
 esphome:
   name: zeltsensor
   comment: "Minimalprofil BMP280 + AS7341"
   project:
     name: "loserat.dixy_zeltsensor"
     version: "2.0"
+
+time:
+  - platform: sntp
+    id: esphome_time
 
 esp32:
   board: esp32dev
@@ -30,6 +31,19 @@ i2c:
   scan: true
 
 sensor:
+  - platform: template
+    name: "Blatttemperatur Dummy"
+    id: leaf_temp_dummy
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    state_class: measurement
+    update_interval: 30s
+    lambda: |-
+      static float leaf_temp = 26.0f;
+      leaf_temp += (float((rand() % 7) - 3)) / 10.0f; // ±0.3°C
+      if (leaf_temp < 20.0f) leaf_temp = 20.0f;
+      if (leaf_temp > 32.0f) leaf_temp = 32.0f;
+      return leaf_temp;
   # Simulierter EC-Sensor (elektrische Leitfähigkeit)
   - platform: template
     name: "EC Dummy"
@@ -164,6 +178,7 @@ sensor:
     nir:
       name: "AS7341 NIR"
     update_interval: 120s
+
 
   - platform: template
     name: "DS18B20 Dummy"
