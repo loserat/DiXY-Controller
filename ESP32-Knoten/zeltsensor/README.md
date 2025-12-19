@@ -1,5 +1,14 @@
 # Zeltsensor – Spektral-Lichtanalyse & Klima-Monitoring
 
+## Changelog
+
+### 2025-12-19 (v2.1)
+- Versionsnummer in YAML auf "2.1" gesetzt
+- YAML-Struktur bereinigt (Indents, Blockstruktur, Duplikate entfernt)
+- Dummy-Sensoren und Dummy-Buttons für Home Assistant hinzugefügt
+- Problematische Komponenten entfernt, falls ESPHome-Linkerfehler
+- Dokumentation und Versionierung aktualisiert
+
 ## Funktion
 Misst Lichtspektrum (AS7341 11-Kanal), Temperatur, Luftfeuchte, Luftdruck und berechnet PPFD/PAR/DLI/VPD. Optionale PWM-Steuerung von Inline-Lüfter.
 

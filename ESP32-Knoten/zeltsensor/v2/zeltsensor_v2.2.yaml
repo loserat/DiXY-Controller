@@ -1,0 +1,32 @@
+esphome:
+  platform: esp32
+  name: zeltsensor
+  board: esp32dev
+  comment: "Minimalprofil BMP280 + AS7341"
+  project:
+    name: "loserat.dixy_zeltsensor"
+    version: "2.2"
+
+time:
+  - platform: sntp
+    id: esphome_time
+
+globals:
+  - id: dim_duration
+    type: int
+    restore_value: yes
+    initial_value: '1800'
+
+interval:
+  - interval: 30s
+    then:
+      - lambda: |-
+          auto now = id(esphome_time).now();
+          int seconds = now.hour * 3600 + now.minute * 60 + now.second;
+          float level = 0.0f;
+          // Sonnenaufgang
+          if (seconds >= id(sunrise_time) && seconds < id(sunrise_time) + id(dim_duration)) {
+            level = float(seconds - id(sunrise_time)) / float(id(dim_duration));
+
+          # --- Vorlage aus v2.1, Version auf 2.2 gesetzt ---
+          else if (seconds >= id(sunrise_time) + id(dim_duration) && seconds < id(sunset_time)) {

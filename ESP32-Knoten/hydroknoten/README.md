@@ -4,17 +4,20 @@
 Misst Nährlösungskonzentration (EC), pH-Wert und Wassertemperatur kontinuierlich. Überwacht 6 separate Wassertanks auf Füllstand. Lokal unabhängig von anderen Knoten – zentral in Home Assistant angezeigt.
 
 ## Hardware
-- **Microcontroller:** ESP32-DevKit (WiFi + API)
-- **ADC:** ADS1115 16-Bit (I2C 0x48, Versorgung 5V → 3.3V intern)
   - Kanal A0: EC-Sensor (Atlas Scientific, analog 0–3.3V)
   - Kanal A1: pH-Sensor (Atlas Scientific, analog 0–3.3V)
-- **Temperatursensoren:** 2x DS18B20 (1-Wire, GPIO4 + GPIO5)
   - Tank-Temperatur (Nährlösung)
   - Rücklauf-Temperatur (Umgebung)
-- **Wasserstands-Sensoren:** 6x D1CS-D kapazitiv (Digital GPIO, LOW = Wasser erkannt)
   - GPIO32, GPIO33, GPIO14, GPIO12, GPIO13, GPIO15
-- **Status LED:** GPIO2 (Onboard)
-- **Versorgung:** 5V USB oder VIN-Pin (2A empfohlen)
+
+## Changelog
+
+### 2025-12-19 (v2.1)
+- Versionsnummer in YAML und Logger auf "2.1" korrigiert
+- YAML-Struktur bereinigt (Indents, Blockstruktur, Duplikate entfernt)
+- Dummy-Sensoren und Dummy-Buttons für Home Assistant hinzugefügt
+- Problematische Komponenten (uptime, status) entfernt, da ESPHome-Linkerfehler
+- Dokumentation und Versionierung aktualisiert
 
 ## Pinning
 | Funktion | Pin | Typ | Bemerkung |
@@ -53,32 +56,18 @@ substitutions:
 ```
 
 ## Dependencies
-- **Hydroknoten ist eigenständig** ✅
   - Keine Abhängigkeit von anderen Knoten
   - Funktioniert offline mit lokal gespeicherten Kalibrierungen
   - WiFi optional (nur für HA-Integration)
-- **Andere Knoten hängen von Hydroknoten ab:** Dosierknoten braucht EC/pH-Werte via HA
 
 ## Kalibrierung
 ### EC (Conductivity)
-- **2-Punkt Kalibrierung:** 1.413 mS/cm + 12.88 mS/cm
-- **Buttons in HA:** "EC Kalibrierung markieren" + Slider "EC Cal 1.413mS" / "EC Cal 12.88mS"
-- **Temperaturkompensation:** Automatisch auf 25°C normalisiert
-- **Update-Zyklus:** 1s Messung, 10s Verarbeitung
 
 ### pH
-- **2-Punkt Kalibrierung:** pH 4.0 + pH 7.0
-- **Buttons in HA:** "pH Kalibrierung markieren" + Slider "pH Cal 7.0" / "pH Cal 4.0"
-- **Update-Zyklus:** 1s Messung, 10s Verarbeitung
 
 ### Temperatur
-- **Offsets:** Pro Sensor anpassbar (±2°C, Schritte 0.1°C)
-- **Buttons in HA:** Slider "Temp1 Offset" / "Temp2 Offset"
-- **Update-Zyklus:** 15s
 
 ## YAML-Varianten
-- **`hydroknoten_v2.yaml`** – Produktiv (mit Hardware)
-- **`hydroknoten_v2_sim.yaml`** – Optional für Testing ohne Hardware (würde separat erstellt)
 
 ## Sensor-Dokumentation
 → Detaillierte Entity-IDs, Bereiche, Formeln siehe [`SENSORS.md`](SENSORS.md)
@@ -87,15 +76,7 @@ substitutions:
 → GPIO-Pinouts, Stecker-Belegung siehe [`hardware_wiring.md`](hardware_wiring.md)
 
 ## Troubleshooting
-- **ADS1115 nicht gefunden:** I2C Scan aktiviert → Logs prüfen (0x48 sollte erkannt werden)
-- **EC/pH springt wild:** Kalibrierpunkte überprüfen (zu nah beieinander?), ADS Gain ändern
-- **Tank-Level falsch:** Sensor invertiert? GPIO-Modus INPUT_PULLUP + inverted: true
-- **Temp-Sensoren offline:** 1-Wire Pullup 4.7kΩ installiert? GPIO4/5 frei?
 
 ## Versionshistorie
-- **v0.2-beta** (aktuell): Cleanup, API-Encryption, Projektmetadata
-- **v0.1-beta:** Initial Release mit OLED/Encoder
 
 ## Board-Support
-- Arduino ESP32 Framework (nicht esp-idf)
-- ESPHome 2024.1+

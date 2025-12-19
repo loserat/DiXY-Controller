@@ -1,15 +1,15 @@
 esphome:
   name: hydroknoten
-  comment: "Knoten für EC, pH, Temperatur, Außenluft. Für Hardware-Integration vorbereitet."
+  comment: "Knoten für EC, pH, Temperatur, Außenluft. Für Hardware-Integration vorbereitet. Version 2.1"
   project:
     name: "loserat.dixy_hydroknoten"
-    version: "v2.1"
+    version: "2.1"
   platformio_options:
     board_build.flash_mode: "dio"
   on_boot:
     priority: -100.0
     then:
-      - logger.log: "Hydroknoten gestartet. Version v2.0"
+        - logger.log: "Hydroknoten gestartet. Version 2.1"
 
 esp32:
   board: esp32dev
@@ -106,7 +106,7 @@ text_sensor:
     id: hydroknoten_version
     icon: "mdi:tag"
     lambda: |-
-      return {"2.0"};
+      return {"2.1"};
     update_interval: 3600s
   - platform: wifi_info
     ip_address:
@@ -117,6 +117,7 @@ text_sensor:
       name: "ESP WiFi BSSID"
     mac_address:
       name: "ESP MAC Adresse"
+
 # Beispiel für vier Buttons mit Pin-Mapping aus config.yaml:
 
 binary_sensor:

@@ -43,13 +43,12 @@
 **Release Date:** Dec 14, 2025
 
 ### Changes from v0.1
-- ✅ Node-RED Flows in `NodeRed/flows-test/` produktiv übernommen (Sensorwerte, Beleuchtung, gemischte Flows)
-- ✅ PWM- und Lichtsteuerung in Node-RED getestet und debuggt
-- ✅ Readmes für Hauptprojekt, Zeltsensor, Home Assistant und Node-RED aktualisiert/erstellt
-- ✅ ESPHome YAMLs (zeltsensor_v6.yaml etc.) aufgeräumt, Dummy-Sensoren und Diagnose sauber getrennt
-- ✅ Struktur und Dateinamen im Repository vereinheitlicht, Altlasten entfernt
-- 🐛 Diverse Bugfixes und Verbesserungen in den Flows und YAMLs
-- 📝 RELEASE_NOTES.md und Dokumentation auf aktuellen Stand gebracht
+
+- 📝 Versionsnummern in YAMLs und Loggern konsolidiert (z. B. hydroknoten_v2.1.yaml → "2.1")
+- 📝 Changelog und README für hydroknoten und zeltsensor um alle Änderungen ergänzt
+- 🐛 YAML-Struktur bereinigt (Indents, Blockstruktur, Duplikate entfernt)
+- 🧪 Dummy-Sensoren und Dummy-Buttons für Home Assistant hinzugefügt
+- 🐞 Problematische Komponenten (uptime, status) entfernt, da ESPHome-Linkerfehler
 
 ---
 
