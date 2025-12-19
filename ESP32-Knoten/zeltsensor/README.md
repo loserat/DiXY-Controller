@@ -2,6 +2,20 @@
 
 ## Changelog
 
+### [2.4] – YYYY-MM-DD
+- Added:
+  - Sensor zur Rückmeldung der aktuellen Lampenhelligkeit (%)
+  - Klare Trennung zwischen Steuerlogik und Rückmeldung
+
+- Changed:
+  - Lichtsteuerung nutzt ausschließlich die interne ESP-Logik
+  - Bestehende Light-Entität reagiert deterministisch auf AUTO/MANUELL
+
+- Rationale:
+  - Bessere Transparenz und Debugbarkeit
+  - Verlässliche Visualisierung von SA/SU-Verläufen
+  - Grundlage für spätere Regel- oder Analysefunktionen
+
 ### 2025-12-19 (v2.1)
 - Versionsnummer in YAML auf "2.1" gesetzt
 - YAML-Struktur bereinigt (Indents, Blockstruktur, Duplikate entfernt)

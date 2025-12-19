@@ -3,7 +3,7 @@ esphome:
   comment: "Minimalprofil BMP280 + AS7341"
   project:
     name: "loserat.dixy_zeltsensor"
-    version: "2.1"
+    version: "2.4"
   on_boot:
     priority: -100
     then:
@@ -273,8 +273,9 @@ text_sensor:
     name: "Zeltsensor Version"
     id: zeltsensor_version
     icon: "mdi:tag"
+    entity_category: diagnostic
     lambda: |-
-      return {"2.1"};
+      return {"2.4"};
     update_interval: 3600s
   - platform: wifi_info
     ip_address:
