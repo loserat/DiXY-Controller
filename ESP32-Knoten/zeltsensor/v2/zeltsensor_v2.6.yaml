@@ -41,11 +41,23 @@ globals:
     type: float
     restore_value: yes
     initial_value: '0.5'
+  - id: sa_start_minutes
+    type: int
+    restore_value: yes
+    initial_value: '480'
+  - id: su_start_minutes
+    type: int
+    restore_value: yes
+    initial_value: '1200'
   - id: sun_ramp_enabled
     type: bool
     restore_value: yes
     initial_value: 'false'
-  - id: sun_ramp_duration_min
+  - id: sunrise_min
+    type: int
+    restore_value: yes
+    initial_value: '10'
+  - id: sunset_min
     type: int
     restore_value: yes
     initial_value: '10'
@@ -269,6 +281,62 @@ sensor:
     update_interval: 60s
 
 text_sensor:
+  - platform: homeassistant
+    id: auto_on_time_input
+    entity_id: input_datetime.einschaltzeit
+    internal: true
+    on_value:
+      - lambda: |-
+          if (x.size() < 5) {
+            return;
+          }
+          int hour = atoi(x.substr(0, 2).c_str());
+          int minute = atoi(x.substr(3, 2).c_str());
+          if (hour < 0) hour = 0;
+          if (hour > 23) hour = 23;
+          if (minute < 0) minute = 0;
+          if (minute > 59) minute = 59;
+          id(on_minutes) = hour * 60 + minute;
+  - platform: homeassistant
+    id: auto_off_time_input
+    entity_id: input_datetime.ausschaltzeit
+    internal: true
+    on_value:
+      - lambda: |-
+          if (x.size() < 5) {
+            return;
+          }
+          int hour = atoi(x.substr(0, 2).c_str());
+          int minute = atoi(x.substr(3, 2).c_str());
+          if (hour < 0) hour = 0;
+          if (hour > 23) hour = 23;
+          if (minute < 0) minute = 0;
+          if (minute > 59) minute = 59;
+          id(off_minutes) = hour * 60 + minute;
+  - platform: template
+    name: "SA Startzeit (hh:mm)"
+    id: sa_start_time_text
+    icon: "mdi:clock-outline"
+    lambda: |-
+      int minutes = id(sa_start_minutes);
+      int hour = minutes / 60;
+      int minute = minutes % 60;
+      char buffer[6];
+      snprintf(buffer, sizeof(buffer), "%02d:%02d", hour, minute);
+      return {buffer};
+    update_interval: 60s
+  - platform: template
+    name: "SU Startzeit (hh:mm)"
+    id: su_start_time_text
+    icon: "mdi:clock-outline"
+    lambda: |-
+      int minutes = id(su_start_minutes);
+      int hour = minutes / 60;
+      int minute = minutes % 60;
+      char buffer[6];
+      snprintf(buffer, sizeof(buffer), "%02d:%02d", hour, minute);
+      return {buffer};
+    update_interval: 60s
   - platform: template
     name: "Zeltsensor Version"
     id: zeltsensor_version
@@ -387,19 +455,57 @@ number:
           if (value > 1.0f) value = 1.0f;
           id(manual_pwm) = value;
   - platform: template
-    name: "SA/SU Dauer"
-    id: zeltlampe_sun_ramp_duration
+    name: "SA Startzeit (Min)"
+    id: zeltlampe_sa_start_minutes
+    unit_of_measurement: "min"
+    min_value: 0
+    max_value: 1439
+    step: 15
+    lambda: |-
+      return id(sa_start_minutes);
+    set_action:
+      - lambda: |-
+          id(sa_start_minutes) = (int) x;
+  - platform: template
+    name: "SU Startzeit (Min)"
+    id: zeltlampe_su_start_minutes
+    unit_of_measurement: "min"
+    min_value: 0
+    max_value: 1439
+    step: 15
+    lambda: |-
+      return id(su_start_minutes);
+    set_action:
+      - lambda: |-
+          id(su_start_minutes) = (int) x;
+  - platform: template
+    name: "Sonnenaufgang Dauer"
+    id: zeltlampe_sunrise_duration
     unit_of_measurement: "min"
     min_value: 1
     max_value: 30
     step: 1
     lambda: |-
-      return id(sun_ramp_duration_min);
+      return id(sunrise_min);
     set_action:
       - lambda: |-
           if (x < 1) x = 1;
           if (x > 30) x = 30;
-          id(sun_ramp_duration_min) = (int) x;
+          id(sunrise_min) = (int) x;
+  - platform: template
+    name: "Sonnenuntergang Dauer"
+    id: zeltlampe_sunset_duration
+    unit_of_measurement: "min"
+    min_value: 1
+    max_value: 30
+    step: 1
+    lambda: |-
+      return id(sunset_min);
+    set_action:
+      - lambda: |-
+          if (x < 1) x = 1;
+          if (x > 30) x = 30;
+          id(sunset_min) = (int) x;
 
 interval:
   - interval: 30s
@@ -457,29 +563,27 @@ interval:
               // AUTO ohne SA/SU
               target_pwm = auto_value;
             } else {
-              // AUTO mit SA/SU gemeinsame Dauer
-              int ramp_minutes = id(sun_ramp_duration_min);
-              if (ramp_minutes < 1) ramp_minutes = 1;
-              if (ramp_minutes > 30) ramp_minutes = 30;
-              if (ramp_minutes * 2 > active_duration) {
-                ramp_minutes = active_duration / 2;
-              }
-              if (ramp_minutes <= 0) ramp_minutes = 1;
-              int plateau_start = ramp_minutes;
-              int plateau_end = active_duration - ramp_minutes;
-              if (plateau_end < plateau_start) {
-                plateau_end = plateau_start;
-              }
+              // AUTO mit SA/SU getrennten Startzeiten
+              int sunrise_minutes = id(sunrise_min);
+              int sunset_minutes = id(sunset_min);
+              if (sunrise_minutes < 1) sunrise_minutes = 1;
+              if (sunrise_minutes > 30) sunrise_minutes = 30;
+              if (sunset_minutes < 1) sunset_minutes = 1;
+              if (sunset_minutes > 30) sunset_minutes = 30;
 
-              if (time_since_on < ramp_minutes) {
-                target_pwm = auto_value * (float) time_since_on / ramp_minutes;
-              } else if (time_since_on < plateau_end) {
-                target_pwm = auto_value;
+              int sa_start = normalize_minutes(id(sa_start_minutes));
+              int su_start = normalize_minutes(id(su_start_minutes));
+              int sa_delta = minutes_of_day - sa_start;
+              if (sa_delta < 0) sa_delta += 1440;
+              int su_delta = minutes_of_day - su_start;
+              if (su_delta < 0) su_delta += 1440;
+
+              if (su_delta >= 0 && su_delta < sunset_minutes) {
+                target_pwm = auto_value * (1.0f - (float) su_delta / sunset_minutes);
+              } else if (sa_delta >= 0 && sa_delta < sunrise_minutes) {
+                target_pwm = auto_value * (float) sa_delta / sunrise_minutes;
               } else {
-                int ramp_pos = time_since_on - plateau_end;
-                int ramp_span = active_duration - plateau_end;
-                if (ramp_span <= 0) ramp_span = 1;
-                target_pwm = auto_value * (1.0f - (float) ramp_pos / ramp_span);
+                target_pwm = auto_value;
               }
             }
             }
