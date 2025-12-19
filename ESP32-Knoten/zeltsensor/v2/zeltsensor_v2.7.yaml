@@ -4,7 +4,7 @@ esphome:
   comment: "Minimalprofil BMP280 + AS7341"
   project:
     name: "loserat.dixy_zeltsensor"
-    version: "2.6"
+    version: "2.7"
   # Sync the SA/SU toggle switch with the persisted flag on boot.
   on_boot:
     priority: -100
@@ -465,12 +465,13 @@ text_sensor:
       return {buffer};
     update_interval: 60s
   - platform: template
+    # Versions- und Diagnoseanzeige des Firmware-Standes.
     name: "Zeltsensor Version"
     id: zeltsensor_version
     icon: "mdi:tag"
     entity_category: diagnostic
     lambda: |-
-      return {"2.6"};
+      return {"2.7"};
     update_interval: 3600s
   - platform: wifi_info
     ip_address:
@@ -742,3 +743,7 @@ logger:
 api:
   encryption:
     key: !secret api_encryption_key
+
+# Lokales ESP-Web-Dashboard (Anzeige der Sensoren per IP).
+web_server:
+  port: 80
