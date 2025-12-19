@@ -405,6 +405,81 @@ text_sensor:
         default: return {"AUS"};
       }
     update_interval: 30s
+  # Aktuelle Lichtphase (Status-Only).
+  - platform: template
+    name: "Zeltlampe Aktuelle Phase"
+    id: zeltlampe_phase_text
+    icon: "mdi:progress-clock"
+    entity_category: diagnostic
+    lambda: |-
+      // STATUS-ONLY – KEINE STEUERUNG
+      // MANUELL HAT IMMER VORRANG
+      int mode = id(light_mode);  // 0=NONE, 1=MANUAL, 2=AUTO
+      if (mode == 1) {
+        return {"MANUELL"};
+      }
+      if (mode == 2) {
+        auto now = id(esphome_time).now();
+        if (!now.is_valid()) {
+          return {"AUS"};
+        }
+        auto normalize_minutes = [](int value) -> int {
+          // Keep any minute value within 0..1439.
+          value %= 1440;
+          if (value < 0) value += 1440;
+          return value;
+        };
+        int minutes_of_day = now.hour * 60 + now.minute;
+        int on_minute = normalize_minutes(id(on_minutes));
+        int off_minute = normalize_minutes(id(off_minutes));
+        int active_duration = off_minute - on_minute;
+        if (active_duration <= 0) active_duration += 1440;
+        if (active_duration <= 0) active_duration = 1440;
+        int time_since_on = minutes_of_day - on_minute;
+        if (time_since_on < 0) time_since_on += 1440;
+        bool in_window = time_since_on < active_duration;
+        if (!in_window) {
+          return {"AUS"};
+        }
+        if (!id(sun_ramp_enabled)) {
+          return {"AUTO – PLATEAU"};
+        }
+        int sunrise_minutes = id(sunrise_min);
+        int sunset_minutes = id(sunset_min);
+        if (sunrise_minutes < 1) sunrise_minutes = 1;
+        if (sunrise_minutes > 30) sunrise_minutes = 30;
+        if (sunset_minutes < 1) sunset_minutes = 1;
+        if (sunset_minutes > 30) sunset_minutes = 30;
+        int sa_rel = normalize_minutes(id(sa_start_minutes) - on_minute);
+        int su_rel = normalize_minutes(id(su_start_minutes) - on_minute);
+        if (sa_rel >= active_duration) sa_rel = 0;
+        if (su_rel == 0 || su_rel > active_duration) {
+          su_rel = active_duration - sunset_minutes;
+          if (su_rel < 0) su_rel = 0;
+        }
+        if (su_rel <= sa_rel) {
+          su_rel = sa_rel + sunrise_minutes;
+          if (su_rel > active_duration) {
+            su_rel = active_duration;
+          }
+        }
+        if (sa_rel + sunrise_minutes > su_rel) {
+          sa_rel = su_rel - sunrise_minutes;
+          if (sa_rel < 0) sa_rel = 0;
+        }
+        if (time_since_on < sa_rel) {
+          return {"AUS"};
+        } else if (time_since_on < sa_rel + sunrise_minutes) {
+          return {"AUTO – SA"};
+        } else if (time_since_on < su_rel) {
+          return {"AUTO – PLATEAU"};
+        } else if (time_since_on < su_rel + sunset_minutes) {
+          return {"AUTO – SU"};
+        }
+        return {"AUS"};
+      }
+      return {"AUS"};
+    update_interval: 30s
   # SA/SU Statusanzeige (nur Anzeige, keine Steuerung).
   - platform: template
     name: "SA/SU Status"
@@ -413,7 +488,7 @@ text_sensor:
     entity_category: diagnostic
     lambda: |-
       // Logic for "SA/SU Status".
-      return id(sun_ramp_enabled) ? "Aktiv" : "Deaktiviert";
+      return id(sun_ramp_enabled) ? std::string("Aktiv") : std::string("Deaktiviert");
     update_interval: 30s
   - platform: template
     name: "AUTO Einschaltzeit"
@@ -490,7 +565,7 @@ text_sensor:
       return {buffer};
     update_interval: 60s
   - platform: template
-    # Versions- und Diagnoseanzeige des Firmware-Standes.
+    # Firmware-/Projektversion (Diagnoseanzeige).
     name: "Zeltsensor Version"
     id: zeltsensor_version
     icon: "mdi:tag"
