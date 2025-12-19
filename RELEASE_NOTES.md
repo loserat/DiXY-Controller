@@ -34,6 +34,32 @@
 
 ---
 
+### [2.6] – YYYY-MM-DD
+
+Added:
+- AUTO-Zeitschaltuhr mit echter Uhrzeit-Eingabe (hh:mm)
+- Mitternachtssichere Zeitfenster-Logik (z. B. 18:00 → 02:00)
+- Getrennte Konfiguration für Sonnenaufgang (SA) und Sonnenuntergang (SU)
+- Echte PWM-Ist-Rückmeldung der Lampenhelligkeit (%)
+
+Changed:
+- AUTO-Modus nutzt intern konsistente Minutenbasis mit hh:mm-UI
+- Lichtsteuerung vollständig deterministisch im ESP ausgeführt
+- Klare Trennung zwischen Steuerwerten (Slider) und Messwerten (Sensoren)
+
+Fixed:
+- Fehlerhafte Behandlung von Zeitfenstern über Mitternacht
+- Unklare Rückmeldung der tatsächlich anliegenden Lampenhelligkeit
+- Falsche Zuordnung von Diagnose-Entitäten in Home Assistant (Hinweis: erfordert Neu-Anlage der Entität in HA)
+
+Rationale:
+- Erhöhte Betriebssicherheit bei Nachtzyklen
+- Bessere Nachvollziehbarkeit der Lichtsteuerung
+- Grow-taugliche, robuste Zeit- und Lichtlogik
+- Vorbereitung für modulare Weiterentwicklung (DiXY-Lichtmodul)
+
+---
+
 
 ---
 

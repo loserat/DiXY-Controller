@@ -3,7 +3,7 @@ esphome:
   comment: "Minimalprofil BMP280 + AS7341"
   project:
     name: "loserat.dixy_zeltsensor"
-    version: "2.4"
+    version: "2.5"
   on_boot:
     priority: -100
     then:
@@ -41,6 +41,10 @@ globals:
     type: float
     restore_value: yes
     initial_value: '0.5'
+  - id: current_pwm
+    type: float
+    restore_value: yes
+    initial_value: '0.0'
   - id: sun_ramp_enabled
     type: bool
     restore_value: yes
@@ -169,18 +173,17 @@ sensor:
       return vpd;
 
   - platform: template
-    name: "Zeltlampe Helligkeit"
+    name: "Zeltlampe Aktuelle Helligkeit"
     id: zeltlampe_brightness_sensor
     unit_of_measurement: "%"
     accuracy_decimals: 0
     state_class: measurement
     update_interval: 2s
     lambda: |-
-      if (id(zeltlampe).current_values.is_on()) {
-        return id(zeltlampe).current_values.get_brightness() * 100.0f;
-      } else {
+      if (id(current_pwm) <= 0.0f) {
         return 0.0f;
       }
+      return id(current_pwm) * 100.0f;
 
   # --- Diagnose-Sensoren (Diagnose-Tab in HA) ---
   - platform: bmp280_i2c
@@ -279,7 +282,7 @@ text_sensor:
     icon: "mdi:tag"
     entity_category: diagnostic
     lambda: |-
-      return {"2.4"};
+      return {"2.5"};
     update_interval: 3600s
   - platform: wifi_info
     ip_address:
@@ -499,7 +502,8 @@ interval:
             target_pwm = 0.0f;
           }
 
-          turn_light(target_pwm);
+          id(current_pwm) = target_pwm;
+          turn_light(id(current_pwm));
 
 logger:
 
