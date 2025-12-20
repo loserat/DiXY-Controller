@@ -1,11 +1,9 @@
-# Core device metadata and boot-time sync behavior.
 esphome:
   name: zeltsensor
   comment: "Minimalprofil BMP280 + AS7341"
   project:
     name: "loserat.dixy_zeltsensor"
-    version: "2.7"
-  # Sync the SA/SU toggle switch with the persisted flag on boot.
+    version: "2.6"
   on_boot:
     priority: -100
     then:
@@ -17,41 +15,32 @@ esphome:
           else:
             - switch.turn_off: zeltlampe_sun_ramp_switch
 
-# Time source for schedule-based logic.
 time:
   - platform: sntp
     id: esphome_time
 
-# Persisted state for light control and schedule parameters.
 globals:
-  # Mode selection: 0=NONE, 1=MANUAL, 2=AUTO
+  # Persistente Parameter und State für die Lichtsteuerung
   - id: light_mode
     type: int
     restore_value: yes
     initial_value: '0'      # 0=NONE, 1=MANUAL, 2=AUTO
-  # Time is stored internally as minutes since midnight for deterministic logic.
-  # AUTO window start in minutes since midnight.
   - id: on_minutes
     type: int
     restore_value: yes
     initial_value: '480'    # 08:00 Uhr
-  # AUTO window end in minutes since midnight.
   - id: off_minutes
     type: int
     restore_value: yes
     initial_value: '1200'   # 20:00 Uhr
-  # Input_datetime from Home Assistant only feeds these values; ESP remains autonomous.
-  # Maximum PWM for AUTO mode (0.0 - 1.0).
   - id: max_pwm
     type: float
     restore_value: yes
     initial_value: '1.0'
-  # Fixed PWM for MANUAL mode (0.0 - 1.0).
   - id: manual_pwm
     type: float
     restore_value: yes
     initial_value: '0.5'
-  # SA/SU start times in minutes since midnight.
   - id: sa_start_minutes
     type: int
     restore_value: yes
@@ -60,12 +49,10 @@ globals:
     type: int
     restore_value: yes
     initial_value: '1200'
-  # Master enable for sunrise/sunset ramps.
   - id: sun_ramp_enabled
     type: bool
     restore_value: yes
     initial_value: 'false'
-  # Sunrise and sunset ramp durations (minutes).
   - id: sunrise_min
     type: int
     restore_value: yes
@@ -75,13 +62,11 @@ globals:
     restore_value: yes
     initial_value: '10'
 
-# MCU target and framework.
 esp32:
   board: esp32dev
   framework:
     type: arduino
 
-# WiFi configuration + fallback AP.
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
@@ -90,90 +75,16 @@ wifi:
     password: "12345678"
 
 
-# OTA update configuration.
 ota:
   platform: esphome
   password: !secret zeltsensor_ota_password
 
-# I2C bus for sensors.
 i2c:
   sda: 21
   scl: 22
   scan: true
 
-# Sensor entities (dummy + real sensors).
 sensor:
-  # Home Assistant input_datetime feeds only the minutes source (no control logic here).
-  # Home Assistant input_datetime: AUTO Einschaltzeit (hour/minute attributes).
-  - platform: homeassistant
-    id: auto_on_hour
-    entity_id: input_datetime.einschaltzeit
-    attribute: hour
-    internal: true
-    on_value:
-      - lambda: |-
-          if (isnan(id(auto_on_hour).state) || isnan(id(auto_on_minute).state)) {
-            return;
-          }
-          int hour = (int) id(auto_on_hour).state;
-          int minute = (int) id(auto_on_minute).state;
-          if (hour < 0) hour = 0;
-          if (hour > 23) hour = 23;
-          if (minute < 0) minute = 0;
-          if (minute > 59) minute = 59;
-          id(on_minutes) = hour * 60 + minute;
-  - platform: homeassistant
-    id: auto_on_minute
-    entity_id: input_datetime.einschaltzeit
-    attribute: minute
-    internal: true
-    on_value:
-      - lambda: |-
-          if (isnan(id(auto_on_hour).state) || isnan(id(auto_on_minute).state)) {
-            return;
-          }
-          int hour = (int) id(auto_on_hour).state;
-          int minute = (int) id(auto_on_minute).state;
-          if (hour < 0) hour = 0;
-          if (hour > 23) hour = 23;
-          if (minute < 0) minute = 0;
-          if (minute > 59) minute = 59;
-          id(on_minutes) = hour * 60 + minute;
-  # Home Assistant input_datetime: AUTO Ausschaltzeit (hour/minute attributes).
-  - platform: homeassistant
-    id: auto_off_hour
-    entity_id: input_datetime.ausschaltzeit
-    attribute: hour
-    internal: true
-    on_value:
-      - lambda: |-
-          if (isnan(id(auto_off_hour).state) || isnan(id(auto_off_minute).state)) {
-            return;
-          }
-          int hour = (int) id(auto_off_hour).state;
-          int minute = (int) id(auto_off_minute).state;
-          if (hour < 0) hour = 0;
-          if (hour > 23) hour = 23;
-          if (minute < 0) minute = 0;
-          if (minute > 59) minute = 59;
-          id(off_minutes) = hour * 60 + minute;
-  - platform: homeassistant
-    id: auto_off_minute
-    entity_id: input_datetime.ausschaltzeit
-    attribute: minute
-    internal: true
-    on_value:
-      - lambda: |-
-          if (isnan(id(auto_off_hour).state) || isnan(id(auto_off_minute).state)) {
-            return;
-          }
-          int hour = (int) id(auto_off_hour).state;
-          int minute = (int) id(auto_off_minute).state;
-          if (hour < 0) hour = 0;
-          if (hour > 23) hour = 23;
-          if (minute < 0) minute = 0;
-          if (minute > 59) minute = 59;
-          id(off_minutes) = hour * 60 + minute;
   - platform: template
     name: "Blatttemperatur Dummy"
     id: leaf_temp_dummy
@@ -182,7 +93,6 @@ sensor:
     state_class: measurement
     update_interval: 30s
     lambda: |-
-      // Logic for "Blatttemperatur Dummy".
       static float leaf_temp = 26.0f;
       leaf_temp += (float((rand() % 7) - 3)) / 10.0f; // ±0.3°C
       if (leaf_temp < 20.0f) leaf_temp = 20.0f;
@@ -197,7 +107,6 @@ sensor:
     state_class: measurement
     update_interval: 10s
     lambda: |-
-      // Logic for "EC Dummy".
       static float ec = 1.8f;
       ec += (float((rand() % 21) - 10)) / 100.0f; // ±0.10
       if (ec < 1.0f) ec = 1.0f;
@@ -231,7 +140,6 @@ sensor:
     state_class: measurement
     update_interval: 10s
     lambda: |-
-      // Logic for "pH Dummy".
       static float ph = 6.2f;
       ph += (float((rand() % 21) - 10)) / 100.0f;
       if (ph < 5.5f) ph = 5.5f;
@@ -246,7 +154,6 @@ sensor:
     state_class: measurement
     update_interval: 30s
     lambda: |-
-      // Logic for "CO2 Dummy".
       static int co2 = 1200;
       co2 += (rand() % 21) - 10; // ±10
       if (co2 < 400) co2 = 400;
@@ -269,7 +176,6 @@ sensor:
       float vpd = es - ea;
       return vpd;
 
-  # Report current light brightness as a percent.
   - platform: template
     name: "Zeltlampe Helligkeit"
     id: zeltlampe_brightness_sensor
@@ -278,7 +184,6 @@ sensor:
     state_class: measurement
     update_interval: 2s
     lambda: |-
-      // Logic for "Zeltlampe Helligkeit".
       if (id(zeltlampe).current_values.is_on()) {
         return id(zeltlampe).current_values.get_brightness() * 100.0f;
       } else {
@@ -336,7 +241,6 @@ sensor:
     accuracy_decimals: 1
     update_interval: 10s
     lambda: |-
-      // Logic for "DS18B20 Dummy".
       static float t = 22.0f;
       t += (float((rand() % 20) - 10)) / 10.0f;
       if (t < 20.0f) t = 20.0f;
@@ -357,7 +261,6 @@ sensor:
     id: ppfd
     unit_of_measurement: "µmol/m²s"
     lambda: |-
-      // Logic for "PPFD (µmol/m²s)".
       return (id(as7341_f2).state + id(as7341_f3).state + id(as7341_f4).state + id(as7341_f5).state + id(as7341_f6).state + id(as7341_f7).state + id(as7341_f8).state) * 0.5;
     update_interval: 60s
 
@@ -366,7 +269,6 @@ sensor:
     id: lux
     unit_of_measurement: "lx"
     lambda: |-
-      // Logic for "LUX (AS7341)".
       return (id(as7341_f1).state + id(as7341_f2).state + id(as7341_f3).state + id(as7341_f4).state + id(as7341_f5).state + id(as7341_f6).state + id(as7341_f7).state + id(as7341_f8).state) * 2.0;
     update_interval: 60s
 
@@ -375,94 +277,48 @@ sensor:
     id: dli
     unit_of_measurement: "mol/m²d"
     lambda: |-
-      // Logic for "DLI (mol/m²d)".
       return id(ppfd).state * 0.0864;
     update_interval: 60s
 
-# Text entities for time display and status.
 text_sensor:
-  # Geraetename fuer lokale Dashboards und Diagnose.
+  - platform: homeassistant
+    id: auto_on_time_input
+    entity_id: input_datetime.einschaltzeit
+    internal: true
+    on_value:
+      - lambda: |-
+          if (x.size() < 5) {
+            return;
+          }
+          int hour = atoi(x.substr(0, 2).c_str());
+          int minute = atoi(x.substr(3, 2).c_str());
+          if (hour < 0) hour = 0;
+          if (hour > 23) hour = 23;
+          if (minute < 0) minute = 0;
+          if (minute > 59) minute = 59;
+          id(on_minutes) = hour * 60 + minute;
+  - platform: homeassistant
+    id: auto_off_time_input
+    entity_id: input_datetime.ausschaltzeit
+    internal: true
+    on_value:
+      - lambda: |-
+          if (x.size() < 5) {
+            return;
+          }
+          int hour = atoi(x.substr(0, 2).c_str());
+          int minute = atoi(x.substr(3, 2).c_str());
+          if (hour < 0) hour = 0;
+          if (hour > 23) hour = 23;
+          if (minute < 0) minute = 0;
+          if (minute > 59) minute = 59;
+          id(off_minutes) = hour * 60 + minute;
   - platform: template
-    name: "Geraetename"
-    id: zeltsensor_device_name
-    icon: "mdi:identifier"
-    entity_category: diagnostic
-    lambda: |-
-      // Logic for "Geraetename".
-      return {"zeltsensor"};
-    update_interval: 3600s
-  # Aktueller Lichtmodus (AUS/AUTO/MANUELL).
-  - platform: template
-    name: "Zeltlampe Modus"
-    id: zeltlampe_mode_text
-    icon: "mdi:lightbulb"
-    entity_category: diagnostic
-    lambda: |-
-      // Logic for "Zeltlampe Modus".
-      switch (id(light_mode)) {
-        case 1: return {"MANUELL"};
-        case 2: return {"AUTO"};
-        default: return {"AUS"};
-      }
-    update_interval: 30s
-  # SA/SU Statusanzeige (nur Anzeige, keine Steuerung).
-  - platform: template
-    name: "SA/SU Status"
-    id: sun_ramp_status_text
-    icon: "mdi:weather-sunset"
-    entity_category: diagnostic
-    lambda: |-
-      // Logic for "SA/SU Status".
-      return id(sun_ramp_enabled) ? "Aktiv" : "Deaktiviert";
-    update_interval: 30s
-  - platform: template
-    name: "AUTO Einschaltzeit"
-    id: auto_on_time_display
+    name: "SA Startzeit (hh:mm)"
+    id: sa_start_time_text
     icon: "mdi:clock-outline"
-    entity_category: diagnostic
     lambda: |-
-      // Logic for "AUTO Einschaltzeit".
-      int minutes = id(on_minutes);
-      if (minutes < 0 || minutes > 1439) {
-        return {"--:--"};
-      }
-      int hour = minutes / 60;
-      int minute = minutes % 60;
-      char buffer[6];
-      snprintf(buffer, sizeof(buffer), "%02d:%02d", hour, minute);
-      return {buffer};
-    update_interval: 60s
-  - platform: template
-    name: "AUTO Ausschaltzeit"
-    id: auto_off_time_display
-    icon: "mdi:clock-outline"
-    entity_category: diagnostic
-    lambda: |-
-      // Logic for "AUTO Ausschaltzeit".
-      int minutes = id(off_minutes);
-      if (minutes < 0 || minutes > 1439) {
-        return {"--:--"};
-      }
-      int hour = minutes / 60;
-      int minute = minutes % 60;
-      char buffer[6];
-      snprintf(buffer, sizeof(buffer), "%02d:%02d", hour, minute);
-      return {buffer};
-    update_interval: 60s
-  - platform: template
-    name: "SA Startzeit"
-    id: sa_start_time_display
-    icon: "mdi:clock-outline"
-    entity_category: diagnostic
-    lambda: |-
-      // Logic for "SA Startzeit".
-      if (!id(sun_ramp_enabled)) {
-        return {"Automatik deaktiviert"};
-      }
       int minutes = id(sa_start_minutes);
-      if (minutes < 0 || minutes > 1439) {
-        return {"Automatik deaktiviert"};
-      }
       int hour = minutes / 60;
       int minute = minutes % 60;
       char buffer[6];
@@ -470,19 +326,11 @@ text_sensor:
       return {buffer};
     update_interval: 60s
   - platform: template
-    name: "SU Startzeit"
-    id: su_start_time_display
+    name: "SU Startzeit (hh:mm)"
+    id: su_start_time_text
     icon: "mdi:clock-outline"
-    entity_category: diagnostic
     lambda: |-
-      // Logic for "SU Startzeit".
-      if (!id(sun_ramp_enabled)) {
-        return {"Automatik deaktiviert"};
-      }
       int minutes = id(su_start_minutes);
-      if (minutes < 0 || minutes > 1439) {
-        return {"Automatik deaktiviert"};
-      }
       int hour = minutes / 60;
       int minute = minutes % 60;
       char buffer[6];
@@ -490,14 +338,12 @@ text_sensor:
       return {buffer};
     update_interval: 60s
   - platform: template
-    # Versions- und Diagnoseanzeige des Firmware-Standes.
     name: "Zeltsensor Version"
     id: zeltsensor_version
     icon: "mdi:tag"
     entity_category: diagnostic
     lambda: |-
-      // Logic for "Zeltsensor Version".
-      return {"2.7"};
+      return {"2.6"};
     update_interval: 3600s
   - platform: wifi_info
     ip_address:
@@ -508,37 +354,30 @@ text_sensor:
       name: "ESP WiFi BSSID"
     mac_address:
       name: "ESP MAC Adresse"
-# Basic device status.
 binary_sensor:
   - platform: status
     name: "ESP Status"
 
-# Onboard status LED.
 status_led:
   pin: 2
 
-# Outputs for PWM and template switch bridging.
 output:
   - platform: ledc
     pin: 25
     id: zeltlampe_pwm
-  # Bridge switch state into a persistent flag.
   - platform: template
     id: zeltlampe_sun_ramp_output
     type: binary
     write_action:
       - lambda: |-
-          // Persist SA/SU enable state.
           id(sun_ramp_enabled) = state;
 
-# Main light entity controlled by interval logic.
 light:
   - platform: monochromatic
     name: "Zeltlampe"
     output: zeltlampe_pwm
     id: zeltlampe
 
-# Switches for SA/SU enable and mode control.
 switch:
   - platform: output
     name: "Zeltlampe SA/SU aktiv"
@@ -546,7 +385,6 @@ switch:
     icon: "mdi:weather-sunset"
     output: zeltlampe_sun_ramp_output
     restore_mode: RESTORE_DEFAULT_OFF
-  # MANUELL hat Vorrang: beim Aktivieren wird AUTO deaktiviert.
   - platform: template
     name: "AUTO"
     id: auto_mode
@@ -554,19 +392,16 @@ switch:
     optimistic: true
     turn_on_action:
       - lambda: |-
-          // AUTO enabled: set mode and disable MANUAL if needed.
           id(light_mode) = 2;
           if (id(manual_mode).state) {
             id(manual_mode).turn_off();
           }
     turn_off_action:
       - lambda: |-
-          // AUTO disabled: clear mode if MANUAL is also off.
           if (!id(manual_mode).state) {
             id(light_mode) = 0;
           }
     lambda: |-
-      // Logic for "AUTO".
       return id(light_mode) == 2;
   - platform: template
     name: "MANUELL"
@@ -575,24 +410,20 @@ switch:
     optimistic: true
     turn_on_action:
       - lambda: |-
-          // MANUAL enabled: set mode and disable AUTO if needed.
           id(light_mode) = 1;
           if (id(auto_mode).state) {
             id(auto_mode).turn_off();
           }
     turn_off_action:
       - lambda: |-
-          // MANUAL disabled: clear mode if AUTO is also off.
           if (!id(auto_mode).state) {
             id(light_mode) = 0;
           }
     lambda: |-
-      // Logic for "MANUELL".
       return id(light_mode) == 1;
 
-# User-adjustable parameters (brightness and timings).
 number:
-  # User-adjustable parameters for lighting behavior.
+  # Bedienbare Parameter für das Autark-Licht
   - platform: template
     name: "Auto Max Helligkeit"
     id: zeltlampe_max_pwm
@@ -601,7 +432,6 @@ number:
     max_value: 100
     step: 1
     lambda: |-
-      // Logic for "Auto Max Helligkeit".
       return id(max_pwm) * 100.0f;
     set_action:
       - lambda: |-
@@ -617,7 +447,6 @@ number:
     max_value: 100
     step: 1
     lambda: |-
-      // Logic for "Manuelle Helligkeit".
       return id(manual_pwm) * 100.0f;
     set_action:
       - lambda: |-
@@ -625,7 +454,30 @@ number:
           if (value < 0.0f) value = 0.0f;
           if (value > 1.0f) value = 1.0f;
           id(manual_pwm) = value;
-  # SA/SU ramp durations in minutes.
+  - platform: template
+    name: "SA Startzeit (Min)"
+    id: zeltlampe_sa_start_minutes
+    unit_of_measurement: "min"
+    min_value: 0
+    max_value: 1439
+    step: 15
+    lambda: |-
+      return id(sa_start_minutes);
+    set_action:
+      - lambda: |-
+          id(sa_start_minutes) = (int) x;
+  - platform: template
+    name: "SU Startzeit (Min)"
+    id: zeltlampe_su_start_minutes
+    unit_of_measurement: "min"
+    min_value: 0
+    max_value: 1439
+    step: 15
+    lambda: |-
+      return id(su_start_minutes);
+    set_action:
+      - lambda: |-
+          id(su_start_minutes) = (int) x;
   - platform: template
     name: "Sonnenaufgang Dauer"
     id: zeltlampe_sunrise_duration
@@ -634,7 +486,6 @@ number:
     max_value: 30
     step: 1
     lambda: |-
-      // Logic for "Sonnenaufgang Dauer".
       return id(sunrise_min);
     set_action:
       - lambda: |-
@@ -649,7 +500,6 @@ number:
     max_value: 30
     step: 1
     lambda: |-
-      // Logic for "Sonnenuntergang Dauer".
       return id(sunset_min);
     set_action:
       - lambda: |-
@@ -657,17 +507,12 @@ number:
           if (x > 30) x = 30;
           id(sunset_min) = (int) x;
 
-# Main control loop for light logic.
 interval:
   - interval: 30s
     then:
       - lambda: |-
-          // ZENTRALE ZEITLOGIK
-          // NICHT ÄNDERN – Grundlage für AUTO/SA/SU
-          // ERWEITERUNG HIER MÖGLICH
           // Vereinfachte Lichtlogik für MANUAL/AUTO inklusive optionaler SA/SU-Rampe
           auto now = id(esphome_time).now();
-          // Clamp inputs and prepare target PWM.
           int mode = id(light_mode);  // 0=NONE, 1=MANUAL, 2=AUTO
           float manual_value = id(manual_pwm);
           if (manual_value < 0.0f) manual_value = 0.0f;
@@ -677,7 +522,6 @@ interval:
           if (auto_value > 1.0f) auto_value = 1.0f;
           float target_pwm = 0.0f;
 
-          // Always hard-toggle the light entity based on computed PWM.
           auto turn_light = [&](float brightness) {
             if (brightness <= 0.001f) {
               if (id(zeltlampe).current_values.is_on()) {
@@ -699,7 +543,6 @@ interval:
               target_pwm = 0.0f;
             } else {
             auto normalize_minutes = [](int value) -> int {
-              // Keep any minute value within 0..1439.
               value %= 1440;
               if (value < 0) value += 1440;
               return value;
@@ -707,7 +550,6 @@ interval:
             int minutes_of_day = now.hour * 60 + now.minute;
             int on_minute = normalize_minutes(id(on_minutes));
             int off_minute = normalize_minutes(id(off_minutes));
-            // Compute active window length across midnight if needed.
             int active_duration = off_minute - on_minute;
             if (active_duration <= 0) active_duration += 1440;
             if (active_duration <= 0) active_duration = 1440;
@@ -729,39 +571,19 @@ interval:
               if (sunset_minutes < 1) sunset_minutes = 1;
               if (sunset_minutes > 30) sunset_minutes = 30;
 
-              int sa_rel = normalize_minutes(id(sa_start_minutes) - on_minute);
-              int su_rel = normalize_minutes(id(su_start_minutes) - on_minute);
+              int sa_start = normalize_minutes(id(sa_start_minutes));
+              int su_start = normalize_minutes(id(su_start_minutes));
+              int sa_delta = minutes_of_day - sa_start;
+              if (sa_delta < 0) sa_delta += 1440;
+              int su_delta = minutes_of_day - su_start;
+              if (su_delta < 0) su_delta += 1440;
 
-              if (sa_rel >= active_duration) sa_rel = 0;
-              if (su_rel == 0 || su_rel > active_duration) {
-                su_rel = active_duration - sunset_minutes;
-                if (su_rel < 0) su_rel = 0;
-              }
-
-              if (su_rel <= sa_rel) {
-                su_rel = sa_rel + sunrise_minutes;
-                if (su_rel > active_duration) {
-                  su_rel = active_duration;
-                }
-              }
-
-              if (sa_rel + sunrise_minutes > su_rel) {
-                sa_rel = su_rel - sunrise_minutes;
-                if (sa_rel < 0) sa_rel = 0;
-              }
-
-              if (time_since_on < sa_rel) {
-                target_pwm = 0.0f;
-              } else if (time_since_on < sa_rel + sunrise_minutes) {
-                int ramp_pos = time_since_on - sa_rel;
-                target_pwm = auto_value * (float) ramp_pos / sunrise_minutes;
-              } else if (time_since_on < su_rel) {
-                target_pwm = auto_value;
-              } else if (time_since_on < su_rel + sunset_minutes) {
-                int ramp_pos = time_since_on - su_rel;
-                target_pwm = auto_value * (1.0f - (float) ramp_pos / sunset_minutes);
+              if (su_delta >= 0 && su_delta < sunset_minutes) {
+                target_pwm = auto_value * (1.0f - (float) su_delta / sunset_minutes);
+              } else if (sa_delta >= 0 && sa_delta < sunrise_minutes) {
+                target_pwm = auto_value * (float) sa_delta / sunrise_minutes;
               } else {
-                target_pwm = 0.0f;
+                target_pwm = auto_value;
               }
             }
             }
@@ -770,18 +592,11 @@ interval:
             target_pwm = 0.0f;
           }
 
-          // ESP entscheidet autark und setzt die Light-Entity deterministisch.
           turn_light(target_pwm);
 
-# Serial/logger configuration.
+
 logger:
 
-# Native API for Home Assistant.
 api:
   encryption:
     key: !secret api_encryption_key
-
-# Lokales ESP-Web-Dashboard (Anzeige der Sensoren per IP).
-web_server:
-  # Anzeige-Only gedacht: Steuerung erfolgt weiterhin durch ESP-Logik.
-  port: 80

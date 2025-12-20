@@ -3,7 +3,7 @@ esphome:
   comment: "Minimalprofil BMP280 + AS7341"
   project:
     name: "loserat.dixy_zeltsensor"
-    version: "2.5"
+    version: "2.4"
   on_boot:
     priority: -100
     then:
@@ -41,22 +41,14 @@ globals:
     type: float
     restore_value: yes
     initial_value: '0.5'
-  - id: current_pwm
-    type: float
-    restore_value: yes
-    initial_value: '0.0'
   - id: sun_ramp_enabled
     type: bool
     restore_value: yes
     initial_value: 'false'
-  - id: sunrise_min
+  - id: sun_ramp_duration_min
     type: int
     restore_value: yes
-    initial_value: '10'
-  - id: sunset_min
-    type: int
-    restore_value: yes
-    initial_value: '10'
+    initial_value: '10'gi
 
 esp32:
   board: esp32dev
@@ -173,17 +165,18 @@ sensor:
       return vpd;
 
   - platform: template
-    name: "Zeltlampe Aktuelle Helligkeit"
+    name: "Zeltlampe Helligkeit"
     id: zeltlampe_brightness_sensor
     unit_of_measurement: "%"
     accuracy_decimals: 0
     state_class: measurement
     update_interval: 2s
     lambda: |-
-      if (id(current_pwm) <= 0.0f) {
+      if (id(zeltlampe).current_values.is_on()) {
+        return id(zeltlampe).current_values.get_brightness() * 100.0f;
+      } else {
         return 0.0f;
       }
-      return id(current_pwm) * 100.0f;
 
   # --- Diagnose-Sensoren (Diagnose-Tab in HA) ---
   - platform: bmp280_i2c
@@ -282,7 +275,7 @@ text_sensor:
     icon: "mdi:tag"
     entity_category: diagnostic
     lambda: |-
-      return {"2.5"};
+      return {"2.4"};
     update_interval: 3600s
   - platform: wifi_info
     ip_address:
@@ -394,33 +387,19 @@ number:
           if (value > 1.0f) value = 1.0f;
           id(manual_pwm) = value;
   - platform: template
-    name: "Sonnenaufgang Dauer"
-    id: zeltlampe_sunrise_duration
+    name: "SA/SU Dauer"
+    id: zeltlampe_sun_ramp_duration
     unit_of_measurement: "min"
     min_value: 1
     max_value: 30
     step: 1
     lambda: |-
-      return id(sunrise_min);
+      return id(sun_ramp_duration_min);
     set_action:
       - lambda: |-
           if (x < 1) x = 1;
           if (x > 30) x = 30;
-          id(sunrise_min) = (int) x;
-  - platform: template
-    name: "Sonnenuntergang Dauer"
-    id: zeltlampe_sunset_duration
-    unit_of_measurement: "min"
-    min_value: 1
-    max_value: 30
-    step: 1
-    lambda: |-
-      return id(sunset_min);
-    set_action:
-      - lambda: |-
-          if (x < 1) x = 1;
-          if (x > 30) x = 30;
-          id(sunset_min) = (int) x;
+          id(sun_ramp_duration_min) = (int) x;
 
 interval:
   - interval: 30s
@@ -478,22 +457,29 @@ interval:
               // AUTO ohne SA/SU
               target_pwm = auto_value;
             } else {
-              // AUTO mit SA/SU getrennten Dauern
-              int sunrise_minutes = id(sunrise_min);
-              int sunset_minutes = id(sunset_min);
-              if (sunrise_minutes < 1) sunrise_minutes = 1;
-              if (sunrise_minutes > 30) sunrise_minutes = 30;
-              if (sunset_minutes < 1) sunset_minutes = 1;
-              if (sunset_minutes > 30) sunset_minutes = 30;
+              // AUTO mit SA/SU gemeinsame Dauer
+              int ramp_minutes = id(sun_ramp_duration_min);
+              if (ramp_minutes < 1) ramp_minutes = 1;
+              if (ramp_minutes > 30) ramp_minutes = 30;
+              if (ramp_minutes * 2 > active_duration) {
+                ramp_minutes = active_duration / 2;
+              }
+              if (ramp_minutes <= 0) ramp_minutes = 1;
+              int plateau_start = ramp_minutes;
+              int plateau_end = active_duration - ramp_minutes;
+              if (plateau_end < plateau_start) {
+                plateau_end = plateau_start;
+              }
 
-              int time_until_off = active_duration - time_since_on;
-              if (time_since_on < sunrise_minutes) {
-                target_pwm = auto_value * (float) time_since_on / sunrise_minutes;
-              } else if (time_until_off <= sunset_minutes) {
-                if (sunset_minutes <= 0) sunset_minutes = 1;
-                target_pwm = auto_value * (float) time_until_off / sunset_minutes;
-              } else {
+              if (time_since_on < ramp_minutes) {
+                target_pwm = auto_value * (float) time_since_on / ramp_minutes;
+              } else if (time_since_on < plateau_end) {
                 target_pwm = auto_value;
+              } else {
+                int ramp_pos = time_since_on - plateau_end;
+                int ramp_span = active_duration - plateau_end;
+                if (ramp_span <= 0) ramp_span = 1;
+                target_pwm = auto_value * (1.0f - (float) ramp_pos / ramp_span);
               }
             }
             }
@@ -502,8 +488,7 @@ interval:
             target_pwm = 0.0f;
           }
 
-          id(current_pwm) = target_pwm;
-          turn_light(id(current_pwm));
+          turn_light(target_pwm);
 
 logger:
 

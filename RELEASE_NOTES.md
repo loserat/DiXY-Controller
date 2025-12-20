@@ -1,65 +1,39 @@
-# DiXY RDWC Controller - Release Notes
 
-## 📋 Version Management Process
+### v2.8 (Release Date: 2025-12-20)
+**Zeltsensor**
+- Autarke Lichtsteuerung mit State-Machine und SA/SU-Rampen weiter optimiert
+- Home Assistant-Integration für alle Lichtparameter und Moduswahl
+- Health-Monitoring für I2C-Sensoren vorbereitet
+- Web-Dashboard für lokale Sensoranzeige ergänzt
+- Versionierung und Diagnose-Entität für Firmwarestatus
 
-**How versioning works going forward:**
-1. **Baseline:** v0.1 (Current - 2025-12-08)
-2. **Development:** Improvements and fixes added to code
-3. **Release:** When ready, increment to **v0.2** and document all changes below
-4. **Requirement:** Each version bump MUST include a summary of changes in this file
-
-**Format for version bumps:**
-```markdown
-### v0.2 (Release Date: YYYY-MM-DD)
-**Changes from v0.1:**
-- ✅ Feature 1 implemented
-- 🐛 Bug 2 fixed
-- 📝 Documentation 3 updated
-```
+**Hydroknoten**
+- Version 2.1: Logger und Boot-Meldung integriert
+- WiFi/OTA/Logger/Projekt-Metadaten konsolidiert
+- API-Verschlüsselung und Fallback-AP verbessert
 
 ---
 
-
-## 📊 Version Overview
-
-| Version | Status | Focus | Target |
-|---------|--------|-------|--------|
-| **v0.2** | 🟢 Current | Node-RED, ESPHome Cleanup, Docs | Dec 14, 2025 |
-| **v0.1** | ⚪️ Baseline | All nodes at v0.1 | Dec 08, 2025 |
-| **v0.3** | 🔄 Planned | HACS Custom Integration | Dec 22, 2025 |
-| **v1.0** | 🔴 Planned | Production Release | Jan 2026 |
-| **v2.0** | 🔴 Planned | KI-Anbindung (Plant Stress ML) | Feb 2026 |
-| **v3.0** | 🔴 Planned | Hardware-Optimierung (MQTT, PID, Multi-Zelt) | Mar 2026 |
-| **v4.0+** | 🔴 Planned | Deep Learning (YOLOv8, Mobile App) | Q2+ 2026 |
+### v2.7 (Release Date: 2025-12-19)
+**Zeltsensor**
+- State-Machine für Lichtsteuerung (MANUAL/AUTO/SA/SU) vollständig auf ESP verlagert
+- Persistente Parameter für Lichtprofile und Rampen
+- Home Assistant-Entitäten für Modus und Parameter
+- Fehlerbehandlung und Robustheit verbessert
 
 ---
 
-### [2.6] – YYYY-MM-DD
-
-Added:
-- AUTO-Zeitschaltuhr mit echter Uhrzeit-Eingabe (hh:mm)
-- Mitternachtssichere Zeitfenster-Logik (z. B. 18:00 → 02:00)
-- Getrennte Konfiguration für Sonnenaufgang (SA) und Sonnenuntergang (SU)
-- Echte PWM-Ist-Rückmeldung der Lampenhelligkeit (%)
-
-Changed:
-- AUTO-Modus nutzt intern konsistente Minutenbasis mit hh:mm-UI
-- Lichtsteuerung vollständig deterministisch im ESP ausgeführt
-- Klare Trennung zwischen Steuerwerten (Slider) und Messwerten (Sensoren)
-
-Fixed:
-- Fehlerhafte Behandlung von Zeitfenstern über Mitternacht
-- Unklare Rückmeldung der tatsächlich anliegenden Lampenhelligkeit
-- Falsche Zuordnung von Diagnose-Entitäten in Home Assistant (Hinweis: erfordert Neu-Anlage der Entität in HA)
-
-Rationale:
-- Erhöhte Betriebssicherheit bei Nachtzyklen
-- Bessere Nachvollziehbarkeit der Lichtsteuerung
-- Grow-taugliche, robuste Zeit- und Lichtlogik
-- Vorbereitung für modulare Weiterentwicklung (DiXY-Lichtmodul)
+### v2.6 (Release Date: 2025-12-18)
+**Zeltsensor**
+- entity_category: diagnostic für Versions-Textsensor ergänzt
+- YAML-Struktur und Kommentare überarbeitet
+- Bugfixes bei der Modusumschaltung und Rampenlogik
 
 ---
 
+### v2.2–v2.5
+- Diverse Verbesserungen an Dummy-Sensoren, Zeitsteuerung und YAML-Struktur
+- Versionierung und Dokumentation konsolidiert
 
 ---
 
@@ -117,7 +91,7 @@ Rationale:
 - [ ] Custom services (dose_pump, calibrate_ec)
 
 ### v1.0 (Planned: Jan 2026)
-**Focus:** Production Release
+**Focus:** Production Releaser
 
 **Planned changes:**
 - [ ] Complete testing on live hardware
@@ -904,16 +878,3 @@ Siehe: `docs/GITHUB_UPLOAD_GUIDE.md` für detaillierte Anleitung
 - [ ] Video-Streaming-Optimierung
 - [ ] Nacht-Modus (Red LED)
 - [ ] Automatische Stage-Transition
-
----
-
-### v0.2 (Release Date: 2025-12-09)
-**Changes from v0.1:**
-- ✅ Zentrale secrets.yaml für alle ESP32-Knoten eingeführt
-- ✅ YAML-Refaktor: alle Knoten nur noch mit realer Hardware konfiguriert
-- ✅ Minimalistischer Simulationsknoten (hydroknoten_sim_v2.yaml) mit Dummy-pH, EC, Temperatur
-- ✅ OTA-Konfiguration vereinheitlicht und Fehlerbehebung (platform: esphome)
-- ✅ Base64-API-Key-Validierung und Hilfestellung
-- ✅ Alle Template/Dummy-Sensoren für Simulation getestet
-- 🐛 Diverse YAML-Syntax- und Pointer-Fehler behoben
-- 📝 Dokumentation und Quickstart aktualisiert
