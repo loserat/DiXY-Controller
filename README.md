@@ -1,54 +1,103 @@
-# DiXY RDWC Controller
+# DiXY Controller
 
-> **Achtung:** Dieses Projekt befindet sich in einer öffentlich einsehbaren Entwicklungsphase und ist noch nicht voll funktionsfähig. Viele Features sind experimentell, Änderungen erfolgen laufend, und ein stabiler Betrieb ist derzeit nicht garantiert. Die Nutzung erfolgt auf eigenes Risiko!
+Entwicklungsstatus: Dieses Projekt befindet sich in aktiver Entwicklung. APIs, Entitäten,
+Logik und Struktur können sich jederzeit ändern. Es gibt keine Garantie auf Stabilität
+oder Produktionsreife.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version: siehe Release Notes](https://img.shields.io/badge/Version-aktuell-blue.svg)](RELEASE_NOTES.md)
+## Projektübersicht (DiXY Controller)
+DiXY ist ein ESPHome‑basiertes Multi‑Knoten‑System für Grow‑Umgebungen.
+Die Logik läuft primär lokal auf den ESP‑Knoten; Home Assistant dient als UI,
+Monitoring‑Schicht und (wo vorhanden) Orchestrierungsebene.
 
----
+Visuelle Übersicht (optional): Platzhalter für Dashboard/GIF‑Link (optional)
 
-## Gesamtprojektübersicht
+## Was hat sich seit der letzten Version geändert?
+Hinweis: Das Projekt ist in aktiver Entwicklung; Änderungen sind nicht
+abwärtskompatibel garantiert.
 
-**DiXY** ist ein modulares Hydroponik-Steuerungssystem auf Basis von ESP32-Knoten und Home Assistant. Ziel ist die flexible, skalierbare Steuerung und Überwachung von Hydroponik-Anlagen mit Fokus auf Transparenz, Erweiterbarkeit und Open-Source-Ansatz.
+### Zeltknoten (v2.8 vs v2.7)
+- Neue Status‑Textsensoren für Modus, Phase, SA/SU‑Status und AUTO‑Zeiten.
+- AUTO‑Zeitübernahme über `input_datetime`‑Attribute (hour/minute);
+  SA/SU‑Startzeit‑Slider entfernt.
+- Lokales Web‑Dashboard für Anzeige‑Only ergänzt.
 
-- **Modulare Architektur:** Jeder Knoten übernimmt eine klar definierte Aufgabe (z.B. Klima, EC/pH, Dosierung, Kamera).
-- **Home Assistant Integration:** Zentrale Visualisierung, Automatisierung und Historie.
-- **ESPHome:** Firmware-Basis für alle Knoten, einfache Anpassung per YAML.
-- **Node-RED:** Optionale Automatisierungs- und Logikschicht für komplexe Abläufe.
+### Hydroknoten (v2.2 vs v2.1)
+- Simulationswerte laufen sinusförmig über einen 1‑Stunden‑Zyklus.
+- Update‑Intervall der Simulationssensoren auf 60 s gesetzt.
 
----
+### Dosierknoten (v2.4 vs v2.3)
+- Dosierabläufe auf nicht‑blockierende Script‑Schritte umgestellt.
+- EC‑Dosierung prüft nach jeder Rührzeit erneut den Zielwert.
+- pH‑Dosierung nutzt denselben Pumpenlauf‑Ablauf wie EC.
+- Minimale Rührzeiten auf 1 s gesetzt.
 
-## Knotentypen & Aufgaben
+## Architektur & Philosophie
+- Mehrere spezialisierte ESP32‑Knoten mit klar getrennten Aufgaben.
+- Lokale Berechnung und Steuerung auf den Knoten, um Abhängigkeiten zu reduzieren.
+- Home Assistant als zentrale Anzeige‑ und Integrationsschicht.
+- Datenflüsse sind transparent und über dokumentierte Entitäten nachvollziehbar.
 
-| Knoten         | Aufgabe/Beschreibung                                                                 |
-|---------------|--------------------------------------------------------------------------------------|
-| **Zeltknoten**      | Klima- und Lichtsensorik, Lichtsteuerung, VPD, Spektrum, Statusdiagnose                |
-| **Hydroknoten**     | EC/pH/Temperatur-Messung, Referenz für Dosierung, Kalibrierung, Systemvolumen         |
-| **Dosierungsknoten**| Nährstoff- und pH-Dosierung, Pumpensteuerung, Tageslimits, Rührzeitmanagement         |
-| **Kameraknoten**    | (optional) Timelapse, Blattanalyse, Bildübertragung                                   |
-| **Klimaknoten**     | (optional) Relaissteuerung, VPD-Regelung, Klimaüberwachung                            |
-| **Node-RED**        | (optional) Erweiterte Automatisierung, Flow-Logik, MQTT-Integration                   |
+## Knotenübersicht
+### Zeltknoten (Zeltsensor) – Status: beta
+Mess‑ und Anzeige‑Knoten für Spektrum, Klima und Lichtlogik im Zelt.
 
----
+### Hydroknoten – Status: beta
+Mess‑Knoten für EC/pH/Wassertemperatur und Tank‑Füllstände.
 
-## Kommunikationsüberblick
+### Dosierknoten – Status: beta
+Autarke EC‑ und pH‑Dosierung mit Sicherheits‑ und Sequenzlogik.
 
-- **ESPHome API:** Hauptkommunikation zwischen Knoten und Home Assistant (sicher, verschlüsselt, bidirektional)
-- **MQTT (optional):** Für Node-RED, externe Tools oder Integrationen
-- **Home Assistant API:** Visualisierung, Automatisierung, Dashboard
-- **Keine direkte Knoten-zu-Knoten-Kommunikation:** Alle Daten laufen über Home Assistant
+Weitere Knoten (vorhanden/experimentell):
+- Klimaknoten (VPD‑Regelung, Relais‑Steuerung)
+- Kameraknoten (Timelapse, Bildanalyse)
+- SOG‑Knoten (Wuchs‑Messung, Grundgerüst)
+- Simulation (Test‑Knoten)
 
----
+## Funktionen je Knoten
+### Zeltknoten
+- Spektral‑Lichtsensorik (AS7341), PPFD/Lux/DLI‑Berechnung.
+- Klima‑Monitoring (Temperatur, Luftfeuchte, VPD).
+- Optional: CO2‑Messung, Blatt‑Temperatur, PWM‑Lichtsteuerung.
 
-## Dokumentation & Changelog
+### Hydroknoten
+- EC‑Messung, pH‑Messung, Wassertemperatur.
+- 6× Tank‑Füllstand (digitale Level‑Sensoren).
+- Lokale Kalibrierungen für EC/pH.
 
-- **Detaillierte Änderungen, Bugfixes und Roadmap:** Siehe [RELEASE_NOTES.md](RELEASE_NOTES.md)
-- **Knoten-spezifische Sensoren und Entitäten:** Siehe jeweilige YAML-Dateien und SENSORS.md pro Knoten
-- **Node-RED Flows und Automationen:** Siehe Verzeichnis `NodeRed/` und `proposals/`
+### Dosierknoten
+- EC‑Verteilungslogik für Dünger‑Pumpen A–C.
+- pH‑Down‑Korrektur über Pumpe D.
+- Sequenzielle Dosierung mit Rührzeit und Sperrlogik.
+- Safety‑Limits (Max/Zyklus, Max/Tag) und Blockiergründe.
 
----
+## Sicherheitskonzepte
+- Keine parallelen Dosierungen; Ablauf strikt sequenziell.
+- Rührzeit blockiert weitere Dosierungen bis zum Ablauf.
+- Tages‑ und Zyklus‑Limits verhindern Überdosierung.
+- Dosierung blockiert bei fehlenden/ungültigen Messwerten.
 
-## Hinweise
+## Abhängigkeiten
+- Home Assistant (ESPHome‑Integration, Dashboards, optional Automationen).
+- ESPHome (Firmware‑Build und OTA‑Update der Knoten).
+- Lovelace Custom Cards (aus Dashboards im Repository):
+  - `mini-graph-card`
+  - `mushroom` (z. B. `mushroom-number-card`, `mushroom-light-card`)
+  - `time-picker-card`
+  - `as7341-spectrum-card`
+- Optional: Node‑RED (Flows in `NodeRed/`).
+- Datenquelle für Dosierung: Hydroknoten (EC/pH) + Systemvolumen aus HA.
+- Referenz: `docs/ha_entitaeten.md` (vollständige Entitätenliste).
 
-- Dieses Projekt ist in aktiver Entwicklung. Funktionen, Schnittstellen und YAML-Struktur können sich ändern.
-- Für Fragen, Issues oder Beiträge: Siehe GitHub-Issues oder erstelle einen Pull Request.
+## Installation (Kurzform, keine Tutorials)
+- ESPHome‑YAMLs aus `ESP32-Knoten/` flashen und in HA registrieren.
+- Home‑Assistant‑Dateien aus `Home-Assistant/` optional einbinden (Dashboards, Inputs).
+- Secrets und Zugangsdaten gemäß `README_SECRETS.md` pflegen.
+
+## Versionsstrategie
+- Projektstand: v0.x (beta).
+- Knoten haben eigene Versionsstände in den YAML‑Dateien.
+- Änderungen sind im `CHANGELOG.md` nachvollziehbar dokumentiert.
+
+## Lizenz / Hinweise
+- Lizenz siehe `LICENSE`.
+- Sicherheitskritisches System: Änderungen dokumentieren und nachvollziehbar testen.

@@ -141,6 +141,39 @@ globals:
     type: int
     initial_value: '0'
 
+  # Laufparameter für Pumpenlauf (nicht blockierend)
+  - id: run_pump_id
+    type: int
+    initial_value: '0'
+
+  - id: run_pump_seconds
+    type: float
+    initial_value: '0.0'
+
+  - id: run_pump_ml
+    type: float
+    initial_value: '0.0'
+
+  - id: run_pump_kind
+    type: int
+    initial_value: '0'
+
+  - id: run_valid
+    type: int
+    initial_value: '0'
+
+  - id: ec_active_pumps
+    type: int
+    initial_value: '0'
+
+  - id: ec_share
+    type: float
+    initial_value: '0.0'
+
+  - id: ec_should_stop
+    type: int
+    initial_value: '0'
+
   # Tages-Counter (Reset um Mitternacht)
   - id: pump_a_total_today
     type: float
@@ -1447,6 +1480,36 @@ script:
             id(pump_d_total_today) = 0.0;
 
     # ═══════════════════════════════════════════════════════════
+    # PUMPENLAUF (NICHT BLOCKIEREND)
+    # ═══════════════════════════════════════════════════════════
+    - id: run_pump
+      mode: queued
+      then:
+        - lambda: |-
+            int p = id(run_pump_id);
+            if (p == 1) id(pump1_output).set_level(1.0f);
+            else if (p == 2) id(pump2_output).set_level(1.0f);
+            else if (p == 3) id(pump3_output).set_level(1.0f);
+            else if (p == 4) id(pump4_output).set_level(1.0f);
+        - delay: !lambda 'return (uint32_t)(id(run_pump_seconds) * 1000);'
+        - lambda: |-
+            int p = id(run_pump_id);
+            if (p == 1) id(pump1_output).set_level(0.0f);
+            else if (p == 2) id(pump2_output).set_level(0.0f);
+            else if (p == 3) id(pump3_output).set_level(0.0f);
+            else if (p == 4) id(pump4_output).set_level(0.0f);
+
+            float ml = id(run_pump_ml);
+            if (p == 1) { id(pump_a_total_today) += ml; id(pump_a_lifetime_ml) += ml; id(pump_a_cycles) += 1; }
+            else if (p == 2) { id(pump_b_total_today) += ml; id(pump_b_lifetime_ml) += ml; id(pump_b_cycles) += 1; }
+            else if (p == 3) { id(pump_c_total_today) += ml; id(pump_c_lifetime_ml) += ml; id(pump_c_cycles) += 1; }
+            else if (p == 4) { id(pump_d_total_today) += ml; id(pump_d_lifetime_ml) += ml; id(pump_d_cycles) += 1; }
+
+            id(last_dose_ml) = ml;
+            id(last_dose_kind) = id(run_pump_kind);
+            id(last_dose_timestamp) = millis();
+
+    # ═══════════════════════════════════════════════════════════
     # INTELLIGENTE EC-DOSIERUNG (Pumpe A)
     # ═══════════════════════════════════════════════════════════
     - id: dose_ec_nutrients
@@ -1470,118 +1533,167 @@ script:
               - logger.log: "❌ Hydroknoten offline – EC-Dosierung abgebrochen"
               - script.stop: dose_ec_nutrients
 
-        # STEP 3: EC-Berechnung
+        # STEP 3: EC-Berechnung (nicht blockierend)
         - lambda: |-
+            id(ec_should_stop) = 0;
             float ec_diff = id(ec_target).state - id(ec_current).state;
-
-            if (ec_diff < 0.05) {
+            if (ec_diff < 0.05f) {
               ESP_LOGI("dose_ec", "✓ EC bereits im Zielbereich (%.2f mS/cm)", id(ec_current).state);
+              id(ec_should_stop) = 1;
               return;
             }
-
-            float system_liters = id(system_volume_liters).state;
-            float max_cycle = id(max_dose_per_cycle).state;
             int active_pumps = 0;
             if (id(pump1_switch).state) active_pumps++;
             if (id(pump2_switch).state) active_pumps++;
             if (id(pump3_switch).state) active_pumps++;
-
             if (active_pumps == 0) {
               ESP_LOGW("dose_ec", "⚠️ Keine EC-Pumpe aktiv");
+              id(ec_should_stop) = 1;
               return;
             }
+            id(ec_active_pumps) = active_pumps;
+            id(ec_share) = ec_diff / (float)active_pumps;
+        - if:
+            condition:
+              lambda: 'return id(ec_should_stop) == 1;'
+            then:
+              - script.stop: dose_ec_nutrients
 
-            float ec_share = ec_diff / (float)active_pumps;
+        - if:
+            condition:
+              lambda: 'return id(ec_should_stop) == 0 && id(pump1_switch).state;'
+            then:
+              - lambda: |-
+                  id(run_valid) = 0;
+                  float system_liters = id(system_volume_liters).state;
+                  float ec_per_ml_100L = id(pump_a_ec_per_ml).state;
+                  float ec_per_ml_actual = ec_per_ml_100L * (100.0f / system_liters);
+                  if (ec_per_ml_actual <= 0.0f) {
+                    ESP_LOGW("dose_ec", "⚠️ Micro EC-Wirksamkeit = 0");
+                    return;
+                  }
+                  float ml_needed = id(ec_share) / ec_per_ml_actual;
+                  float max_cycle = id(max_dose_per_cycle).state;
+                  if (ml_needed > max_cycle) ml_needed = max_cycle;
+                  if (id(pump_a_total_today) + ml_needed > id(pump_a_max_ml_day).state) {
+                    ESP_LOGE("dose_ec", "❌ Tageslimit Micro erreicht!");
+                    return;
+                  }
+                  id(run_pump_id) = 1;
+                  id(run_pump_kind) = 1;
+                  id(run_pump_ml) = ml_needed;
+                  id(run_pump_seconds) = ml_needed / id(pump_a_flow_ml_per_sec).state;
+                  id(run_valid) = 1;
+              - if:
+                  condition:
+                    lambda: 'return id(run_valid) == 1;'
+                  then:
+                    - logger.log: "💧 Micro Dosierung läuft"
+                    - script.execute: run_pump
+                    - wait_until:
+                        condition:
+                          not:
+                            script.is_running: run_pump
+                    - logger.log:
+                        format: "⏳ Rührzeit läuft: %.0f s"
+                        args: ['id(stir_time).state']
+                    - delay: !lambda 'return (uint32_t)(id(stir_time).state * 1000);'
+                    - lambda: |-
+                        float ec_diff = id(ec_target).state - id(ec_current).state;
+                        if (ec_diff < 0.05f) {
+                          ESP_LOGI("dose_ec", "✓ EC erreicht nach Rührzeit (%.2f mS/cm)", id(ec_current).state);
+                          id(ec_should_stop) = 1;
+                        } else {
+                          id(ec_share) = ec_diff / (float)id(ec_active_pumps);
+                        }
 
-            auto dose_pump = [&](const char* label,
-                                 float ec_per_ml_100L,
-                                 float flow_rate,
-                                 float* today_counter,
-                                 float max_day,
-                                 esphome::output::FloatOutput* output,
-                                 int* cycles,
-                                 float* lifetime_ml) -> bool {
-              float ec_per_ml_actual = ec_per_ml_100L * (100.0f / system_liters);
-              if (ec_per_ml_actual <= 0.0f) {
-                ESP_LOGW("dose_ec", "⚠️ %s EC-Wirksamkeit = 0", label);
-                return false;
-              }
-              float ml_needed = ec_share / ec_per_ml_actual;
-              if (ml_needed > max_cycle) {
-                ESP_LOGW("dose_ec", "⚠️ %s begrenzt auf %.0f ml (berechnet: %.1f ml)", label, max_cycle, ml_needed);
-                ml_needed = max_cycle;
-              }
-              if (*today_counter + ml_needed > max_day) {
-                ESP_LOGE("dose_ec", "❌ Tageslimit %s erreicht!", label);
-                return false;
-              }
-              ESP_LOGI("dose_ec", "💧 %s: %.1f ml (EC: %.2f → %.2f mS/cm)", label, ml_needed, id(ec_current).state, id(ec_target).state);
-              float seconds = ml_needed / flow_rate;
-              output->set_level(1.0f);
-              delay((int)(seconds * 1000));
-              output->set_level(0.0f);
-              *today_counter += ml_needed;
-              *lifetime_ml += ml_needed;
-              (*cycles) += 1;
-              id(last_dose_ml) = ml_needed;
-              id(last_dose_kind) = 1;
-              id(last_dose_timestamp) = millis();
-              ESP_LOGI("dose_ec", "✓ %s: %.1f ml dosiert (heute: %.0f ml)", label, ml_needed, *today_counter);
-              return true;
-            };
+        - if:
+            condition:
+              lambda: 'return id(ec_should_stop) == 0 && id(pump2_switch).state;'
+            then:
+              - lambda: |-
+                  id(run_valid) = 0;
+                  float system_liters = id(system_volume_liters).state;
+                  float ec_per_ml_100L = id(pump_b_ec_per_ml).state;
+                  float ec_per_ml_actual = ec_per_ml_100L * (100.0f / system_liters);
+                  if (ec_per_ml_actual <= 0.0f) {
+                    ESP_LOGW("dose_ec", "⚠️ Grow EC-Wirksamkeit = 0");
+                    return;
+                  }
+                  float ml_needed = id(ec_share) / ec_per_ml_actual;
+                  float max_cycle = id(max_dose_per_cycle).state;
+                  if (ml_needed > max_cycle) ml_needed = max_cycle;
+                  if (id(pump_b_total_today) + ml_needed > id(pump_b_max_ml_day).state) {
+                    ESP_LOGE("dose_ec", "❌ Tageslimit Grow erreicht!");
+                    return;
+                  }
+                  id(run_pump_id) = 2;
+                  id(run_pump_kind) = 1;
+                  id(run_pump_ml) = ml_needed;
+                  id(run_pump_seconds) = ml_needed / id(pump_b_flow_ml_per_sec).state;
+                  id(run_valid) = 1;
+              - if:
+                  condition:
+                    lambda: 'return id(run_valid) == 1;'
+                  then:
+                    - logger.log: "💧 Grow Dosierung läuft"
+                    - script.execute: run_pump
+                    - wait_until:
+                        condition:
+                          not:
+                            script.is_running: run_pump
+                    - logger.log:
+                        format: "⏳ Rührzeit läuft: %.0f s"
+                        args: ['id(stir_time).state']
+                    - delay: !lambda 'return (uint32_t)(id(stir_time).state * 1000);'
+                    - lambda: |-
+                        float ec_diff = id(ec_target).state - id(ec_current).state;
+                        if (ec_diff < 0.05f) {
+                          ESP_LOGI("dose_ec", "✓ EC erreicht nach Rührzeit (%.2f mS/cm)", id(ec_current).state);
+                          id(ec_should_stop) = 1;
+                        } else {
+                          id(ec_share) = ec_diff / (float)id(ec_active_pumps);
+                        }
 
-            if (id(pump1_switch).state) {
-              bool dosed = dose_pump("Micro",
-                        id(pump_a_ec_per_ml).state,
-                        id(pump_a_flow_ml_per_sec).state,
-                        &id(pump_a_total_today),
-                        id(pump_a_max_ml_day).state,
-                        id(pump1_output),
-                        &id(pump_a_cycles),
-                        &id(pump_a_lifetime_ml));
-              if (dosed) {
-                ESP_LOGI("dose_ec", "⏳ Rührzeit läuft: %.0f s", id(stir_time).state);
-                delay((int)(id(stir_time).state * 1000));
-                ec_diff = id(ec_target).state - id(ec_current).state;
-                if (ec_diff < 0.05f) {
-                  ESP_LOGI("dose_ec", "✓ EC erreicht nach Rührzeit (%.2f mS/cm)", id(ec_current).state);
-                  return;
-                }
-              }
-            }
-            if (id(pump2_switch).state) {
-              bool dosed = dose_pump("Grow",
-                        id(pump_b_ec_per_ml).state,
-                        id(pump_b_flow_ml_per_sec).state,
-                        &id(pump_b_total_today),
-                        id(pump_b_max_ml_day).state,
-                        id(pump2_output),
-                        &id(pump_b_cycles),
-                        &id(pump_b_lifetime_ml));
-              if (dosed) {
-                ESP_LOGI("dose_ec", "⏳ Rührzeit läuft: %.0f s", id(stir_time).state);
-                delay((int)(id(stir_time).state * 1000));
-                ec_diff = id(ec_target).state - id(ec_current).state;
-                if (ec_diff < 0.05f) {
-                  ESP_LOGI("dose_ec", "✓ EC erreicht nach Rührzeit (%.2f mS/cm)", id(ec_current).state);
-                  return;
-                }
-              }
-            }
-            if (id(pump3_switch).state) {
-              bool dosed = dose_pump("Bloom",
-                        id(pump_c_ec_per_ml).state,
-                        id(pump_c_flow_ml_per_sec).state,
-                        &id(pump_c_total_today),
-                        id(pump_c_max_ml_day).state,
-                        id(pump3_output),
-                        &id(pump_c_cycles),
-                        &id(pump_c_lifetime_ml));
-              if (dosed) {
-                ESP_LOGI("dose_ec", "⏳ Rührzeit läuft: %.0f s", id(stir_time).state);
-                delay((int)(id(stir_time).state * 1000));
-              }
-            }
+        - if:
+            condition:
+              lambda: 'return id(ec_should_stop) == 0 && id(pump3_switch).state;'
+            then:
+              - lambda: |-
+                  id(run_valid) = 0;
+                  float system_liters = id(system_volume_liters).state;
+                  float ec_per_ml_100L = id(pump_c_ec_per_ml).state;
+                  float ec_per_ml_actual = ec_per_ml_100L * (100.0f / system_liters);
+                  if (ec_per_ml_actual <= 0.0f) {
+                    ESP_LOGW("dose_ec", "⚠️ Bloom EC-Wirksamkeit = 0");
+                    return;
+                  }
+                  float ml_needed = id(ec_share) / ec_per_ml_actual;
+                  float max_cycle = id(max_dose_per_cycle).state;
+                  if (ml_needed > max_cycle) ml_needed = max_cycle;
+                  if (id(pump_c_total_today) + ml_needed > id(pump_c_max_ml_day).state) {
+                    ESP_LOGE("dose_ec", "❌ Tageslimit Bloom erreicht!");
+                    return;
+                  }
+                  id(run_pump_id) = 3;
+                  id(run_pump_kind) = 1;
+                  id(run_pump_ml) = ml_needed;
+                  id(run_pump_seconds) = ml_needed / id(pump_c_flow_ml_per_sec).state;
+                  id(run_valid) = 1;
+              - if:
+                  condition:
+                    lambda: 'return id(run_valid) == 1;'
+                  then:
+                    - logger.log: "💧 Bloom Dosierung läuft"
+                    - script.execute: run_pump
+                    - wait_until:
+                        condition:
+                          not:
+                            script.is_running: run_pump
+                    - logger.log:
+                        format: "⏳ Rührzeit läuft: %.0f s"
+                        args: ['id(stir_time).state']
+                    - delay: !lambda 'return (uint32_t)(id(stir_time).state * 1000);'
 
         # STEP 4: Rührmotor aktivieren
         - logger.log: "🌀 Rührmotor gestartet"
@@ -1618,23 +1730,28 @@ script:
               - logger.log: "❌ Hydroknoten offline – pH-Dosierung abgebrochen"
               - script.stop: dose_ph_correction
 
-        # STEP 3: pH-Berechnung (nur pH Down über Pumpe D)
+        # STEP 3: pH-Berechnung (nur pH Down über Pumpe D, nicht blockierend)
         - lambda: |-
+            id(run_valid) = 0;
             float ph_diff = id(ph_target).state - id(ph_current).state;
 
-            if (abs(ph_diff) < 0.1) {
+            if (abs(ph_diff) < 0.1f) {
               ESP_LOGI("dose_ph", "✓ pH bereits im Zielbereich (%.2f)", id(ph_current).state);
               return;
             }
 
-            if (ph_diff > 0.1) {
+            if (ph_diff > 0.1f) {
               ESP_LOGW("dose_ph", "⚠️ pH zu niedrig – pH Up nicht vorhanden");
               return;
             }
 
             float system_liters = id(system_volume_liters).state;
             float ph_per_ml_100L = id(ph_down_per_ml).state;
-            float ph_per_ml_actual = ph_per_ml_100L * (100.0 / system_liters);
+            float ph_per_ml_actual = ph_per_ml_100L * (100.0f / system_liters);
+            if (ph_per_ml_actual <= 0.0f) {
+              ESP_LOGW("dose_ph", "⚠️ pH Down Wirksamkeit = 0");
+              return;
+            }
             float ml_needed = abs(ph_diff) / ph_per_ml_actual;
             ESP_LOGI("dose_ph", "📉 pH zu hoch – pH Down benötigt");
 
@@ -1644,30 +1761,30 @@ script:
               ml_needed = max_cycle;
             }
 
-            float* today_counter = &id(pump_d_total_today);
-            float max_day = id(pump_d_max_ml_day).state;
-
-            if (*today_counter + ml_needed > max_day) {
+            if (id(pump_d_total_today) + ml_needed > id(pump_d_max_ml_day).state) {
               ESP_LOGE("dose_ph", "❌ Tageslimit Pumpe D erreicht!");
               return;
             }
 
-            ESP_LOGI("dose_ph", "💧 Dosiere %.1f ml (pH: %.2f → %.2f)", ml_needed, id(ph_current).state, id(ph_target).state);
-
-            float flow_rate = id(pump_d_flow_ml_per_sec).state;
-            float seconds = ml_needed / flow_rate;
-
-            id(pump4_output).set_level(1.0);
-            delay((int)(seconds * 1000));
-            id(pump4_output).set_level(0.0);
-            id(pump_d_total_today) += ml_needed;
-            id(pump_d_lifetime_ml) += ml_needed;
-            id(pump_d_cycles) += 1;
-
-            id(last_dose_timestamp) = millis();
-            id(last_dose_ml) = ml_needed;
-            id(last_dose_kind) = 2;
-            ESP_LOGI("dose_ph", "✓ pH Down: %.1f ml dosiert", ml_needed);
+            id(run_pump_id) = 4;
+            id(run_pump_kind) = 2;
+            id(run_pump_ml) = ml_needed;
+            id(run_pump_seconds) = ml_needed / id(pump_d_flow_ml_per_sec).state;
+            id(run_valid) = 1;
+        - if:
+            condition:
+              lambda: 'return id(run_valid) == 1;'
+            then:
+              - logger.log: "💧 pH Down Dosierung läuft"
+              - script.execute: run_pump
+              - wait_until:
+                  condition:
+                    not:
+                      script.is_running: run_pump
+              - logger.log:
+                  format: "⏳ Rührzeit läuft: %.0f s"
+                  args: ['id(stir_time).state']
+              - delay: !lambda 'return (uint32_t)(id(stir_time).state * 1000);'
         # STEP 4: Rührmotor aktivieren
         - logger.log: "🌀 Rührmotor gestartet"
         - lambda: |-
