@@ -1,5 +1,7 @@
 # DiXY RDWC Controller
 
+> **Achtung:** Dieses Projekt befindet sich in einer öffentlich einsehbaren Entwicklungsphase und ist noch nicht voll funktionsfähig. Viele Features sind experimentell, Änderungen erfolgen laufend, und ein stabiler Betrieb ist derzeit nicht garantiert. Die Nutzung erfolgt auf eigenes Risiko!
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version: siehe Release Notes](https://img.shields.io/badge/Version-aktuell-blue.svg)](RELEASE_NOTES.md)
 
