@@ -1,39 +1,49 @@
-
 ### v2.8 (Release Date: 2025-12-20)
 **Zeltsensor**
-- Autarke Lichtsteuerung mit State-Machine und SA/SU-Rampen weiter optimiert
-- Home Assistant-Integration für alle Lichtparameter und Moduswahl
-- Health-Monitoring für I2C-Sensoren vorbereitet
-- Web-Dashboard für lokale Sensoranzeige ergänzt
-- Versionierung und Diagnose-Entität für Firmwarestatus
+- **Added:**
+  - Autarke Lichtsteuerung mit State-Machine und SA/SU-Rampen weiter optimiert
+  - Health-Monitoring für I2C-Sensoren vorbereitet
+  - Web-Dashboard für lokale Sensoranzeige ergänzt
+- **Changed:**
+  - Home Assistant-Integration für alle Lichtparameter und Moduswahl
+  - Versionierung und Diagnose-Entität für Firmwarestatus
 
 **Hydroknoten**
-- Version 2.1: Logger und Boot-Meldung integriert
-- WiFi/OTA/Logger/Projekt-Metadaten konsolidiert
-- API-Verschlüsselung und Fallback-AP verbessert
+- **Added:**
+  - Logger und Boot-Meldung integriert
+- **Changed:**
+  - WiFi/OTA/Logger/Projekt-Metadaten konsolidiert
+  - API-Verschlüsselung und Fallback-AP verbessert
 
 ---
 
 ### v2.7 (Release Date: 2025-12-19)
 **Zeltsensor**
-- State-Machine für Lichtsteuerung (MANUAL/AUTO/SA/SU) vollständig auf ESP verlagert
-- Persistente Parameter für Lichtprofile und Rampen
-- Home Assistant-Entitäten für Modus und Parameter
-- Fehlerbehandlung und Robustheit verbessert
+- **Added:**
+  - State-Machine für Lichtsteuerung (MANUAL/AUTO/SA/SU) vollständig auf ESP verlagert
+  - Persistente Parameter für Lichtprofile und Rampen
+- **Changed:**
+  - Home Assistant-Entitäten für Modus und Parameter
+- **Fixed:**
+  - Fehlerbehandlung und Robustheit verbessert
 
 ---
 
 ### v2.6 (Release Date: 2025-12-18)
 **Zeltsensor**
-- entity_category: diagnostic für Versions-Textsensor ergänzt
-- YAML-Struktur und Kommentare überarbeitet
-- Bugfixes bei der Modusumschaltung und Rampenlogik
+- **Added:**
+  - entity_category: diagnostic für Versions-Textsensor ergänzt
+- **Changed:**
+  - YAML-Struktur und Kommentare überarbeitet
+- **Fixed:**
+  - Bugfixes bei der Modusumschaltung und Rampenlogik
 
 ---
 
 ### v2.2–v2.5
-- Diverse Verbesserungen an Dummy-Sensoren, Zeitsteuerung und YAML-Struktur
-- Versionierung und Dokumentation konsolidiert
+- **Changed:**
+  - Diverse Verbesserungen an Dummy-Sensoren, Zeitsteuerung und YAML-Struktur
+  - Versionierung und Dokumentation konsolidiert
 
 ---
 
@@ -42,13 +52,15 @@
 **Status:** 🟢 Current  
 **Release Date:** Dec 14, 2025
 
-### Changes from v0.1
-
-- 📝 Versionsnummern in YAMLs und Loggern konsolidiert (z. B. hydroknoten_v2.1.yaml → "2.1")
-- 📝 Changelog und README für hydroknoten und zeltsensor um alle Änderungen ergänzt
-- 🐛 YAML-Struktur bereinigt (Indents, Blockstruktur, Duplikate entfernt)
-- 🧪 Dummy-Sensoren und Dummy-Buttons für Home Assistant hinzugefügt
-- 🐞 Problematische Komponenten (uptime, status) entfernt, da ESPHome-Linkerfehler
+- **Documentation:**
+  - Versionsnummern in YAMLs und Loggern konsolidiert (z. B. hydroknoten_v2.1.yaml → "2.1")
+  - Changelog und README für hydroknoten und zeltsensor um alle Änderungen ergänzt
+- **Changed:**
+  - YAML-Struktur bereinigt (Indents, Blockstruktur, Duplikate entfernt)
+- **Added:**
+  - Dummy-Sensoren und Dummy-Buttons für Home Assistant hinzugefügt
+- **Fixed:**
+  - Problematische Komponenten (uptime, status) entfernt, da ESPHome-Linkerfehler
 
 ---
 
@@ -57,25 +69,23 @@
 **Status:** ⚪️ Baseline  
 **Release Date:** Dec 08, 2025
 
-### Components at v0.1
-- ✅ Hydroknoten (EC/pH/Temp + Tank Levels)
-- ✅ Dosierung (4× Pumpen + Stirrer)
-- ✅ Zeltsensor (AS7341 Spektral + Climate)
-- ✅ Klimaknoten (VPD + 4× Relays)
-- ✅ Kameraknoten (Canopy + Detail Timelapse)
-
-### Features
-- ✅ All 5 ESP32 nodes at v0.1 baseline
-- ✅ MQTT Discovery ready
-- ✅ Home Assistant integration structure
-- ✅ Complete documentation (README + SENSORS.md per node)
-- ✅ Version synchronization across all components
-
-### Known Issues (for v0.2 fixes)
-- [ ] Node-Red flows in proposals/ need production validation
-- [ ] HA HACS integration not yet implemented
-- [ ] ESP32 flash wizard script needed
-- [ ] Docker-Compose stack not yet built
+- **Added:**
+  - Hydroknoten (EC/pH/Temp + Tank Levels)
+  - Dosierung (4× Pumpen + Stirrer)
+  - Zeltsensor (AS7341 Spektral + Climate)
+  - Klimaknoten (VPD + 4× Relays)
+  - Kameraknoten (Canopy + Detail Timelapse)
+- **Documentation:**
+  - All 5 ESP32 nodes at v0.1 baseline
+  - MQTT Discovery ready
+  - Home Assistant integration structure
+  - Complete documentation (README + SENSORS.md per node)
+  - Version synchronization across all components
+- **Known Issues:**
+  - Node-Red flows in proposals/ need production validation
+  - HA HACS integration not yet implemented
+  - ESP32 flash wizard script needed
+  - Docker-Compose stack not yet built
 
 ---
 
