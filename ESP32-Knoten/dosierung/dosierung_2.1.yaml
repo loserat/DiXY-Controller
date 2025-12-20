@@ -282,6 +282,7 @@ sensor:
     id: time_since_last_dose
     unit_of_measurement: "s"
     state_class: measurement
+    entity_category: diagnostic
     lambda: |-
       if (id(last_dose_timestamp) == 0) return 999999;  // Noch nie dosiert
       return (millis() - id(last_dose_timestamp)) / 1000.0;
@@ -291,6 +292,7 @@ sensor:
     name: "Nächste Dosierung in"
     id: next_dose_countdown
     unit_of_measurement: "s"
+    entity_category: diagnostic
     lambda: |-
       float min_wait = id(min_stir_time_between_doses).state;
       float time_passed = id(time_since_last_dose).state;
@@ -303,6 +305,7 @@ sensor:
     name: "Durchmischung Fortschritt"
     id: mix_progress
     unit_of_measurement: "%"
+    entity_category: diagnostic
     lambda: |-
       float full_mix = id(full_system_mix_time).state;
       float time_passed = id(time_since_last_dose).state;
@@ -318,6 +321,7 @@ sensor:
     id: pump_a_ml_today
     unit_of_measurement: "ml"
     state_class: measurement
+    entity_category: diagnostic
     lambda: 'return id(pump_a_total_today);'
     update_interval: 10s
   
@@ -326,6 +330,7 @@ sensor:
     id: pump_b_ml_today
     unit_of_measurement: "ml"
     state_class: measurement
+    entity_category: diagnostic
     lambda: 'return id(pump_b_total_today);'
     update_interval: 10s
   
@@ -334,6 +339,7 @@ sensor:
     id: pump_c_ml_today
     unit_of_measurement: "ml"
     state_class: measurement
+    entity_category: diagnostic
     lambda: 'return id(pump_c_total_today);'
     update_interval: 10s
   
@@ -342,6 +348,7 @@ sensor:
     id: pump_d_ml_today
     unit_of_measurement: "ml"
     state_class: measurement
+    entity_category: diagnostic
     lambda: 'return id(pump_d_total_today);'
     update_interval: 10s
   
@@ -352,6 +359,7 @@ sensor:
     id: pump_a_lifetime_sensor
     unit_of_measurement: "ml"
     state_class: total_increasing
+    entity_category: diagnostic
     lambda: 'return id(pump_a_lifetime_ml);'
     update_interval: 60s
   
@@ -360,6 +368,7 @@ sensor:
     id: pump_b_lifetime_sensor
     unit_of_measurement: "ml"
     state_class: total_increasing
+    entity_category: diagnostic
     lambda: 'return id(pump_b_lifetime_ml);'
     update_interval: 60s
   
@@ -368,6 +377,7 @@ sensor:
     id: pump_c_lifetime_sensor
     unit_of_measurement: "ml"
     state_class: total_increasing
+    entity_category: diagnostic
     lambda: 'return id(pump_c_lifetime_ml);'
     update_interval: 60s
   
@@ -376,6 +386,7 @@ sensor:
     id: pump_d_lifetime_sensor
     unit_of_measurement: "ml"
     state_class: total_increasing
+    entity_category: diagnostic
     lambda: 'return id(pump_d_lifetime_ml);'
     update_interval: 60s
   
@@ -383,6 +394,7 @@ sensor:
     name: "Pumpe A – Dosier-Zyklen"
     id: pump_a_cycles_sensor
     state_class: total_increasing
+    entity_category: diagnostic
     lambda: 'return id(pump_a_cycles);'
     update_interval: 60s
   
@@ -390,6 +402,7 @@ sensor:
     name: "Pumpe B – Dosier-Zyklen"
     id: pump_b_cycles_sensor
     state_class: total_increasing
+    entity_category: diagnostic
     lambda: 'return id(pump_b_cycles);'
     update_interval: 60s
   
@@ -397,6 +410,7 @@ sensor:
     name: "Pumpe C – Dosier-Zyklen"
     id: pump_c_cycles_sensor
     state_class: total_increasing
+    entity_category: diagnostic
     lambda: 'return id(pump_c_cycles);'
     update_interval: 60s
   
@@ -404,6 +418,7 @@ sensor:
     name: "Pumpe D – Dosier-Zyklen"
     id: pump_d_cycles_sensor
     state_class: total_increasing
+    entity_category: diagnostic
     lambda: 'return id(pump_d_cycles);'
     update_interval: 60s
 
@@ -988,6 +1003,20 @@ text_sensor:
       }
 
   - platform: template
+    name: "Dosierung Aktive Dosierung"
+    entity_category: diagnostic
+    lambda: |-
+      if (id(dose_ec_nutrients).is_running()) {
+        return {"EC"};
+      }
+      if (id(dose_ph_correction).is_running()) {
+        return {"pH"};
+      }
+      return {"keine"};
+    update_interval: 5s
+    # Zeigt, welche Logik gerade läuft (EC / pH / keine)
+
+  - platform: template
     name: "Dosierung Status"
     entity_category: diagnostic
     lambda: |-
@@ -1111,23 +1140,52 @@ binary_sensor:
   # Safety Limits (90% Warnung)
   - platform: template
     name: "Pumpe A – Safety Limit Warning"
+    entity_category: diagnostic
     lambda: |-
       return id(pump_a_total_today) >= (id(pump_a_max_ml_day).state * 0.9);
 
   - platform: template
     name: "Pumpe B – Safety Limit Warning"
+    entity_category: diagnostic
     lambda: |-
       return id(pump_b_total_today) >= (id(pump_b_max_ml_day).state * 0.9);
 
   - platform: template
     name: "Pumpe C – Safety Limit Warning"
+    entity_category: diagnostic
     lambda: |-
       return id(pump_c_total_today) >= (id(pump_c_max_ml_day).state * 0.9);
 
   - platform: template
     name: "Pumpe D – Safety Limit Warning"
+    entity_category: diagnostic
     lambda: |-
       return id(pump_d_total_today) >= (id(pump_d_max_ml_day).state * 0.9);
+
+  # Tageslimit erreicht (harte Grenze)
+  - platform: template
+    name: "Pumpe A – Tageslimit erreicht"
+    entity_category: diagnostic
+    lambda: |-
+      return id(pump_a_total_today) >= id(pump_a_max_ml_day).state;
+
+  - platform: template
+    name: "Pumpe B – Tageslimit erreicht"
+    entity_category: diagnostic
+    lambda: |-
+      return id(pump_b_total_today) >= id(pump_b_max_ml_day).state;
+
+  - platform: template
+    name: "Pumpe C – Tageslimit erreicht"
+    entity_category: diagnostic
+    lambda: |-
+      return id(pump_c_total_today) >= id(pump_c_max_ml_day).state;
+
+  - platform: template
+    name: "Pumpe D – Tageslimit erreicht"
+    entity_category: diagnostic
+    lambda: |-
+      return id(pump_d_total_today) >= id(pump_d_max_ml_day).state;
 
   # Irgendeine Pumpe aktiv?
   - platform: template

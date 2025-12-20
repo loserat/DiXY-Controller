@@ -45,10 +45,13 @@ ota:
 # Hinweis: Passwort kann hier direkt eingetragen werden oder aus secrets.yaml geladen werden
 # password: !secret hydroknoten_ota_password
 
+web_server:
+  port: 80
+
 sensor:
-  # --- Simulation ---
+  # --- Messwerte (aktuell simuliert, ohne Sim-Namen) ---
   - platform: template
-    name: "Sim EC"
+    name: "Hydroknoten EC Sensor"
     id: sim_ec
     unit_of_measurement: "mS/cm"
     accuracy_decimals: 2
@@ -60,7 +63,7 @@ sensor:
       if (ec > 2.0) ec = 2.0;
       return ec;
   - platform: template
-    name: "Sim pH"
+    name: "Hydroknoten pH Sensor"
     id: sim_ph
     unit_of_measurement: "pH"
     accuracy_decimals: 2
@@ -72,7 +75,7 @@ sensor:
       if (ph > 6.5) ph = 6.5;
       return ph;
   - platform: template
-    name: "Sim Temperatur"
+    name: "Hydroknoten Temperatur"
     id: sim_temp
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -84,7 +87,7 @@ sensor:
       if (t > 24.0) t = 24.0;
       return t;
   - platform: template
-    name: "Sim Zelttemperatur außen"
+    name: "Hydroknoten Zelttemperatur außen"
     id: sim_tent_temp_outside
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -126,33 +129,30 @@ binary_sensor:
     pin:
       number: GPIO16
       mode: INPUT_PULLUP
-    name: "Button 1 (dummy)"
+    name: "EC Kalibrierung – Lösung 1"
     id: button_1
     internal: false
   - platform: gpio
     pin:
       number: GPIO17
       mode: INPUT_PULLUP
-    name: "Button 2 (dummy)"
+    name: "EC Kalibrierung – Lösung 2"
     id: button_2
     internal: false
   - platform: gpio
     pin:
       number: GPIO18
       mode: INPUT_PULLUP
-    name: "Button 3 (dummy)"
+    name: "pH Kalibrierung – Lösung 1"
     id: button_3
     internal: false
   - platform: gpio
     pin:
       number: GPIO19
       mode: INPUT_PULLUP
-    name: "Button 4 (dummy)"
+    name: "pH Kalibrierung – Lösung 2"
     id: button_4
     internal: false
-
-
-
 
 
 
