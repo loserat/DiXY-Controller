@@ -131,6 +131,16 @@ globals:
     initial_value: '0'
     # Unix ms seit letzter Dosierung
 
+  # Letzte Dosiermenge (ml)
+  - id: last_dose_ml
+    type: float
+    initial_value: '0.0'
+
+  # Letzter Dosiertyp: 0=keine, 1=EC, 2=pH
+  - id: last_dose_kind
+    type: int
+    initial_value: '0'
+
   # Tages-Counter (Reset um Mitternacht)
   - id: pump_a_total_today
     type: float
@@ -212,15 +222,6 @@ sensor:
     entity_id: sensor.hydroknoten_hydroknoten_ph_sensor
     accuracy_decimals: 2
     
-  # System-Volumen (von HA oder Hydroknoten)
-  - platform: homeassistant
-    name: "System Volumen Gesamt"
-    id: system_volume_liters
-    entity_id: input_number.rdwc_liter
-    unit_of_measurement: "L"
-    accuracy_decimals: 1
-    # Fallback: Manuell in HA setzen (z.B. 80L)
-
   # --- SYSTEM-SENSOREN (echte ESP32 Hardware) ---
   - platform: wifi_signal
     id: dosier_wifi_signal
@@ -429,9 +430,9 @@ number:
     unit_of_measurement: "mS/cm"
     optimistic: true
     min_value: 0.2
-    max_value: 3.0
+    max_value: 8.0
     step: 0.01
-    initial_value: 1.8
+    initial_value: 3.0
     restore_value: true
 
   - platform: template
@@ -443,6 +444,17 @@ number:
     max_value: 9.0
     step: 0.01
     initial_value: 6.0
+    restore_value: true
+
+  - platform: template
+    name: "System Volumen Gesamt"
+    id: system_volume_liters
+    unit_of_measurement: "L"
+    optimistic: true
+    min_value: 10
+    max_value: 200
+    step: 1
+    initial_value: 40
     restore_value: true
 
   # ═══════════════════════════════════════════════════════════
@@ -665,7 +677,7 @@ number:
     unit_of_measurement: "mS/cm"
     optimistic: true
     min_value: 0.5
-    max_value: 3.0
+    max_value: 8.0
     step: 0.1
     initial_value: 1.2
     restore_value: true
@@ -824,6 +836,7 @@ switch:
     id: pump1_switch
     name: "Micro – Steuerung"
     optimistic: true
+    restore_mode: ALWAYS_ON
     turn_on_action:
       then:
         - lambda: |-
@@ -842,6 +855,7 @@ switch:
     id: pump2_switch
     name: "Grow – Steuerung"
     optimistic: true
+    restore_mode: ALWAYS_ON
     turn_on_action:
       then:
         - lambda: |-
@@ -860,6 +874,7 @@ switch:
     id: pump3_switch
     name: "Bloom – Steuerung"
     optimistic: true
+    restore_mode: ALWAYS_ON
     turn_on_action:
       then:
         - lambda: |-
@@ -919,6 +934,21 @@ switch:
       then:
         - logger.log: "Rührmotor AUS blockiert (immer aktiv)"
         - switch.turn_on: stir_motor_switch
+
+  # ===============================================================
+  # SCHALTER: MANUELLE DOSIERUNG (START)
+  # ===============================================================
+  - platform: template
+    id: dosierung_automatik
+    name: "Dosierung Automatik"
+    optimistic: true
+    restore_mode: ALWAYS_ON
+    turn_on_action:
+      then:
+        - logger.log: "✅ Dosierung Automatik EIN"
+    turn_off_action:
+      then:
+        - logger.log: "🛑 Dosierung Automatik AUS"
 
 # ===============================================================
 # TEXT SENSOREN (WLAN-INFOS, VERSION, ZUSAMMENFASSUNGEN)
@@ -1019,6 +1049,167 @@ text_sensor:
       return {"keine"};
     update_interval: 5s
     # Zeigt, welche Logik gerade läuft (EC / pH / keine)
+
+  - platform: template
+    name: "Dosierung Zyklus"
+    entity_category: diagnostic
+    lambda: |-
+      if (id(dose_ec_nutrients).is_running()) {
+        return {"EC"};
+      }
+      if (id(dose_ph_correction).is_running()) {
+        return {"pH"};
+      }
+      return {"idle"};
+    update_interval: 5s
+    # Aktueller Dosier-Zyklus (EC / pH / idle)
+
+  - platform: template
+    name: "Dosierung Nächste Menge (ml)"
+    entity_category: diagnostic
+    lambda: |-
+      if (isnan(id(ec_current).state) || isnan(id(ph_current).state)) {
+        return {"unavailable"};
+      }
+      float system_liters = id(system_volume_liters).state;
+      if (system_liters <= 0.0f) {
+        return {"unavailable"};
+      }
+
+      std::string ec_part = "EC: ";
+      float ec_ml = 0.0f;
+      float ec_diff = id(ec_target).state - id(ec_current).state;
+      if (ec_diff >= 0.05f) {
+        float ec_per_ml_100L = id(pump_a_ec_per_ml).state;
+        float ec_per_ml_actual = ec_per_ml_100L * (100.0f / system_liters);
+        if (ec_per_ml_actual > 0.0f) {
+          ec_ml = ec_diff / ec_per_ml_actual;
+          float max_cycle = id(max_dose_per_cycle).state;
+          if (ec_ml > max_cycle) ec_ml = max_cycle;
+          if (id(pump_a_total_today) + ec_ml > id(pump_a_max_ml_day).state) {
+            ec_part += "block";
+          } else {
+            char buf[24];
+            snprintf(buf, sizeof(buf), "%.1f ml", ec_ml);
+            ec_part += buf;
+          }
+        } else {
+          ec_part += "0.0 ml";
+        }
+      } else {
+        ec_part += "0.0 ml";
+      }
+
+      std::string ph_part = "pH: ";
+      float ph_ml = 0.0f;
+      float ph_diff = id(ph_target).state - id(ph_current).state;
+      if (ph_diff <= -0.1f) {
+        float ph_per_ml_100L = id(ph_down_per_ml).state;
+        float ph_per_ml_actual = ph_per_ml_100L * (100.0f / system_liters);
+        if (ph_per_ml_actual > 0.0f) {
+          ph_ml = (-ph_diff) / ph_per_ml_actual;
+          float max_cycle = id(max_dose_per_cycle).state;
+          if (ph_ml > max_cycle) ph_ml = max_cycle;
+          if (id(pump_d_total_today) + ph_ml > id(pump_d_max_ml_day).state) {
+            ph_part += "block";
+          } else {
+            char buf[24];
+            snprintf(buf, sizeof(buf), "%.1f ml", ph_ml);
+            ph_part += buf;
+          }
+        } else {
+          ph_part += "0.0 ml";
+        }
+      } else {
+        ph_part += "0.0 ml";
+      }
+
+      return ec_part + " | " + ph_part;
+    update_interval: 5s
+    # Berechnete Zielmenge für den nächsten Zyklus (ohne Ausführung)
+
+  - platform: template
+    name: "Dosierung Wartezeit (s)"
+    entity_category: diagnostic
+    lambda: |-
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%.0f s", id(next_dose_countdown).state);
+      return std::string(buffer);
+    update_interval: 5s
+    # Aktuelle Wartezeit bis zur nächsten Dosierung
+
+  - platform: template
+    name: "Rührzeit Rest (s)"
+    entity_category: diagnostic
+    lambda: |-
+      if (id(last_dose_timestamp) == 0) return {"0 s"};
+      float elapsed = (millis() - id(last_dose_timestamp)) / 1000.0f;
+      float remaining = id(stir_time).state - elapsed;
+      if (remaining < 0) remaining = 0;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "%.0f s", remaining);
+      return std::string(buffer);
+    update_interval: 5s
+    # Restzeit der Rührphase nach letzter Dosierung
+
+  - platform: template
+    name: "Dosierung Letzte Menge"
+    entity_category: diagnostic
+    lambda: |-
+      if (id(last_dose_kind) == 0) return {"keine"};
+      const char* kind = (id(last_dose_kind) == 1) ? "EC" : "pH";
+      float seconds = id(time_since_last_dose).state;
+      char buffer[64];
+      snprintf(buffer, sizeof(buffer), "%s %.1f ml, vor %.0f s", kind, id(last_dose_ml), seconds);
+      return std::string(buffer);
+    update_interval: 5s
+    # Letzte Dosiermenge inkl. Zeit seit der Dosierung
+
+  - platform: template
+    name: "Dosierung Aktive Pumpen"
+    entity_category: diagnostic
+    lambda: |-
+      if (id(dose_ph_correction).is_running()) {
+        return {"pH Down"};
+      }
+      if (id(dose_ec_nutrients).is_running()) {
+        std::string pumps;
+        if (id(pump1_switch).state) pumps += "Micro ";
+        if (id(pump2_switch).state) pumps += "Grow ";
+        if (id(pump3_switch).state) pumps += "Bloom ";
+        if (pumps.empty()) return {"keine"};
+        return pumps;
+      }
+      return {"keine"};
+    update_interval: 5s
+    # Zeigt die aktiven Pumpen (für EC/pH)
+
+  - platform: template
+    name: "Dosierung Schritt"
+    entity_category: diagnostic
+    lambda: |-
+      if (id(dose_ec_nutrients).is_running()) {
+        return {"dosieren ec"};
+      }
+      if (id(dose_ph_correction).is_running()) {
+        return {"dosieren ph"};
+      }
+      if (!id(stir_time_elapsed).state) {
+        return {"ruehrzeit"};
+      }
+      return {"bereit"};
+    update_interval: 5s
+    # Aktueller Prozess-Schritt für das Dashboard
+
+  - platform: template
+    name: "Dosierung Letzte Aktion"
+    entity_category: diagnostic
+    lambda: |-
+      if (id(last_dose_kind) == 1) return {"ec dosiert"};
+      if (id(last_dose_kind) == 2) return {"ph dosiert"};
+      return {"keine"};
+    update_interval: 5s
+    # Letztes Ergebnis (nur Anzeige)
 
   - platform: template
     name: "EC Ist (empfangen)"
@@ -1240,6 +1431,7 @@ button:
           id(pump_c_total_today) = 0.0;
           id(pump_d_total_today) = 0.0;
 
+
 # ===============================================================
 # SCRIPTS (DOSIER-LOGIK, DAILY RESET)
 # ===============================================================
@@ -1288,35 +1480,108 @@ script:
             }
 
             float system_liters = id(system_volume_liters).state;
-            float ec_per_ml_100L = id(pump_a_ec_per_ml).state;
-            float ec_per_ml_actual = ec_per_ml_100L * (100.0 / system_liters);
-            float ml_needed = ec_diff / ec_per_ml_actual;
-
             float max_cycle = id(max_dose_per_cycle).state;
-            if (ml_needed > max_cycle) {
-              ESP_LOGW("dose_ec", "⚠️ Begrenzt auf %.0f ml (berechnet: %.1f ml)", max_cycle, ml_needed);
-              ml_needed = max_cycle;
-            }
+            int active_pumps = 0;
+            if (id(pump1_switch).state) active_pumps++;
+            if (id(pump2_switch).state) active_pumps++;
+            if (id(pump3_switch).state) active_pumps++;
 
-            if (id(pump_a_total_today) + ml_needed > id(pump_a_max_ml_day).state) {
-              ESP_LOGE("dose_ec", "❌ Tageslimit erreicht! (%.0f/%.0f ml)", id(pump_a_total_today), id(pump_a_max_ml_day).state);
+            if (active_pumps == 0) {
+              ESP_LOGW("dose_ec", "⚠️ Keine EC-Pumpe aktiv");
               return;
             }
 
-            ESP_LOGI("dose_ec", "💧 Dosiere %.1f ml Dünger (EC: %.2f → %.2f mS/cm)", ml_needed, id(ec_current).state, id(ec_target).state);
+            float ec_share = ec_diff / (float)active_pumps;
 
-            float flow_rate = id(pump_a_flow_ml_per_sec).state;
-            float seconds = ml_needed / flow_rate;
-            id(pump1_output).set_level(1.0);
-            delay((int)(seconds * 1000));
-            id(pump1_output).set_level(0.0);
+            auto dose_pump = [&](const char* label,
+                                 float ec_per_ml_100L,
+                                 float flow_rate,
+                                 float* today_counter,
+                                 float max_day,
+                                 esphome::output::FloatOutput* output,
+                                 int* cycles,
+                                 float* lifetime_ml) -> bool {
+              float ec_per_ml_actual = ec_per_ml_100L * (100.0f / system_liters);
+              if (ec_per_ml_actual <= 0.0f) {
+                ESP_LOGW("dose_ec", "⚠️ %s EC-Wirksamkeit = 0", label);
+                return false;
+              }
+              float ml_needed = ec_share / ec_per_ml_actual;
+              if (ml_needed > max_cycle) {
+                ESP_LOGW("dose_ec", "⚠️ %s begrenzt auf %.0f ml (berechnet: %.1f ml)", label, max_cycle, ml_needed);
+                ml_needed = max_cycle;
+              }
+              if (*today_counter + ml_needed > max_day) {
+                ESP_LOGE("dose_ec", "❌ Tageslimit %s erreicht!", label);
+                return false;
+              }
+              ESP_LOGI("dose_ec", "💧 %s: %.1f ml (EC: %.2f → %.2f mS/cm)", label, ml_needed, id(ec_current).state, id(ec_target).state);
+              float seconds = ml_needed / flow_rate;
+              output->set_level(1.0f);
+              delay((int)(seconds * 1000));
+              output->set_level(0.0f);
+              *today_counter += ml_needed;
+              *lifetime_ml += ml_needed;
+              (*cycles) += 1;
+              id(last_dose_ml) = ml_needed;
+              id(last_dose_kind) = 1;
+              id(last_dose_timestamp) = millis();
+              ESP_LOGI("dose_ec", "✓ %s: %.1f ml dosiert (heute: %.0f ml)", label, ml_needed, *today_counter);
+              return true;
+            };
 
-            id(pump_a_total_today) += ml_needed;
-            id(pump_a_lifetime_ml) += ml_needed;
-            id(pump_a_cycles) += 1;
-            id(last_dose_timestamp) = millis();
-
-            ESP_LOGI("dose_ec", "✓ Micro: %.1f ml dosiert (heute: %.0f ml)", ml_needed, id(pump_a_total_today));
+            if (id(pump1_switch).state) {
+              bool dosed = dose_pump("Micro",
+                        id(pump_a_ec_per_ml).state,
+                        id(pump_a_flow_ml_per_sec).state,
+                        &id(pump_a_total_today),
+                        id(pump_a_max_ml_day).state,
+                        id(pump1_output),
+                        &id(pump_a_cycles),
+                        &id(pump_a_lifetime_ml));
+              if (dosed) {
+                ESP_LOGI("dose_ec", "⏳ Rührzeit läuft: %.0f s", id(stir_time).state);
+                delay((int)(id(stir_time).state * 1000));
+                ec_diff = id(ec_target).state - id(ec_current).state;
+                if (ec_diff < 0.05f) {
+                  ESP_LOGI("dose_ec", "✓ EC erreicht nach Rührzeit (%.2f mS/cm)", id(ec_current).state);
+                  return;
+                }
+              }
+            }
+            if (id(pump2_switch).state) {
+              bool dosed = dose_pump("Grow",
+                        id(pump_b_ec_per_ml).state,
+                        id(pump_b_flow_ml_per_sec).state,
+                        &id(pump_b_total_today),
+                        id(pump_b_max_ml_day).state,
+                        id(pump2_output),
+                        &id(pump_b_cycles),
+                        &id(pump_b_lifetime_ml));
+              if (dosed) {
+                ESP_LOGI("dose_ec", "⏳ Rührzeit läuft: %.0f s", id(stir_time).state);
+                delay((int)(id(stir_time).state * 1000));
+                ec_diff = id(ec_target).state - id(ec_current).state;
+                if (ec_diff < 0.05f) {
+                  ESP_LOGI("dose_ec", "✓ EC erreicht nach Rührzeit (%.2f mS/cm)", id(ec_current).state);
+                  return;
+                }
+              }
+            }
+            if (id(pump3_switch).state) {
+              bool dosed = dose_pump("Bloom",
+                        id(pump_c_ec_per_ml).state,
+                        id(pump_c_flow_ml_per_sec).state,
+                        &id(pump_c_total_today),
+                        id(pump_c_max_ml_day).state,
+                        id(pump3_output),
+                        &id(pump_c_cycles),
+                        &id(pump_c_lifetime_ml));
+              if (dosed) {
+                ESP_LOGI("dose_ec", "⏳ Rührzeit läuft: %.0f s", id(stir_time).state);
+                delay((int)(id(stir_time).state * 1000));
+              }
+            }
 
         # STEP 4: Rührmotor aktivieren
         - logger.log: "🌀 Rührmotor gestartet"
@@ -1400,6 +1665,8 @@ script:
             id(pump_d_cycles) += 1;
 
             id(last_dose_timestamp) = millis();
+            id(last_dose_ml) = ml_needed;
+            id(last_dose_kind) = 2;
             ESP_LOGI("dose_ph", "✓ pH Down: %.1f ml dosiert", ml_needed);
         # STEP 4: Rührmotor aktivieren
         - logger.log: "🌀 Rührmotor gestartet"
@@ -1422,6 +1689,29 @@ interval:
           if (time.hour == 0 && time.minute == 0) {
             id(daily_reset_script).execute();
           }
+
+  - interval: 10s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return id(dosierung_automatik).state &&
+                     id(stir_time_elapsed).state &&
+                     !id(dose_ec_nutrients).is_running() &&
+                     !id(dose_ph_correction).is_running();
+          then:
+            - logger.log: "▶️ Automatik: starte EC-Dosierung"
+            - script.execute: dose_ec_nutrients
+      - if:
+          condition:
+            lambda: |-
+              return id(dosierung_automatik).state &&
+                     id(stir_time_elapsed).state &&
+                     !id(dose_ec_nutrients).is_running() &&
+                     !id(dose_ph_correction).is_running();
+          then:
+            - logger.log: "▶️ Automatik: starte pH-Dosierung"
+            - script.execute: dose_ph_correction
 
 
 

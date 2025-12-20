@@ -1,0 +1,104 @@
+esphome:
+  name: sog
+  comment: "SOG-Knoten (Wuchsmessung) – Grundgerüst"
+  project:
+    name: "loserat.dixy_sog"
+    version: "0.1"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# ===============================================================
+# LOGGING
+# ===============================================================
+logger:
+  level: INFO
+
+# ===============================================================
+# NETZWERK & API
+# ===============================================================
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "SOG Fallback"
+    password: "dixy12345"
+
+api:
+  reboot_timeout: 0s
+
+ota:
+  platform: esphome
+  password: !secret ota_password
+
+# ===============================================================
+# I2C BUS (VL53L1X)
+# ===============================================================
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  scan: true
+  frequency: 400kHz
+
+# ===============================================================
+# SENSOR: DISTANZ ZUR PFLANZE (ROH)
+# ===============================================================
+# Hinweis: Keine Glättung, keine Mittelwerte, keine Wuchsrate.
+# Dieses Grundgerüst dient nur der Rohwert-Erfassung.
+# ===============================================================
+sensor:
+  - platform: vl53l1x
+    name: "SOG Abstand Pflanze"
+    id: sog_abstand_pflanze
+    unit_of_measurement: "mm"
+    accuracy_decimals: 0
+    update_interval: 60s
+    # Rohwert in Millimetern
+
+  - platform: wifi_signal
+    name: "SOG WiFi Signal"
+    unit_of_measurement: "dBm"
+    state_class: measurement
+    update_interval: 30s
+    entity_category: diagnostic
+
+  - platform: uptime
+    name: "SOG Uptime"
+    unit_of_measurement: "h"
+    state_class: total_increasing
+    update_interval: 60s
+    entity_category: diagnostic
+
+# ===============================================================
+# TEXTSENSOR: RESET-GRUND (DIAGNOSE)
+# ===============================================================
+text_sensor:
+  - platform: template
+    name: "SOG Reset Grund"
+    icon: "mdi:restart-alert"
+    entity_category: diagnostic
+    lambda: |-
+      switch (esp_reset_reason()) {
+        case ESP_RST_POWERON: return {"poweron"};
+        case ESP_RST_EXT: return {"ext"};
+        case ESP_RST_SW: return {"sw"};
+        case ESP_RST_PANIC: return {"panic"};
+        case ESP_RST_INT_WDT: return {"int_wdt"};
+        case ESP_RST_TASK_WDT: return {"task_wdt"};
+        case ESP_RST_WDT: return {"wdt"};
+        case ESP_RST_DEEPSLEEP: return {"deepsleep"};
+        case ESP_RST_BROWNOUT: return {"brownout"};
+        case ESP_RST_SDIO: return {"sdio"};
+        default: return {"unknown"};
+      }
+
+# ===============================================================
+# NICHT IMPLEMENTIERT (BEWUSST)
+# ===============================================================
+# - Keine Wuchsrate-Berechnung
+# - Keine Filter/Mittelwerte
+# - Keine Automationen
+# - Keine Abhängigkeiten zu anderen Knoten
+# - Keine HA input_* Entitäten
