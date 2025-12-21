@@ -437,7 +437,7 @@ text_sensor:
     id: hydroknoten_version
     icon: "mdi:tag"
     lambda: |-
-      return {"2.5"};
+      return {"v2.5"};
     update_interval: 3600s
   - platform: wifi_info
     ip_address:

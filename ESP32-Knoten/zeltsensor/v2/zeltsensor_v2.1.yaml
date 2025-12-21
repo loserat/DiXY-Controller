@@ -232,7 +232,7 @@ text_sensor:
     id: zeltsensor_version
     icon: "mdi:tag"
     lambda: |-
-      return {"2.1"};
+      return {"v2.1"};
     update_interval: 3600s
   - platform: wifi_info
     ip_address:

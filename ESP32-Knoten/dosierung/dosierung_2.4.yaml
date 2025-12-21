@@ -1020,7 +1020,7 @@ text_sensor:
     name: "Projekt Version"
     entity_category: diagnostic
     lambda: |-
-      return {"2.4"};
+      return {"v2.4"};
     update_interval: 60s
 
   - platform: template

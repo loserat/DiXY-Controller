@@ -4,7 +4,7 @@ esphome:
   comment: "Minimalprofil BMP280 + AS7341"
   project:
     name: "loserat.dixy_zeltsensor"
-    version: "2.7"
+    version: "2.8"
   # Sync the SA/SU toggle switch with the persisted flag on boot.
   on_boot:
     priority: -100
@@ -175,29 +175,29 @@ sensor:
           if (minute > 59) minute = 59;
           id(off_minutes) = hour * 60 + minute;
   - platform: template
-    name: "Blatttemperatur Dummy"
+    name: "Blatttemperatur"
     id: leaf_temp_dummy
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     state_class: measurement
     update_interval: 30s
     lambda: |-
-      // Logic for "Blatttemperatur Dummy".
+      // Logic for "Blatttemperatur".
       static float leaf_temp = 26.0f;
       leaf_temp += (float((rand() % 7) - 3)) / 10.0f; // ±0.3°C
       if (leaf_temp < 20.0f) leaf_temp = 20.0f;
       if (leaf_temp > 32.0f) leaf_temp = 32.0f;
       return leaf_temp;
-  # Simulierter EC-Sensor (elektrische Leitfähigkeit)
+  # EC-Sensor (elektrische Leitfähigkeit)
   - platform: template
-    name: "EC Dummy"
+    name: "EC"
     id: ec_dummy
     unit_of_measurement: "mS/cm"
     accuracy_decimals: 2
     state_class: measurement
     update_interval: 10s
     lambda: |-
-      // Logic for "EC Dummy".
+      // Logic for "EC".
       static float ec = 1.8f;
       ec += (float((rand() % 21) - 10)) / 100.0f; // ±0.10
       if (ec < 1.0f) ec = 1.0f;
@@ -224,14 +224,14 @@ sensor:
       return rlf;
 
   - platform: template
-    name: "pH Dummy"
+    name: "pH"
     id: ph_dummy
     unit_of_measurement: "pH"
     accuracy_decimals: 2
     state_class: measurement
     update_interval: 10s
     lambda: |-
-      // Logic for "pH Dummy".
+      // Logic for "pH".
       static float ph = 6.2f;
       ph += (float((rand() % 21) - 10)) / 100.0f;
       if (ph < 5.5f) ph = 5.5f;
@@ -239,14 +239,14 @@ sensor:
       return ph;
 
   - platform: template
-    name: "CO2 Dummy"
+    name: "CO2"
     id: co2_dummy
     unit_of_measurement: "ppm"
     accuracy_decimals: 0
     state_class: measurement
     update_interval: 30s
     lambda: |-
-      // Logic for "CO2 Dummy".
+      // Logic for "CO2".
       static int co2 = 1200;
       co2 += (rand() % 21) - 10; // ±10
       if (co2 < 400) co2 = 400;
@@ -254,7 +254,7 @@ sensor:
       return co2;
 
   - platform: template
-    name: "VPD Dummy"
+    name: "VPD"
     id: vpd_dummy
     unit_of_measurement: "kPa"
     accuracy_decimals: 2
@@ -262,8 +262,8 @@ sensor:
     update_interval: 30s
     lambda: |-
       // VPD-Berechnung aus Temperatur und Luftfeuchte
-      float temp = 24.0f; // Dummy-Wert, kann durch echten Sensor ersetzt werden
-      float rlf = 60.0f;  // Dummy-Wert, kann durch echten Sensor ersetzt werden
+      float temp = 24.0f; // Platzhalterwert, kann durch echten Sensor ersetzt werden
+      float rlf = 60.0f;  // Platzhalterwert, kann durch echten Sensor ersetzt werden
       float es = 0.6108 * exp((17.27 * temp) / (temp + 237.3));
       float ea = es * (rlf / 100.0f);
       float vpd = es - ea;
@@ -330,13 +330,13 @@ sensor:
 
 
   - platform: template
-    name: "DS18B20 Dummy"
+    name: "DS18B20"
     id: ds18b20_dummy
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     update_interval: 10s
     lambda: |-
-      // Logic for "DS18B20 Dummy".
+      // Logic for "DS18B20".
       static float t = 22.0f;
       t += (float((rand() % 20) - 10)) / 10.0f;
       if (t < 20.0f) t = 20.0f;
@@ -572,7 +572,23 @@ text_sensor:
     entity_category: diagnostic
     lambda: |-
       // Logic for "Zeltsensor Version".
-      return {"2.7"};
+      return {"v2.8"};
+    update_interval: 3600s
+  - platform: template
+    name: "Zelt CO2 Version"
+    id: co2_logic_version
+    icon: "mdi:tag"
+    entity_category: diagnostic
+    lambda: |-
+      return {"v1.0"};
+    update_interval: 3600s
+  - platform: template
+    name: "Zelt Lichtsteuerung Version"
+    id: light_logic_version
+    icon: "mdi:tag"
+    entity_category: diagnostic
+    lambda: |-
+      return {"v1.0"};
     update_interval: 3600s
   - platform: wifi_info
     ip_address:
@@ -664,6 +680,16 @@ switch:
     lambda: |-
       // Logic for "MANUELL".
       return id(light_mode) == 1;
+  - platform: template
+    name: "CO2 Automatik"
+    id: co2_auto
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
+    name: "CO2 Dosierung"
+    id: co2_dose_output
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
 
 # User-adjustable parameters (brightness and timings).
 number:
@@ -763,6 +789,26 @@ number:
           if (x < 1) x = 1;
           if (x > 30) x = 30;
           id(sunset_min) = (int) x;
+  - platform: template
+    name: "CO2 Sollwert"
+    id: co2_target_ppm
+    unit_of_measurement: "ppm"
+    optimistic: true
+    min_value: 400
+    max_value: 2000
+    step: 100
+    initial_value: 1000
+    restore_value: true
+  - platform: template
+    name: "CO2 Hysterese"
+    id: co2_hysteresis_ppm
+    unit_of_measurement: "ppm"
+    optimistic: true
+    min_value: 100
+    max_value: 500
+    step: 100
+    initial_value: 100
+    restore_value: true
 
 # Main control loop for light logic.
 interval:
@@ -879,9 +925,27 @@ interval:
 
           // ESP entscheidet autark und setzt die Light-Entity deterministisch.
           turn_light(target_pwm);
+  - interval: 10s
+    then:
+      - lambda: |-
+          if (!id(co2_auto).state) {
+            return;
+          }
+          float co2 = id(co2_dummy).state;
+          if (isnan(co2)) {
+            return;
+          }
+          float target = id(co2_target_ppm).state;
+          float hysteresis = id(co2_hysteresis_ppm).state;
+          if (co2 < target - hysteresis) {
+            id(co2_dose_output).turn_on();
+          } else if (co2 > target + hysteresis) {
+            id(co2_dose_output).turn_off();
+          }
 
 # Serial/logger configuration.
 logger:
+  level: Info
 
 # Native API for Home Assistant.
 api:

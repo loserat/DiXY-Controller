@@ -343,7 +343,7 @@ text_sensor:
     icon: "mdi:tag"
     entity_category: diagnostic
     lambda: |-
-      return {"2.6"};
+      return {"v2.6"};
     update_interval: 3600s
   - platform: wifi_info
     ip_address:

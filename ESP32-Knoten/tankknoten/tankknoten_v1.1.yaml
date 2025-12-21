@@ -225,6 +225,8 @@ switch:
     id: main_lvl_6_sim
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
+    on_turn_on:
+      - switch.turn_off: main_fill_relay
 
   - platform: template
     name: "RDWC Level 1 Eingang"
@@ -256,6 +258,8 @@ switch:
     id: rdwc_lvl_6_sim
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
+    on_turn_on:
+      - switch.turn_off: rdwc_fill_relay
 
   - platform: template
     name: "EC Temperaturkompensation"
@@ -578,5 +582,5 @@ text_sensor:
     name: "Tankknoten Version"
     entity_category: diagnostic
     lambda: |-
-      return {"1.0"};
+      return {"v1.0"};
     update_interval: 3600s
