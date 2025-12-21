@@ -333,6 +333,18 @@ sensor:
       if (remaining < 0) return 0;
       return remaining;
     update_interval: 5s
+
+  - platform: template
+    name: "Dosierung Wartezeit Rest (s)"
+    unit_of_measurement: "s"
+    entity_category: diagnostic
+    lambda: |-
+      float min_wait = id(min_stir_time_between_doses).state;
+      float time_passed = id(time_since_last_dose).state;
+      float remaining = min_wait - time_passed;
+      if (remaining < 0) return 0;
+      return remaining;
+    update_interval: 2s
   
   - platform: template
     name: "Durchmischung Fortschritt"
