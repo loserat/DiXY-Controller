@@ -29,6 +29,24 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 ### Nicht geändert
 - Licht‑Entität, AUTO/MANUELL‑Schalter und SA/SU‑Dauer‑Slider bleiben erhalten.
 
+## v2.7 (experimentell) – Dosierungsknoten (Datum: nicht dokumentiert)
+Verglichen mit Version: v2.6  
+Entwicklungsstatus: experimentell, nicht kalibriert.
+
+### Added
+- Tag/Nacht‑Statusanzeige (Quelle: Zeltlampe).
+- Blockgrund‑Texte für Nachtphase (EC/pH).
+
+### Changed
+- Automatik startet Dosierungen nur in Tagphase.
+- EC‑ und pH‑Dosierung stoppen in der Nachtphase.
+
+### Fixed
+- Keine dokumentierten Änderungen.
+
+### Nicht geändert
+- Sicherheitslogik, Limits und Pumpen‑Zuweisung bleiben unverändert.
+
 ## v2.7 (beta) – Zeltsensor (2025-12-19)
 ### Added
 - State‑Machine für Lichtsteuerung (MANUAL/AUTO/SA/SU) vollständig auf ESP verlagert.

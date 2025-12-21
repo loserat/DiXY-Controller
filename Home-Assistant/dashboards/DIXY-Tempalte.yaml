@@ -76,58 +76,67 @@ views:
       - type: custom:mini-graph-card
         name: EC-Wert Verlauf
         entities:
-          - entity: sensor.zeltsensor_ec_dummy
-            name: Istwert
-        color_thresholds:
-          - value: 0.6
-            color: '#2f6fa3'
-          - value: 1
-            color: '#4fa3b6'
-          - value: 1.4
-            color: '#22ab9c'
-          - value: 1.8
-            color: '#00cd00'
-          - value: 2.2
-            color: '#19b57c'
-          - value: 2.5
-            color: '#e7c12b'
-          - value: 2.8
-            color: '#ce4234'
-          - value: 3.2
-            color: '#8b1e14'
-        hours_to_show: 24
-        points_per_hour: 2
+          - entity: sensor.hydroknoten_hydroknoten_ec_sensor
+        hours_to_show: 4
+        points_per_hour: 8
         show:
           labels: true
+        color_thresholds:
+          - value: 0.3
+            color: '#0f172a'
+          - value: 0.6
+            color: '#1e3a8a'
+          - value: 0.9
+            color: '#2563eb'
+          - value: 1.2
+            color: '#06b6d4'
+          - value: 1.5
+            color: '#16a34a'
+          - value: 1.8
+            color: '#22c55e'
+          - value: 2.1
+            color: '#84cc16'
+          - value: 2.4
+            color: '#facc15'
+          - value: 2.8
+            color: '#f97316'
+          - value: 3.2
+            color: '#dc2626'
+          - value: 3.6
+            color: '#7f1d1d'
       - type: custom:mini-graph-card
         name: PH-Wert Verlauf
         entities:
-          - entity: sensor.zeltsensor_ph_dummy
+          - entity: sensor.hydroknoten_hydroknoten_ph_sensor
             name: PH-IST
-        hours_to_show: 48
-        points_per_hour: 4
+        hours_to_show: 2
+        points_per_hour: 10
         show:
           labels: true
         color_thresholds:
-          - value: 5.3
-            color: '#2f6fa3'
-          - value: 5.6
-            color: '#22ab9c'
-          - value: 6
-            color: '#00cd00'
-          - value: 6.3
-            color: '#e7c12b'
+          - value: 4.5
+            color: '#7f1d1d'
+          - value: 5
+            color: '#dc2626'
+          - value: 5.5
+            color: '#f97316'
+          - value: 5.8
+            color: '#16a34a'
+          - value: 6.2
+            color: '#84cc16'
           - value: 6.6
-            color: '#ce4234'
+            color: '#facc15'
           - value: 7
-            color: '#8b1e14'
+            color: '#2563eb'
+          - value: 7.5
+            color: '#1e3a8a'
       - type: custom:mini-graph-card
         name: Temperatur-Verlauf Zelt (48h)
         entities:
           - entity: sensor.zeltsensor_bmp280_temperatur
             name: IST
-        hours_to_show: 48
-        points_per_hour: 2
+        hours_to_show: 12
+        points_per_hour: 4
         show:
           labels: true
       - type: custom:mini-graph-card
@@ -177,16 +186,16 @@ views:
         show:
           labels: true
       - type: custom:mini-graph-card
-        name: EC-Wert Verlauf
+        name: EC-Verlauf Dosierungssteuerung
         entities:
-          - entity: sensor.zeltsensor_ec_dummy
+          - entity: sensor.hydroknoten_hydroknoten_ec_sensor
             name: EC-IST
             color: green
-          - entity: input_number.ph_soll
-            name: EC-SOLL
+          - entity: number.dosierung_ec_zielwert
+            name: EC-Zielwert
             color: lightgreen
-        hours_to_show: 24
-        points_per_hour: 2
+        hours_to_show: 12
+        points_per_hour: 8
         show:
           labels: true
     type: masonry
@@ -424,6 +433,10 @@ views:
         show_icon: true
         entity: sensor.zeltsensor_zeltsensor_version
         name: 'Zeltversion:'
+    header:
+      layout: center
+      badges_position: top
+      badges_wrap: scroll
   - type: sections
     max_columns: 4
     title: Zeltsensor
@@ -452,7 +465,7 @@ views:
               - value: 2.2
                 color: '#8b1e14'
             align_state: center
-            unit: pH
+            unit: VPD
           - type: custom:ha-vpd-chart
             vpd_phases:
               - upper: 0
@@ -577,67 +590,6 @@ views:
     cards: []
   - type: sections
     max_columns: 4
-    title: EC-Regelung
-    path: ec-regelung
-    sections:
-      - type: grid
-        cards:
-          - type: heading
-            heading: EC-Düngerdosierung V_0.1
-            heading_style: title
-          - type: custom:mini-graph-card
-            name: EC-Wert Verlauf
-            entities:
-              - entity: sensor.zeltsensor_ec_dummy
-                name: Istwert
-              - entity: input_number.ph_soll
-                name: Sollwert
-                color: lightgreen
-            hours_to_show: 24
-            points_per_hour: 2
-            show:
-              labels: true
-          - type: custom:mushroom-number-card
-            entity: input_number.ec_soll
-            icon_color: light-green
-            name: EC SOLLWERT
-          - type: custom:mini-graph-card
-            name: EC-Wert Verlauf
-            entities:
-              - entity: sensor.zeltsensor_ec_dummy
-                name: Istwert
-            color_thresholds:
-              - value: 0.6
-                color: '#2f6fa3'
-              - value: 1
-                color: '#4fa3b6'
-              - value: 1.4
-                color: '#22ab9c'
-              - value: 1.8
-                color: '#00cd00'
-              - value: 2.2
-                color: '#19b57c'
-              - value: 2.5
-                color: '#e7c12b'
-              - value: 2.8
-                color: '#ce4234'
-              - value: 3.2
-                color: '#8b1e14'
-            hours_to_show: 24
-            points_per_hour: 2
-            show:
-              labels: true
-    badges:
-      - type: entity
-        show_name: true
-        show_state: true
-        show_icon: true
-        entity: sensor.hydroknoten_hydroknoten_version
-        name: 'Version:'
-      - type: entity
-        entity: sensor.hydroknoten_esp_wifi_ssid
-  - type: sections
-    max_columns: 4
     title: VPD-Regelung
     path: vpd-regelung
     sections:
@@ -651,6 +603,7 @@ views:
             entities:
               - entity: sensor.vpd_ist
                 name: IST
+                icon: gauge
             hours_to_show: 48
             points_per_hour: 2
             color_thresholds:
@@ -733,6 +686,31 @@ views:
               - condition: state
                 entity: input_boolean.vpd_regelung
                 state: 'on'
+          - type: custom:mini-graph-card
+            name: Luftdruck (72h)
+            entities:
+              - entity: sensor.zeltsensor_bmp280_luftdruck
+                name: IST
+                icon: gauge
+            hours_to_show: 72
+            points_per_hour: 10
+            color_thresholds:
+              - value: 995
+                color: '#5c6bc0'
+              - value: 1000
+                color: '#42a5f5'
+              - value: 1005
+                color: '#4dd0e1'
+              - value: 1010
+                color: '#66bb6a'
+              - value: 1015
+                color: '#43a047'
+              - value: 1020
+                color: '#c0ca33'
+              - value: 1025
+                color: '#fbc02d'
+              - value: 1030
+                color: '#f57c00'
       - type: grid
         cards:
           - type: heading
@@ -760,6 +738,391 @@ views:
     cards: []
   - type: sections
     max_columns: 4
+    title: EC-Regelung
+    path: ec-regelung
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Statusübersicht Düngerdosierung V_0.1
+            heading_style: subtitle
+          - type: custom:mini-graph-card
+            name: Düngerdosierung
+            entities:
+              - entity: sensor.dosierung_micro_ml_heute
+                name: Micro
+                color: purple
+              - entity: sensor.dosierung_grow_ml_heute
+                name: GROW
+                color: green
+              - entity: sensor.dosierung_bloom_ml_heute
+                name: Bloom
+            hours_to_show: 4
+            points_per_hour: 40
+            show:
+              labels: true
+          - type: custom:mini-graph-card
+            name: EC-Wert Verlauf
+            entities:
+              - entity: sensor.hydroknoten_hydroknoten_ec_sensor
+                name: Istwert
+            color_thresholds:
+              - value: 0.6
+                color: '#2f6fa3'
+              - value: 1
+                color: '#4fa3b6'
+              - value: 1.4
+                color: '#22ab9c'
+              - value: 1.8
+                color: '#00cd00'
+              - value: 2.2
+                color: '#19b57c'
+              - value: 2.4
+                color: '#e7c12b'
+              - value: 2.5
+                color: '#ce4234'
+              - value: 2.6
+                color: '#8b1e14'
+            hours_to_show: 2
+            points_per_hour: 40
+            show:
+              labels: true
+          - type: custom:mini-graph-card
+            name: EC-Wert Verlauf
+            entities:
+              - entity: sensor.hydroknoten_hydroknoten_ec_sensor
+                name: Istwert
+              - entity: number.dosierung_ec_zielwert
+                name: Sollwert
+                color: purple
+            hours_to_show: 6
+            points_per_hour: 4
+            show:
+              labels: true
+          - type: logbook
+            target:
+              device_id: 5481106cca16d619b30e782622e3d8ee
+            hours_to_show: 1
+          - type: entities
+            entities:
+              - entity: sensor.dosierung_dosierung_pumpen_status
+              - entity: sensor.dosierung_dosierung_status_zusammenfassung
+              - entity: sensor.dosierung_ph_dosierung_blockgrund
+              - entity: sensor.dosierung_durchmischung_fortschritt
+              - entity: sensor.dosierung_dosierung_aktive_dosierung
+              - entity: sensor.dosierung_ec_ist_empfangen
+              - entity: sensor.dosierung_ph_ist_empfangen
+      - type: grid
+        cards:
+          - type: heading
+            heading: EC-Düngerdosierung V_0.1
+            heading_style: subtitle
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: switch.dosierung_dosierung_automatik
+            grid_options:
+              columns: full
+              rows: 1
+            theme: Mushroom
+            name: Dosierung aktivieren
+            show_state: true
+          - type: tile
+            entity: sensor.dosierung_dosierung_pumpen_status
+            vertical: false
+            features_position: bottom
+            grid_options:
+              columns: full
+          - type: tile
+            grid_options:
+              columns: full
+              rows: 1
+            entity: sensor.dosierung_dosierung_status_zusammenfassung
+            vertical: false
+            features_position: bottom
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_system_volumen_gesamt
+            layout: horizontal
+            icon_color: light-blue
+            icon: mdi:cup-water
+            name: Systemvolumen
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_durchmischungs_dauer_system_zyklus
+            layout: horizontal
+            icon_color: light-blue
+            icon: mdi:timeline-clock
+            name: Systemzyklus
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_min_ruhrzeit_zwischen_dosierungen
+            layout: horizontal
+            icon_color: light-blue
+            icon: mdi:timeline-clock
+            name: Rührzeit zw. Dosierungen
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_ec_zielwert
+            icon_color: purple
+            name: EC Zielwert
+            layout: horizontal
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_ec_toleranzbereich_ms_cm
+            icon_color: purple
+            name: EC Toleranzbereich
+            layout: horizontal
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_dosiervolumen_ec_pumpe_ml_min
+            icon_color: purple
+            name: Pumpenleistung ???
+            layout: horizontal
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: button.dosierung_reset_tages_counter
+            grid_options:
+              columns: 6
+              rows: 1
+            name: Reset Tageszähler
+            theme: Mushroom
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: button.dosierung_reset_lifetime_counter
+            grid_options:
+              columns: 6
+              rows: 1
+            name: Reset Lifetimezähler
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: button.dosierung_reset_dosierzyklen
+            grid_options:
+              columns: 6
+              rows: 1
+            name: Reset Dosierzyklen
+        column_span: 1
+      - type: grid
+        cards:
+          - type: heading
+            heading: Tera Aquatica - TriPart - Micro
+            heading_style: subtitle
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: switch.dosierung_micro_steuerung
+            grid_options:
+              columns: full
+              rows: 1
+            theme: Mushroom
+            name: TA-Micro Dosierung aktivieren
+          - type: entities
+            entities:
+              - entity: sensor.dosierung_micro_ml_heute
+              - entity: binary_sensor.dosierung_micro_tageslimit_erreicht
+                secondary_info: none
+              - entity: sensor.dosierung_micro_dosier_zyklen
+              - entity: binary_sensor.dosierung_micro_safety_limit_warning
+              - entity: sensor.dosierung_micro_total_lifetime_ml
+              - entity: sensor.dosierung_durchmischung_fortschritt
+              - entity: sensor.dosierung_dosierung_aktive_dosierung
+              - entity: sensor.dosierung_dosierung_letzte_menge
+              - entity: sensor.dosierung_dosierung_nachste_menge_ml
+            show_header_toggle: false
+            state_color: true
+            visibility:
+              - condition: state
+                entity: switch.dosierung_micro_steuerung
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_micro_max_ml_tag
+            icon_color: purple
+            layout: horizontal
+            name: D1 - Maximal pro Tag
+            visibility:
+              - condition: state
+                entity: switch.dosierung_micro_steuerung
+                state: 'on'
+            icon: mdi:car-speed-limiter
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_micro_ec_pro_ml_100l
+            icon_color: purple
+            name: D1 - EC pro ml/100L
+            layout: horizontal
+            visibility:
+              - condition: state
+                entity: switch.dosierung_micro_steuerung
+                state: 'on'
+            icon: mdi:car-speed-limiter
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_micro_flow_rate
+            icon_color: purple
+            layout: horizontal
+            name: D1 - Durchflussmenge
+            visibility:
+              - condition: state
+                entity: switch.dosierung_micro_steuerung
+                state: 'on'
+            icon: mdi:car-speed-limiter
+      - type: grid
+        cards:
+          - type: heading
+            heading: Tera Aquatica - TriPart - Grow
+            heading_style: subtitle
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: switch.dosierung_grow_steuerung
+            grid_options:
+              columns: full
+              rows: 1
+            name: TA-Grow Dosierungen aktivieren
+            theme: Mushroom
+          - type: entities
+            entities:
+              - entity: sensor.dosierung_grow_ml_heute
+              - entity: binary_sensor.dosierung_grow_tageslimit_erreicht
+                secondary_info: none
+              - entity: sensor.dosierung_grow_dosier_zyklen
+              - entity: binary_sensor.dosierung_grow_safety_limit_warning
+              - entity: sensor.dosierung_grow_total_lifetime_ml
+              - entity: sensor.dosierung_durchmischung_fortschritt
+              - entity: sensor.dosierung_dosierung_aktive_dosierung
+            show_header_toggle: false
+            state_color: true
+            visibility:
+              - condition: state
+                entity: switch.dosierung_grow_steuerung
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_grow_max_ml_tag
+            icon_color: purple
+            layout: horizontal
+            name: D1 - Maximal pro Tag
+            visibility:
+              - condition: state
+                entity: switch.dosierung_grow_steuerung
+                state: 'on'
+            icon: mdi:car-speed-limiter
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_grow_ec_pro_ml_100l
+            icon_color: purple
+            name: D1 - EC pro ml/100L
+            layout: horizontal
+            visibility:
+              - condition: state
+                entity: switch.dosierung_grow_steuerung
+                state: 'on'
+            icon: mdi:car-speed-limiter
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_grow_flow_rate
+            icon_color: purple
+            layout: horizontal
+            name: D1 - Durchflussmenge
+            visibility:
+              - condition: state
+                entity: switch.dosierung_grow_steuerung
+                state: 'on'
+            icon: mdi:car-speed-limiter
+      - type: grid
+        cards:
+          - type: heading
+            heading: Tera Aquatica - TriPart - Bloom
+            heading_style: subtitle
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: switch.dosierung_bloom_steuerung
+            grid_options:
+              columns: full
+              rows: 1
+            name: TA-Bloom Dosierung aktivieren
+            theme: Mushroom
+          - type: entities
+            entities:
+              - entity: sensor.dosierung_bloom_ml_heute
+              - entity: binary_sensor.dosierung_bloom_tageslimit_erreicht
+                secondary_info: none
+              - entity: sensor.dosierung_bloom_dosier_zyklen
+              - entity: binary_sensor.dosierung_bloom_safety_limit_warning
+              - entity: sensor.dosierung_bloom_total_lifetime_ml
+              - entity: sensor.dosierung_durchmischung_fortschritt
+              - entity: sensor.dosierung_dosierung_aktive_dosierung
+            show_header_toggle: false
+            state_color: true
+            visibility:
+              - condition: state
+                entity: switch.dosierung_bloom_steuerung
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_bloom_max_ml_tag
+            icon_color: purple
+            layout: horizontal
+            name: D1 - Maximal pro Tag
+            visibility:
+              - condition: state
+                entity: switch.dosierung_bloom_steuerung
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_bloom_ec_pro_ml_100l
+            icon_color: purple
+            name: D1 - EC pro ml/100L
+            layout: horizontal
+            visibility:
+              - condition: state
+                entity: switch.dosierung_bloom_steuerung
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_bloom_flow_rate
+            icon_color: purple
+            layout: horizontal
+            name: D1 - Durchflussmenge
+            visibility:
+              - condition: state
+                entity: switch.dosierung_bloom_steuerung
+                state: 'on'
+    badges:
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: binary_sensor.dosierung_status_verbunden
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.hydroknoten_hydroknoten_version
+        name: 'Hydro: '
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.ventilknoten_projekt_version
+        name: 'Dosierung:: '
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.zeltsensor_zeltsensor_version
+        name: 'Zeltversion:'
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.dosierung_dosierung_status_zusammenfassung
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.dosierung_debug_ec_status
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.dosierung_debug_dosierung_gesamtstatus
+    header:
+      layout: center
+      badges_position: top
+      badges_wrap: scroll
+  - type: sections
+    max_columns: 4
     title: PH-Regelung
     path: ph-regelung
     sections:
@@ -770,12 +1133,38 @@ views:
             heading: PH-Dosierungssteuerung
             heading_style: subtitle
           - type: custom:mini-graph-card
+            name: PH-Dosierungsteuerung
+            entities:
+              - entity: sensor.hydroknoten_hydroknoten_ph_sensor
+                name: PH-IST
+                y_axis: secondary
+              - entity: sensor.hydroknoten_hydroknoten_ec_sensor
+                name: EC
+                color: green
+              - entity: number.dosierung_ph_zielwert
+                name: PH-SOLL
+                color: purple
+            hours_to_show: 4
+            points_per_hour: 8
+            show:
+              labels: true
+          - type: custom:mini-graph-card
+            name: 'PH-Down Dosierungen:'
+            entities:
+              - entity: sensor.dosierung_ph_down_ml_heute
+                name: Micro
+                color: purple
+            hours_to_show: 6
+            points_per_hour: 4
+            show:
+              labels: true
+          - type: custom:mini-graph-card
             name: PH-Wert Verlauf
             entities:
-              - entity: sensor.zeltsensor_ph_dummy
+              - entity: sensor.hydroknoten_hydroknoten_ph_sensor
                 name: PH-IST
-            hours_to_show: 48
-            points_per_hour: 4
+            hours_to_show: 2
+            points_per_hour: 8
             show:
               labels: true
             color_thresholds:
@@ -791,40 +1180,23 @@ views:
                 color: '#ce4234'
               - value: 7
                 color: '#8b1e14'
-          - type: custom:mini-graph-card
-            name: PH-Wert Verlauf
-            entities:
-              - entity: sensor.zeltsensor_ph_dummy
-                name: PH-IST
-              - entity: sensor.zeltsensor_ec_dummy
-                name: EC
-                color: green
-              - entity: input_number.ph_soll
-                name: PH-SOLL
-                color: purple
-            hours_to_show: 24
-            points_per_hour: 8
-            show:
-              labels: true
           - show_name: true
             show_icon: false
             type: button
-            entity: input_boolean.ph_regelung_aktivieren
+            entity: switch.dosierung_ph_down_steuerung
             grid_options:
               rows: 1
               columns: full
           - type: custom:mushroom-number-card
-            entity: input_number.ph_soll
+            entity: number.dosierung_ph_zielwert
+            icon_color: purple
+            name: pH SOLLWERT
             layout: horizontal
-            fill_container: false
-            secondary_info: state
             display_mode: buttons
-            icon: mdi:ph
             visibility:
               - condition: state
-                entity: input_boolean.ph_regelung_aktivieren
+                entity: switch.dosierung_ph_down_steuerung
                 state: 'on'
-            icon_color: purple
           - type: custom:mushroom-number-card
             entity: input_number.ph_max_stoesse_tag
             layout: horizontal
@@ -835,7 +1207,7 @@ views:
             display_mode: buttons
             visibility:
               - condition: state
-                entity: input_boolean.ph_regelung_aktivieren
+                entity: switch.dosierung_ph_down_steuerung
                 state: 'on'
             icon_color: purple
           - type: custom:mushroom-number-card
@@ -847,7 +1219,20 @@ views:
             name: Dosierung PH-Minus
             visibility:
               - condition: state
-                entity: input_boolean.ph_regelung_aktivieren
+                entity: switch.dosierung_ph_down_steuerung
+                state: 'on'
+            icon_color: purple
+          - type: custom:mushroom-number-card
+            entity: input_number.rdwc_ruehrzeit
+            layout: horizontal
+            fill_container: false
+            secondary_info: state
+            display_mode: buttons
+            icon: ml
+            name: Wartezeit Dosierungen
+            visibility:
+              - condition: state
+                entity: switch.dosierung_ph_down_steuerung
                 state: 'on'
             icon_color: purple
           - type: custom:mushroom-number-card
@@ -856,26 +1241,14 @@ views:
             fill_container: false
             secondary_info: state
             display_mode: buttons
-            icon_color: purple
-            icon: ml
-            name: Wartezeit Dosierungen
-            visibility:
-              - condition: state
-                entity: input_boolean.ph_regelung_aktivieren
-                state: 'on'
-          - type: custom:mushroom-number-card
-            entity: input_number.rdwc_ruehrzeit
-            layout: horizontal
-            fill_container: false
-            secondary_info: state
-            display_mode: buttons
-            icon: ml
             name: Rührzeit
             visibility:
               - condition: state
-                entity: input_boolean.ph_regelung_aktivieren
+                entity: switch.dosierung_ph_down_steuerung
                 state: 'on'
             icon_color: purple
+          - type: custom:mushroom-number-card
+            entity: input_number.rdwc_ruehrzeit
         column_span: 1
       - type: grid
         cards:
@@ -888,8 +1261,8 @@ views:
             entities:
               - entity: sensor.zeltsensor_co2_dummy
                 name: IST
-            hours_to_show: 48
-            points_per_hour: 8
+            hours_to_show: 12
+            points_per_hour: 4
             color_thresholds:
               - value: 380
                 color: '#2f6fa3'
@@ -940,10 +1313,31 @@ views:
                 entity: input_boolean.co2_dosierung_aktivieren
                 state: 'on'
         column_span: 1
-    badges: []
+    badges:
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.dosierung_debug_ph_status
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: sensor.dosierung_debug_dosierung_gesamtstatus
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: binary_sensor.dosierung_status_verbunden
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.hydroknoten_hydroknoten_version
+        name: 'Hydronoten: '
   - type: sections
     max_columns: 4
-    title: Wassertank
+    title: RDWC
     path: wassertank
     sections:
       - type: grid
@@ -965,13 +1359,15 @@ views:
             layout: horizontal
             icon_color: light-blue
             icon: mdi:cup-water
+            name: Systemvolumen
           - type: custom:mushroom-number-card
-            entity: input_number.rdwc_ruehrzeit
+            entity: number.dosierung_ruhrmotor_dauer_sekunden
             layout: horizontal
             icon_color: light-blue
             icon: mdi:timeline-clock
+            name: Dauer Rührvorgang
           - type: custom:mushroom-number-card
-            entity: input_number.rdwc_pumpenleistung
+            entity: number.dosierung_ruhrmotor_pwm_speed
             layout: horizontal
             icon_color: light-blue
             name: Pumpenleistung
@@ -995,12 +1391,13 @@ views:
             icon: mdi:temperature-celsius
             hours_to_show: 12
     header:
-      layout: responsive
-      badges_position: bottom
-      badges_wrap: wrap
+      layout: center
+      badges_position: top
+      badges_wrap: scroll
     badges:
       - type: entity
         entity: sensor.ventilknoten_projekt_version
+    cards: []
   - type: sections
     max_columns: 4
     title: Status
@@ -1027,7 +1424,7 @@ views:
             state_color: true
           - type: entities
             entities:
-              - entity: binary_sensor.zeltsensor_esp_status
+              - entity: device_tracker.unifi_default_14_08_08_a4_ef_4c
                 name: 'Status:'
               - entity: sensor.hydroknoten_esp_wifi_ssid
                 name: 'Verbunden mit:'
@@ -1035,6 +1432,23 @@ views:
               - entity: sensor.hydroknoten_hydroknoten_version
                 name: 'Firmware-Version: '
               - entity: sensor.zeltsensor_esp_uptime
+                secondary_info: none
+                name: 'Online seit: '
+              - entity: sensor.hydroknoten_esp_ip_adresse
+                name: 'IP-Adresse:'
+            show_header_toggle: false
+            title: ESP-Hydroknoten
+            state_color: true
+          - type: entities
+            entities:
+              - entity: binary_sensor.dosierung_status_verbunden
+                name: 'Status:'
+              - entity: sensor.hydroknoten_esp_wifi_ssid
+                name: 'Verbunden mit:'
+                icon: mdi:wifi
+              - entity: sensor.hydroknoten_hydroknoten_version
+                name: 'Firmware-Version: '
+              - entity: sensor.dosierung_dosierung_uptime
                 secondary_info: none
                 name: 'Online seit: '
               - entity: sensor.hydroknoten_esp_ip_adresse

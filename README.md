@@ -26,6 +26,11 @@ abwärtskompatibel garantiert.
 - Modulation ist gedämpft und klingt aus; die Basis‑Simulation bleibt unverändert.
 - Warnung: Simulation nur für Entwicklung/Debug, nicht für reale Nährstoffsteuerung.
 
+### Dosierknoten (v2.7 vs v2.6)
+- Tag/Nacht‑Sperre auf Basis des Zeltlampen‑Status ergänzt.
+- EC‑ und pH‑Dosierung werden in der Nachtphase pausiert.
+- Hinweis: experimentelle Logik, nicht final kalibriert.
+
 ### Dosierknoten (v2.4 vs v2.3)
 - Dosierabläufe auf nicht‑blockierende Script‑Schritte umgestellt.
 - EC‑Dosierung prüft nach jeder Rührzeit erneut den Zielwert.
