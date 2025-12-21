@@ -89,6 +89,32 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 ### Nicht geändert
 - Entitäten, IDs und Pumpen‑Zuordnung bleiben unverändert.
 
+## v2.3 (experimentell) – Hydroknoten (Datum: nicht dokumentiert)
+Verglichen mit Version: v2.2  
+Entwicklungsstatus: experimentell, nicht kalibriert.
+
+### Änderungen & Erweiterungen
+- ➕ Dosierungs‑Modulator: kleiner, gedämpfter Offset auf bestehende EC/pH‑Simulation.
+- 🔄 Reaktion auf Dosierungen des Dosierungsknotens über Tages‑ml‑Werte.
+- ⏱ Ausklingen des Effekts über Zeit (kein dauerhafter Drift).
+
+### Added
+- Interne Eingänge für Tages‑ml‑Zähler (Micro/Grow/Bloom/pH Down).
+- Interne Offset‑Variablen für EC/pH‑Modulation.
+
+### Changed
+- Simulierter EC/pH‑Wert erhält einen kleinen Zusatz‑Offset nach Dosierungen.
+
+### Fixed
+- Keine dokumentierten Änderungen.
+
+### Nicht geändert
+- Bestehende Simulationslogik (Sinus) bleibt vollständig erhalten.
+- Sensor‑Namen und Entitäten bleiben unverändert.
+
+### Notes
+- Simulation ist ein Debug‑/Visualisierungswerkzeug und kein Ersatz für echte Sensorik.
+
 ## v2.2 (beta) – Hydroknoten (Datum: nicht dokumentiert)
 Verglichen mit Version: v2.1  
 Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.

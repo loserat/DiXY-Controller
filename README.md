@@ -21,9 +21,10 @@ abwärtskompatibel garantiert.
   SA/SU‑Startzeit‑Slider entfernt.
 - Lokales Web‑Dashboard für Anzeige‑Only ergänzt.
 
-### Hydroknoten (v2.2 vs v2.1)
-- Simulationswerte laufen sinusförmig über einen 1‑Stunden‑Zyklus.
-- Update‑Intervall der Simulationssensoren auf 60 s gesetzt.
+### Hydroknoten (v2.3 vs v2.2)
+- Experimenteller Zusatz‑Offset auf den bestehenden EC/pH‑Simulationen nach Dosierungen.
+- Modulation ist gedämpft und klingt aus; die Basis‑Simulation bleibt unverändert.
+- Warnung: Simulation nur für Entwicklung/Debug, nicht für reale Nährstoffsteuerung.
 
 ### Dosierknoten (v2.4 vs v2.3)
 - Dosierabläufe auf nicht‑blockierende Script‑Schritte umgestellt.
@@ -63,6 +64,7 @@ Weitere Knoten (vorhanden/experimentell):
 - EC‑Messung, pH‑Messung, Wassertemperatur.
 - 6× Tank‑Füllstand (digitale Level‑Sensoren).
 - Lokale Kalibrierungen für EC/pH.
+- Simulationen können experimentell moduliert werden (nur Test/Debug).
 
 ### Dosierknoten
 - EC‑Verteilungslogik für Dünger‑Pumpen A–C.
