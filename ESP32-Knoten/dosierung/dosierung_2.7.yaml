@@ -686,9 +686,9 @@ number:
     id: min_stir_time_between_doses
     unit_of_measurement: "s"
     optimistic: true
-    min_value: 1
-    max_value: 600
-    step: 10
+    min_value: 60
+    max_value: 3600
+    step: 60
     initial_value: ${min_stir_time}
     restore_value: true
     # 3min Pflicht-Durchmischung vor nächster Dosierung
@@ -784,10 +784,10 @@ number:
     name: "Rührmotor – Dauer (Sekunden)"
     unit_of_measurement: "s"
     optimistic: true
-    min_value: 1
-    max_value: 300
-    step: 10
-    initial_value: 90
+    min_value: 60
+    max_value: 3600
+    step: 60
+    initial_value: 180
     restore_value: true
     # Wie lange Rührmotor nach Dosierung läuft (RDWC Durchmischung)
 
@@ -1081,7 +1081,7 @@ text_sensor:
     name: "Tag/Nacht"
     entity_category: diagnostic
     lambda: |-
-      return id(tagphase_active).state ? "Tag" : "Nacht";
+      return id(tagphase_active).state ? std::string("Tag") : std::string("Nacht");
     update_interval: 5s
     # Status der Tag/Nacht-Phase (Quelle: Zeltlampe)
 

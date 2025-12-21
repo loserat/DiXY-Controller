@@ -669,6 +669,38 @@ switch:
 number:
   # User-adjustable parameters for lighting behavior.
   - platform: template
+    name: "AUTO Einschaltzeit (Min)"
+    id: auto_on_minutes_local
+    unit_of_measurement: "min"
+    min_value: 0
+    max_value: 1439
+    step: 5
+    lambda: |-
+      // Logic for "AUTO Einschaltzeit (Min)".
+      return id(on_minutes);
+    set_action:
+      - lambda: |-
+          int value = (int) x;
+          if (value < 0) value = 0;
+          if (value > 1439) value = 1439;
+          id(on_minutes) = value;
+  - platform: template
+    name: "AUTO Ausschaltzeit (Min)"
+    id: auto_off_minutes_local
+    unit_of_measurement: "min"
+    min_value: 0
+    max_value: 1439
+    step: 5
+    lambda: |-
+      // Logic for "AUTO Ausschaltzeit (Min)".
+      return id(off_minutes);
+    set_action:
+      - lambda: |-
+          int value = (int) x;
+          if (value < 0) value = 0;
+          if (value > 1439) value = 1439;
+          id(off_minutes) = value;
+  - platform: template
     name: "Auto Max Helligkeit"
     id: zeltlampe_max_pwm
     unit_of_measurement: "%"

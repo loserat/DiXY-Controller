@@ -1,0 +1,582 @@
+esphome:
+  name: tankknoten
+  comment: "Tankknoten: Haupttank + RDWC-Level (6 Stufen je Tank), manuelle Aktoren."
+  project:
+    name: "loserat.dixy_tankknoten"
+    version: "1.0"
+  on_boot:
+    priority: -100.0
+    then:
+      - logger.log: "Tankknoten gestartet. Version 1.0"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: info
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Tankknoten Fallback"
+    password: "dixy12345"
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  platform: esphome
+  password: !secret ota_password
+
+web_server:
+  port: 80
+
+time:
+  - platform: sntp
+    id: ha_time
+    timezone: "Europe/Berlin"
+
+substitutions:
+  main_fill_relay_pin: "4"
+  rdwc_fill_relay_pin: "5"
+  leak_guard_pin: "34"
+
+binary_sensor:
+  - platform: template
+    name: "Haupttank Level 1"
+    id: main_lvl_1
+    lambda: |-
+      return id(main_lvl_1_sim).state;
+    on_release:
+      - lambda: |-
+          auto now = id(ha_time).now();
+          if (now.is_valid()) {
+            id(main_last_low_ts) = now.timestamp;
+          }
+  - platform: template
+    name: "Haupttank Level 2"
+    id: main_lvl_2
+    lambda: |-
+      return id(main_lvl_2_sim).state;
+  - platform: template
+    name: "Haupttank Level 3"
+    id: main_lvl_3
+    lambda: |-
+      return id(main_lvl_3_sim).state;
+  - platform: template
+    name: "Haupttank Level 4"
+    id: main_lvl_4
+    lambda: |-
+      return id(main_lvl_4_sim).state;
+  - platform: template
+    name: "Haupttank Level 5"
+    id: main_lvl_5
+    lambda: |-
+      return id(main_lvl_5_sim).state;
+  - platform: template
+    name: "Haupttank Level 6"
+    id: main_lvl_6
+    lambda: |-
+      return id(main_lvl_6_sim).state;
+    on_press:
+      - switch.turn_off: main_fill_relay
+      - lambda: |-
+          auto now = id(ha_time).now();
+          if (now.is_valid()) {
+            id(main_last_full_ts) = now.timestamp;
+          }
+
+  - platform: template
+    name: "RDWC Level 1"
+    id: rdwc_lvl_1
+    lambda: |-
+      return id(rdwc_lvl_1_sim).state;
+    on_release:
+      - lambda: |-
+          auto now = id(ha_time).now();
+          if (now.is_valid()) {
+            id(rdwc_last_low_ts) = now.timestamp;
+          }
+  - platform: template
+    name: "RDWC Level 2"
+    id: rdwc_lvl_2
+    lambda: |-
+      return id(rdwc_lvl_2_sim).state;
+  - platform: template
+    name: "RDWC Level 3"
+    id: rdwc_lvl_3
+    lambda: |-
+      return id(rdwc_lvl_3_sim).state;
+  - platform: template
+    name: "RDWC Level 4"
+    id: rdwc_lvl_4
+    lambda: |-
+      return id(rdwc_lvl_4_sim).state;
+  - platform: template
+    name: "RDWC Level 5"
+    id: rdwc_lvl_5
+    lambda: |-
+      return id(rdwc_lvl_5_sim).state;
+  - platform: template
+    name: "RDWC Level 6"
+    id: rdwc_lvl_6
+    lambda: |-
+      return id(rdwc_lvl_6_sim).state;
+    on_press:
+      - switch.turn_off: rdwc_fill_relay
+      - lambda: |-
+          auto now = id(ha_time).now();
+          if (now.is_valid()) {
+            id(rdwc_last_full_ts) = now.timestamp;
+          }
+  - platform: gpio
+    name: "Leckage Kontakt"
+    id: leak_contact
+    device_class: moisture
+    pin:
+      number: ${leak_guard_pin}
+      mode: INPUT
+      inverted: true
+    filters:
+      - delayed_on: 50ms
+      - delayed_off: 500ms
+    on_press:
+      - switch.turn_on: emergency_stop
+    on_release:
+      - logger.log: "Leckage Kontakt frei"
+  - platform: template
+    name: "Notfall Wasserwächter"
+    id: leak_guard
+    device_class: safety
+    lambda: |-
+      return id(emergency_stop).state;
+
+switch:
+  - platform: gpio
+    name: "Haupttank Befüllen"
+    pin: ${main_fill_relay_pin}
+    restore_mode: ALWAYS_OFF
+    id: main_fill_relay
+    on_turn_on:
+      - if:
+          condition:
+            or:
+              - binary_sensor.is_on: main_lvl_6
+              - switch.is_on: emergency_stop
+          then:
+            - switch.turn_off: main_fill_relay
+  - platform: gpio
+    name: "RDWC Befüllen"
+    pin: ${rdwc_fill_relay_pin}
+    restore_mode: ALWAYS_OFF
+    id: rdwc_fill_relay
+    on_turn_on:
+      - if:
+          condition:
+            or:
+              - binary_sensor.is_on: rdwc_lvl_6
+              - switch.is_on: emergency_stop
+          then:
+            - switch.turn_off: rdwc_fill_relay
+
+  - platform: template
+    name: "Not-Aus Befüllung"
+    id: emergency_stop
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    icon: "mdi:alert-octagon"
+    turn_on_action:
+      - switch.turn_off: main_fill_relay
+      - switch.turn_off: rdwc_fill_relay
+    turn_off_action:
+      - logger.log: "Not-Aus aufgehoben. Automatik darf wieder schalten."
+
+  - platform: template
+    name: "Haupttank Level 1 Eingang"
+    id: main_lvl_1_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
+    name: "Haupttank Level 2 Eingang"
+    id: main_lvl_2_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
+    name: "Haupttank Level 3 Eingang"
+    id: main_lvl_3_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
+    name: "Haupttank Level 4 Eingang"
+    id: main_lvl_4_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
+    name: "Haupttank Level 5 Eingang"
+    id: main_lvl_5_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
+    name: "Haupttank Level 6 Eingang"
+    id: main_lvl_6_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+
+  - platform: template
+    name: "RDWC Level 1 Eingang"
+    id: rdwc_lvl_1_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
+    name: "RDWC Level 2 Eingang"
+    id: rdwc_lvl_2_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
+    name: "RDWC Level 3 Eingang"
+    id: rdwc_lvl_3_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
+    name: "RDWC Level 4 Eingang"
+    id: rdwc_lvl_4_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
+    name: "RDWC Level 5 Eingang"
+    id: rdwc_lvl_5_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
+    name: "RDWC Level 6 Eingang"
+    id: rdwc_lvl_6_sim
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+
+  - platform: template
+    name: "EC Temperaturkompensation"
+    id: ec_temp_comp_enabled
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+
+globals:
+  - id: main_last_full_ts
+    type: uint32_t
+    restore_value: true
+    initial_value: '0'
+  - id: main_last_low_ts
+    type: uint32_t
+    restore_value: true
+    initial_value: '0'
+  - id: rdwc_last_full_ts
+    type: uint32_t
+    restore_value: true
+    initial_value: '0'
+  - id: rdwc_last_low_ts
+    type: uint32_t
+    restore_value: true
+    initial_value: '0'
+
+button:
+  - platform: template
+    name: "Haupttank Befuellen Start"
+    on_press:
+      - switch.turn_on: main_fill_relay
+  - platform: template
+    name: "Haupttank Befuellen Stopp"
+    on_press:
+      - switch.turn_off: main_fill_relay
+
+  - platform: template
+    name: "RDWC Befuellen Start"
+    on_press:
+      - switch.turn_on: rdwc_fill_relay
+  - platform: template
+    name: "RDWC Befuellen Stopp"
+    on_press:
+      - switch.turn_off: rdwc_fill_relay
+
+number:
+  - platform: template
+    name: "Haupttank Volumen"
+    id: main_tank_volume_l
+    unit_of_measurement: "L"
+    optimistic: true
+    min_value: 10
+    max_value: 100
+    step: 1
+    initial_value: 100
+    restore_value: true
+
+  - platform: template
+    name: "RDWC Volumen"
+    id: rdwc_tank_volume_l
+    unit_of_measurement: "L"
+    optimistic: true
+    min_value: 10
+    max_value: 80
+    step: 1
+    initial_value: 80
+    restore_value: true
+
+  - platform: template
+    name: "Tanktemperatur Offset"
+    id: tank_temp_offset
+    unit_of_measurement: "°C"
+    optimistic: true
+    min_value: -2.0
+    max_value: 2.0
+    step: 0.1
+    initial_value: 0.0
+    restore_value: true
+
+sensor:
+  - platform: wifi_signal
+    name: "Tankknoten WiFi Signal"
+    unit_of_measurement: "dBm"
+    state_class: measurement
+    update_interval: 30s
+    entity_category: diagnostic
+  - platform: uptime
+    name: "Tankknoten Uptime"
+    unit_of_measurement: "h"
+    state_class: total_increasing
+    update_interval: 60s
+    entity_category: diagnostic
+  - platform: internal_temperature
+    name: "Tankknoten ESP32 Temperatur"
+    unit_of_measurement: "°C"
+    state_class: measurement
+    update_interval: 30s
+    entity_category: diagnostic
+  - platform: template
+    name: "Tankknoten EC Roh"
+    id: tank_ec_raw
+    unit_of_measurement: "mS/cm"
+    accuracy_decimals: 2
+    state_class: measurement
+    update_interval: 30s
+    lambda: |-
+      const float min_val = 0.8f;
+      const float max_val = 2.6f;
+      const float mid = (min_val + max_val) * 0.5f;
+      const float amp = (max_val - min_val) * 0.5f;
+      const uint32_t period_ms = 3600000UL;
+      float phase = (float)(millis() % period_ms) / (float)period_ms;
+      phase += 0.10f;
+      if (phase > 1.0f) phase -= 1.0f;
+      return mid + amp * sinf(phase * 2.0f * 3.1415926f);
+  - platform: template
+    name: "Tankknoten EC kompensiert"
+    unit_of_measurement: "mS/cm"
+    accuracy_decimals: 2
+    state_class: measurement
+    update_interval: 30s
+    lambda: |-
+      float ec_raw = id(tank_ec_raw).state;
+      if (isnan(ec_raw)) return NAN;
+      if (!id(ec_temp_comp_enabled).state) {
+        return ec_raw;
+      }
+      float temp_c = id(tank_temp_raw).state;
+      if (isnan(temp_c)) {
+        return ec_raw;
+      }
+      float alpha = 0.02f;
+      return ec_raw / (1.0f + alpha * (temp_c - 25.0f));
+  - platform: template
+    name: "Tankknoten EC"
+    unit_of_measurement: "mS/cm"
+    accuracy_decimals: 2
+    state_class: measurement
+    update_interval: 30s
+    lambda: |-
+      float ec_raw = id(tank_ec_raw).state;
+      if (isnan(ec_raw)) return NAN;
+      if (!id(ec_temp_comp_enabled).state) {
+        return ec_raw;
+      }
+      float temp_c = id(tank_temp_raw).state;
+      if (isnan(temp_c)) {
+        return ec_raw;
+      }
+      return ec_raw / (1.0f + 0.02f * (temp_c - 25.0f));
+  - platform: template
+    name: "Tankknoten pH"
+    unit_of_measurement: "pH"
+    accuracy_decimals: 2
+    state_class: measurement
+    update_interval: 30s
+    lambda: |-
+      const float min_val = 5.4f;
+      const float max_val = 6.5f;
+      const float mid = (min_val + max_val) * 0.5f;
+      const float amp = (max_val - min_val) * 0.5f;
+      const uint32_t period_ms = 3600000UL;
+      float phase = (float)(millis() % period_ms) / (float)period_ms;
+      phase += 0.35f;
+      if (phase > 1.0f) phase -= 1.0f;
+      return mid + amp * sinf(phase * 2.0f * 3.1415926f);
+  - platform: template
+    name: "Tankknoten Wassertemperatur Roh"
+    id: tank_temp_raw
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    state_class: measurement
+    update_interval: 30s
+    lambda: |-
+      const float min_val = 18.0f;
+      const float max_val = 24.0f;
+      const float mid = (min_val + max_val) * 0.5f;
+      const float amp = (max_val - min_val) * 0.5f;
+      const uint32_t period_ms = 3600000UL;
+      float phase = (float)(millis() % period_ms) / (float)period_ms;
+      phase += 0.60f;
+      if (phase > 1.0f) phase -= 1.0f;
+      return mid + amp * sinf(phase * 2.0f * 3.1415926f);
+  - platform: template
+    name: "Tankknoten Wassertemperatur"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    state_class: measurement
+    update_interval: 30s
+    lambda: |-
+      float raw = id(tank_temp_raw).state;
+      if (isnan(raw)) return NAN;
+      return raw + id(tank_temp_offset).state;
+  - platform: template
+    name: "Haupttank Fuellstand"
+    id: main_tank_level_l
+    unit_of_measurement: "L"
+    accuracy_decimals: 1
+    lambda: |-
+      float pct = id(main_tank_level_pct).state;
+      if (id(main_tank_volume_l).state <= 0.0f) return 0.0f;
+      return id(main_tank_volume_l).state * (pct / 100.0f);
+    update_interval: 30s
+
+  - platform: template
+    name: "Haupttank Fuellstand Prozent"
+    id: main_tank_level_pct
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    lambda: |-
+      if (id(main_lvl_6).state) return 100.0f;
+      if (id(main_lvl_5).state) return 83.3f;
+      if (id(main_lvl_4).state) return 66.6f;
+      if (id(main_lvl_3).state) return 50.0f;
+      if (id(main_lvl_2).state) return 33.3f;
+      if (id(main_lvl_1).state) return 16.6f;
+      return 0.0f;
+    update_interval: 30s
+
+  - platform: template
+    name: "RDWC Fuellstand"
+    id: rdwc_tank_level_l
+    unit_of_measurement: "L"
+    accuracy_decimals: 1
+    lambda: |-
+      float pct = id(rdwc_tank_level_pct).state;
+      if (id(rdwc_tank_volume_l).state <= 0.0f) return 0.0f;
+      return id(rdwc_tank_volume_l).state * (pct / 100.0f);
+    update_interval: 30s
+
+  - platform: template
+    name: "RDWC Fuellstand Prozent"
+    id: rdwc_tank_level_pct
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    lambda: |-
+      if (id(rdwc_lvl_6).state) return 100.0f;
+      if (id(rdwc_lvl_5).state) return 83.3f;
+      if (id(rdwc_lvl_4).state) return 66.6f;
+      if (id(rdwc_lvl_3).state) return 50.0f;
+      if (id(rdwc_lvl_2).state) return 33.3f;
+      if (id(rdwc_lvl_1).state) return 16.6f;
+      return 0.0f;
+    update_interval: 30s
+
+  - platform: template
+    name: "Haupttank Status"
+    id: main_tank_state
+    lambda: |-
+      float pct = id(main_tank_level_pct).state;
+      if (pct <= 5.0f) return 0;
+      if (pct <= 40.0f) return 1;
+      if (pct >= 90.0f) return 3;
+      return 2;
+    update_interval: 30s
+    accuracy_decimals: 0
+
+  - platform: template
+    name: "RDWC Status"
+    id: rdwc_tank_state
+    lambda: |-
+      float pct = id(rdwc_tank_level_pct).state;
+      if (pct <= 5.0f) return 0;
+      if (pct <= 40.0f) return 1;
+      if (pct >= 90.0f) return 3;
+      return 2;
+    update_interval: 30s
+    accuracy_decimals: 0
+  - platform: template
+    name: "Haupttank Zuletzt Voll"
+    device_class: timestamp
+    update_interval: 60s
+    lambda: |-
+      if (id(main_last_full_ts) == 0) return NAN;
+      return (float) id(main_last_full_ts);
+  - platform: template
+    name: "Haupttank Zuletzt Leer"
+    device_class: timestamp
+    update_interval: 60s
+    lambda: |-
+      if (id(main_last_low_ts) == 0) return NAN;
+      return (float) id(main_last_low_ts);
+  - platform: template
+    name: "RDWC Zuletzt Voll"
+    device_class: timestamp
+    update_interval: 60s
+    lambda: |-
+      if (id(rdwc_last_full_ts) == 0) return NAN;
+      return (float) id(rdwc_last_full_ts);
+  - platform: template
+    name: "RDWC Zuletzt Leer"
+    device_class: timestamp
+    update_interval: 60s
+    lambda: |-
+      if (id(rdwc_last_low_ts) == 0) return NAN;
+      return (float) id(rdwc_last_low_ts);
+
+text_sensor:
+  - platform: template
+    name: "Geraetename"
+    id: tankknoten_device_name
+    icon: "mdi:identifier"
+    entity_category: diagnostic
+    lambda: |-
+      return {"tankknoten"};
+    update_interval: 3600s
+  - platform: wifi_info
+    ip_address:
+      name: "Tankknoten IP"
+      entity_category: diagnostic
+    ssid:
+      name: "Tankknoten WLAN SSID"
+      entity_category: diagnostic
+    bssid:
+      name: "Tankknoten WLAN BSSID"
+      entity_category: diagnostic
+    mac_address:
+      name: "Tankknoten MAC"
+      entity_category: diagnostic
+  - platform: template
+    name: "Tankknoten Version"
+    entity_category: diagnostic
+    lambda: |-
+      return {"1.0"};
+    update_interval: 3600s
