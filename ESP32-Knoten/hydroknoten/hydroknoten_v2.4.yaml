@@ -1,0 +1,309 @@
+esphome:
+  name: hydroknoten
+  comment: "Knoten für EC, pH, Temperatur, Außenluft. Für Hardware-Integration vorbereitet. Version 2.3"
+  project:
+    name: "loserat.dixy_hydroknoten"
+    version: "2.4"
+  platformio_options:
+    board_build.flash_mode: "dio"
+  on_boot:
+    priority: -100.0
+    then:
+        - logger.log: "Hydroknoten gestartet. Version 2.4"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: INFO
+
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Hydroknoten SIM Fallback"
+    password: "dixy12345"
+  # Info: SSID und Passwort werden aus secrets.yaml geladen
+  # Alternativ können sie hier auch direkt eingetragen werden (nicht empfohlen).
+  # ssid: "Dein_WLAN_SSID"
+  # password: "Dein_WLAN_Passwort"
+
+api:
+  encryption:
+    key: "zCy9bhBNViqsl/kfDQ2eNJW8hzYuGDLyTk250eYjWYY="
+    # Hinweis: Key
+    # - kann mit `esphome api encryption_key <dein_projekt>.yaml` generiert werden
+    # - muss bei Änderung in Home Assistant neu eingetragen werden
+    # - alternativ kann die Verschlüsselung auch deaktiviert werden (nicht empfohlen)
+
+ota:
+  platform: esphome
+  password: "dixy"
+# Hinweis: Passwort kann hier direkt eingetragen werden oder aus secrets.yaml geladen werden
+# password: !secret hydroknoten_ota_password
+
+web_server:
+  port: 80
+
+globals:
+  # Simulations-Offset aus Dosierungen (experimentell, kein realer Messwert).
+  - id: ec_dose_offset
+    type: float
+    initial_value: '0.0'
+  - id: ph_dose_offset
+    type: float
+    initial_value: '0.0'
+  - id: ec_offset_last_ms
+    type: uint32_t
+    initial_value: '0'
+  - id: ph_offset_last_ms
+    type: uint32_t
+    initial_value: '0'
+
+  # Letzte Tageswerte der Dosierung (zur Delta-Berechnung).
+  - id: last_micro_ml_today
+    type: float
+    initial_value: '0.0'
+  - id: last_grow_ml_today
+    type: float
+    initial_value: '0.0'
+  - id: last_bloom_ml_today
+    type: float
+    initial_value: '0.0'
+  - id: last_ph_down_ml_today
+    type: float
+    initial_value: '0.0'
+
+switch:
+  # Schaltet die EC-Temperaturkompensation der Simulation ein/aus.
+  - platform: template
+    id: ec_temp_comp_enabled
+    name: "EC Temperaturkompensation"
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+
+sensor:
+  # ───────────────────────────────────────────────────────────
+  # DOSIERUNGSKNOTEN – TAGES-COUNTER (NUR INPUTS)
+  # Experimentelle Modulation: bestehende Simulation bleibt erhalten.
+  # 10 ml → +0.02 mS/cm (EC) und 10 ml → -0.02 pH, Ausklingen ~10 min.
+  # ───────────────────────────────────────────────────────────
+  - platform: homeassistant
+    id: dose_micro_ml_today
+    entity_id: sensor.dosierung_micro_ml_heute
+    internal: true
+    on_value:
+      - lambda: |-
+          if (isnan(id(dose_micro_ml_today).state)) return;
+          float current = id(dose_micro_ml_today).state;
+          float delta = current - id(last_micro_ml_today);
+          id(last_micro_ml_today) = current;
+          if (delta <= 0.0f) return;
+          id(ec_dose_offset) += delta * 0.002f;  // 10 ml -> +0.02 mS/cm
+          if (id(ec_dose_offset) > 0.2f) id(ec_dose_offset) = 0.2f;
+  - platform: homeassistant
+    id: dose_grow_ml_today
+    entity_id: sensor.dosierung_grow_ml_heute
+    internal: true
+    on_value:
+      - lambda: |-
+          if (isnan(id(dose_grow_ml_today).state)) return;
+          float current = id(dose_grow_ml_today).state;
+          float delta = current - id(last_grow_ml_today);
+          id(last_grow_ml_today) = current;
+          if (delta <= 0.0f) return;
+          id(ec_dose_offset) += delta * 0.002f;  // 10 ml -> +0.02 mS/cm
+          if (id(ec_dose_offset) > 0.2f) id(ec_dose_offset) = 0.2f;
+  - platform: homeassistant
+    id: dose_bloom_ml_today
+    entity_id: sensor.dosierung_bloom_ml_heute
+    internal: true
+    on_value:
+      - lambda: |-
+          if (isnan(id(dose_bloom_ml_today).state)) return;
+          float current = id(dose_bloom_ml_today).state;
+          float delta = current - id(last_bloom_ml_today);
+          id(last_bloom_ml_today) = current;
+          if (delta <= 0.0f) return;
+          id(ec_dose_offset) += delta * 0.002f;  // 10 ml -> +0.02 mS/cm
+          if (id(ec_dose_offset) > 0.2f) id(ec_dose_offset) = 0.2f;
+  - platform: homeassistant
+    id: dose_ph_down_ml_today
+    entity_id: sensor.dosierung_ph_down_ml_heute
+    internal: true
+    on_value:
+      - lambda: |-
+          if (isnan(id(dose_ph_down_ml_today).state)) return;
+          float current = id(dose_ph_down_ml_today).state;
+          float delta = current - id(last_ph_down_ml_today);
+          id(last_ph_down_ml_today) = current;
+          if (delta <= 0.0f) return;
+          id(ph_dose_offset) -= delta * 0.002f;  // 10 ml -> -0.02 pH
+          if (id(ph_dose_offset) < -0.2f) id(ph_dose_offset) = -0.2f;
+
+  # --- Messwerte (aktuell simuliert, ohne Sim-Namen) ---
+  - platform: template
+    name: "Hydroknoten EC Sensor"
+    id: sim_ec
+    unit_of_measurement: "mS/cm"
+    accuracy_decimals: 2
+    update_interval: 60s
+    lambda: |-
+      const float min_val = 0.5f;
+      const float max_val = 3.0f;
+      const float mid = (min_val + max_val) * 0.5f;
+      const float amp = (max_val - min_val) * 0.5f;
+      const uint32_t period_ms = 3600000UL;
+      float phase = (float)(millis() % period_ms) / (float)period_ms;
+      // Phasenversatz zur Entkopplung der Sinuskurven.
+      phase += 0.10f;
+      if (phase > 1.0f) phase -= 1.0f;
+      float base = mid + amp * sinf(phase * 2.0f * 3.1415926f);
+      // Experimenteller Dosier-Offset (Modulator), Simulation bleibt erhalten.
+      uint32_t now = millis();
+      if (id(ec_offset_last_ms) == 0) {
+        id(ec_offset_last_ms) = now;
+      } else {
+        uint32_t dt = now - id(ec_offset_last_ms);
+        float decay_ms = 600000.0f;  // 10 min Ausklingen
+        float factor = expf(-((float)dt) / decay_ms);
+        id(ec_dose_offset) *= factor;
+        id(ec_offset_last_ms) = now;
+      }
+      // Rohwert der EC-Simulation (Sinus + Dosier-Offset).
+      float ec_raw = base + id(ec_dose_offset);
+      // Temperaturkompensation ist optional (Switch).
+      if (!id(ec_temp_comp_enabled).state) {
+        return ec_raw;
+      }
+      float temp_c = id(sim_temp).state;
+      if (isnan(temp_c)) {
+        return ec_raw;
+      }
+      // Vereinfachte ATC: Referenz 25°C, ca. 2%/°C.
+      // Formel: EC25 = EC_raw / (1 + 0.02 * (T - 25)).
+      float alpha = 0.02f;
+      float compensated = ec_raw / (1.0f + alpha * (temp_c - 25.0f));
+      return compensated;
+  - platform: template
+    name: "Hydroknoten pH Sensor"
+    id: sim_ph
+    unit_of_measurement: "pH"
+    accuracy_decimals: 2
+    update_interval: 60s
+    lambda: |-
+      const float min_val = 4.0f;
+      const float max_val = 9.0f;
+      const float mid = (min_val + max_val) * 0.5f;
+      const float amp = (max_val - min_val) * 0.5f;
+      const uint32_t period_ms = 3600000UL;
+      float phase = (float)(millis() % period_ms) / (float)period_ms;
+      // Phasenversatz zur Entkopplung der Sinuskurven.
+      phase += 0.35f;
+      if (phase > 1.0f) phase -= 1.0f;
+      float base = mid + amp * sinf(phase * 2.0f * 3.1415926f);
+      // Experimenteller Dosier-Offset (Modulator), Simulation bleibt erhalten.
+      uint32_t now = millis();
+      if (id(ph_offset_last_ms) == 0) {
+        id(ph_offset_last_ms) = now;
+      } else {
+        uint32_t dt = now - id(ph_offset_last_ms);
+        float decay_ms = 600000.0f;  // 10 min Ausklingen
+        float factor = expf(-((float)dt) / decay_ms);
+        id(ph_dose_offset) *= factor;
+        id(ph_offset_last_ms) = now;
+      }
+      return base + id(ph_dose_offset);
+  - platform: template
+    name: "Hydroknoten Temperatur"
+    id: sim_temp
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: |-
+      const float min_val = 0.0f;
+      const float max_val = 40.0f;
+      const float mid = (min_val + max_val) * 0.5f;
+      const float amp = (max_val - min_val) * 0.5f;
+      const uint32_t period_ms = 3600000UL;
+      float phase = (float)(millis() % period_ms) / (float)period_ms;
+      // Phasenversatz zur EC/pH-Sinuskurve (¼ Periode).
+      phase += 0.25f;
+      if (phase > 1.0f) phase -= 1.0f;
+      return mid + amp * sinf(phase * 2.0f * 3.1415926f);
+  - platform: template
+    name: "Hydroknoten Zelttemperatur außen"
+    id: sim_tent_temp_outside
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: |-
+      const float min_val = 0.0f;
+      const float max_val = 40.0f;
+      const float mid = (min_val + max_val) * 0.5f;
+      const float amp = (max_val - min_val) * 0.5f;
+      const uint32_t period_ms = 3600000UL;
+      float phase = (float)(millis() % period_ms) / (float)period_ms;
+      // Phasenversatz zur Entkopplung der Sinuskurven.
+      phase += 0.60f;
+      if (phase > 1.0f) phase -= 1.0f;
+      return mid + amp * sinf(phase * 2.0f * 3.1415926f);
+
+
+# --- Hardware vorbereitet ---
+# --- Buttons vorbereitet ---
+
+text_sensor:
+  - platform: template
+    name: "Hydroknoten Version"
+    id: hydroknoten_version
+    icon: "mdi:tag"
+    lambda: |-
+      return {"2.4"};
+    update_interval: 3600s
+  - platform: wifi_info
+    ip_address:
+      name: "ESP IP Adresse"
+    ssid:
+      name: "ESP WiFi SSID"
+    bssid:
+      name: "ESP WiFi BSSID"
+    mac_address:
+      name: "ESP MAC Adresse"
+
+# Beispiel für vier Buttons mit Pin-Mapping aus config.yaml:
+
+binary_sensor:
+  # --- Dummy-GPIO-Buttons für Home Assistant ---
+  - platform: gpio
+    pin:
+      number: GPIO16
+      mode: INPUT_PULLUP
+    name: "EC Kalibrierung – Lösung 1"
+    id: button_1
+    internal: false
+  - platform: gpio
+    pin:
+      number: GPIO17
+      mode: INPUT_PULLUP
+    name: "EC Kalibrierung – Lösung 2"
+    id: button_2
+    internal: false
+  - platform: gpio
+    pin:
+      number: GPIO18
+      mode: INPUT_PULLUP
+    name: "pH Kalibrierung – Lösung 1"
+    id: button_3
+    internal: false
+  - platform: gpio
+    pin:
+      number: GPIO19
+      mode: INPUT_PULLUP
+    name: "pH Kalibrierung – Lösung 2"
+    id: button_4
+    internal: false
