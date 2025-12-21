@@ -74,6 +74,19 @@ globals:
     type: int
     restore_value: yes
     initial_value: '10'
+  # CO2-SIMULATION (ENTFERNEN, sobald echte CO2-Hardware aktiv ist).
+  - id: co2_dose_offset
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+  - id: co2_offset_last_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: co2_last_dose_check_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
 
 # MCU target and framework.
 esp32:
@@ -246,11 +259,29 @@ sensor:
     state_class: measurement
     update_interval: 30s
     lambda: |-
-      // Logic for "CO2".
-      static int co2 = 1200;
-      co2 += (rand() % 21) - 10; // ±10
-      if (co2 < 400) co2 = 400;
-      if (co2 > 2000) co2 = 2000;
+      // CO2-SIMULATION (ENTFERNEN, sobald echte CO2-Hardware aktiv ist).
+      const float min_val = 400.0f;
+      const float max_val = 2000.0f;
+      const float mid = (min_val + max_val) * 0.5f;
+      const float amp = (max_val - min_val) * 0.5f;
+      const uint32_t period_ms = 900000UL;  // 15 min, schneller als andere Sensoren
+      float phase = (float)(millis() % period_ms) / (float)period_ms;
+      float base = mid + amp * sinf(phase * 2.0f * 3.1415926f);
+
+      uint32_t now = millis();
+      if (id(co2_offset_last_ms) == 0) {
+        id(co2_offset_last_ms) = now;
+      } else {
+        uint32_t dt = now - id(co2_offset_last_ms);
+        float decay_ms = 600000.0f;  // 10 min Ausklingen
+        float factor = expf(-((float)dt) / decay_ms);
+        id(co2_dose_offset) *= factor;
+        id(co2_offset_last_ms) = now;
+      }
+
+      float co2 = base + id(co2_dose_offset);
+      if (co2 < min_val) co2 = min_val;
+      if (co2 > max_val) co2 = max_val;
       return co2;
 
   - platform: template
@@ -575,21 +606,34 @@ text_sensor:
       return {"v2.8"};
     update_interval: 3600s
   - platform: template
-    name: "Zelt CO2 Version"
-    id: co2_logic_version
+    name: "CO2 Dosierung Version"
     icon: "mdi:tag"
     entity_category: diagnostic
     lambda: |-
-      return {"v1.0"};
+      return {"v0.1"};
     update_interval: 3600s
   - platform: template
-    name: "Zelt Lichtsteuerung Version"
-    id: light_logic_version
+    name: "Lichtsteuerung Version"
     icon: "mdi:tag"
     entity_category: diagnostic
     lambda: |-
-      return {"v1.0"};
+      return {"v0.8"};
     update_interval: 3600s
+  - platform: template
+    name: "CO2 Differenz Sollwert"
+    icon: "mdi:delta"
+    entity_category: diagnostic
+    lambda: |-
+      float co2 = id(co2_dummy).state;
+      float target = id(co2_target_ppm).state;
+      if (isnan(co2) || isnan(target)) {
+        return {"unavailable"};
+      }
+      float diff = co2 - target;
+      char buffer[16];
+      snprintf(buffer, sizeof(buffer), "%+.0f ppm", diff);
+      return {buffer};
+    update_interval: 10s
   - platform: wifi_info
     ip_address:
       name: "ESP IP Adresse"
@@ -685,11 +729,18 @@ switch:
     id: co2_auto
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
+    turn_off_action:
+      - switch.turn_off: co2_dose_output
   - platform: template
     name: "CO2 Dosierung"
     id: co2_dose_output
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
+    turn_on_action:
+      - lambda: |-
+          // CO2-SIMULATION (ENTFERNEN, sobald echte CO2-Hardware aktiv ist).
+          id(co2_dose_offset) += 60.0f;
+          if (id(co2_dose_offset) > 400.0f) id(co2_dose_offset) = 400.0f;
 
 # User-adjustable parameters (brightness and timings).
 number:
@@ -941,6 +992,23 @@ interval:
             id(co2_dose_output).turn_on();
           } else if (co2 > target + hysteresis) {
             id(co2_dose_output).turn_off();
+          }
+  - interval: 10min
+    then:
+      - lambda: |-
+          // CO2-SIMULATION (ENTFERNEN, sobald echte CO2-Hardware aktiv ist).
+          uint32_t now = millis();
+          if (id(co2_last_dose_check_ms) == 0) {
+            id(co2_last_dose_check_ms) = now;
+            return;
+          }
+          if (now - id(co2_last_dose_check_ms) < 600000UL) {
+            return;
+          }
+          id(co2_last_dose_check_ms) = now;
+          if (id(co2_dose_output).state) {
+            id(co2_dose_offset) += 80.0f;
+            if (id(co2_dose_offset) > 500.0f) id(co2_dose_offset) = 500.0f;
           }
 
 # Serial/logger configuration.

@@ -20,16 +20,24 @@ abwärtskompatibel garantiert.
 - AUTO‑Zeitübernahme über `input_datetime`‑Attribute (hour/minute);
   SA/SU‑Startzeit‑Slider entfernt.
 - Lokales Web‑Dashboard für Anzeige‑Only ergänzt.
+- CO2‑Regelung mit Sollwert/Hysterese, Automatik‑Schalter und Ausgang.
+- CO2‑Differenz‑Textsensor für Sollwert‑Abweichung.
 
-### Hydroknoten (v2.3 vs v2.2)
-- Experimenteller Zusatz‑Offset auf den bestehenden EC/pH‑Simulationen nach Dosierungen.
-- Modulation ist gedämpft und klingt aus; die Basis‑Simulation bleibt unverändert.
-- Warnung: Simulation nur für Entwicklung/Debug, nicht für reale Nährstoffsteuerung.
+### Hydroknoten (v2.5 vs v2.4)
+- Temperatur‑Offset für Wassertemperatur ergänzt.
+- Versionstexte mit `v`‑Prefix.
 
 ### Dosierknoten (v2.7 vs v2.6)
 - Tag/Nacht‑Sperre auf Basis des Zeltlampen‑Status ergänzt.
 - EC‑ und pH‑Dosierung werden in der Nachtphase pausiert.
 - Hinweis: experimentelle Logik, nicht final kalibriert.
+- Versions‑Textsensoren für Dosierung und pH‑Regelung ergänzt.
+
+### Tankknoten (v1.2 vs v1.1)
+- Manuelle Level‑Eingänge (1–6) als Schalter für Simulation.
+- Füllstand in L/% aus Level‑Eingängen berechnet.
+- Befüll‑Taster (Start/Stop) für Haupttank und RDWC.
+- Zeitstempel: letzter Voll‑ und Leer‑Stand pro Tank.
 
 ### Dosierknoten (v2.4 vs v2.3)
 - Dosierabläufe auf nicht‑blockierende Script‑Schritte umgestellt.

@@ -1009,6 +1009,18 @@ text_sensor:
     lambda: |-
       return {"v2.7"};
     update_interval: 60s
+  - platform: template
+    name: "Dosierung Version"
+    entity_category: diagnostic
+    lambda: |-
+      return {"v0.7"};
+    update_interval: 3600s
+  - platform: template
+    name: "pH Regelung Version"
+    entity_category: diagnostic
+    lambda: |-
+      return {"v0.7"};
+    update_interval: 3600s
 
   - platform: template
     name: "Dosierung Status Zusammenfassung"

@@ -10,6 +10,10 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 - ➖ Entfernte SA/SU‑Startzeit‑Slider (Minuten).
 - 🔄 SA/SU‑Phasenberechnung relativ zum AUTO‑Zeitfenster mit Überlappungsschutz.
 - ➕ Lokales Web‑Dashboard (Anzeige‑Only).
+- ➕ CO2‑Regelung (Sollwert + Hysterese) mit Automatik‑Schalter und Ausgang.
+- ➕ CO2‑Differenz‑Textsensor (Sollwert‑Abweichung).
+- 🔄 CO2‑Simulation reagiert auf Dosierung (mit Ausklingen; später Hardware‑Ersatz).
+- 🔧 Logger auf INFO gesetzt.
 
 ### Added
 - Textsensoren: `AUTO Einschaltzeit`, `AUTO Ausschaltzeit`, `Geraetename`,
@@ -17,17 +21,41 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
   `SA Startzeit`, `SU Startzeit`.
 - Webserver für lokales Dashboard.
 - Interne HA‑Zeit‑Eingänge (hour/minute) zur Minutenbasis‑Übernahme.
+- CO2‑Automatik: `CO2 Automatik`, `CO2 Dosierung`, `CO2 Sollwert`, `CO2 Hysterese`.
+- Textsensor: `CO2 Differenz Sollwert`.
 
 ### Changed
 - SA/SU‑Startzeiten werden nur noch angezeigt (Automatik‑Status), keine Eingabe‑Slider.
 - SA/SU‑Phasenlogik an das AUTO‑Zeitfenster gekoppelt.
 - AUTO‑Zeitübernahme ohne Text‑Parsing.
+- CO2‑Simulation mit schnellerem Verlauf und Dosier‑Offset.
 
 ### Fixed
 - Keine dokumentierten Änderungen.
 
 ### Nicht geändert
 - Licht‑Entität, AUTO/MANUELL‑Schalter und SA/SU‑Dauer‑Slider bleiben erhalten.
+
+## v1.2 (beta) – Tankknoten (Datum: nicht dokumentiert)
+Verglichen mit Version: v1.1  
+Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
+
+### Änderungen & Erweiterungen
+- ➕ Manuelle Level‑Eingänge (Level 1–6) als Schalter.
+- ➕ Füllstand in L/% aus Level‑Eingängen berechnet.
+- ➕ Befüll‑Taster (Start/Stop) für Haupttank und RDWC.
+- ➕ Not‑Aus und Leckage‑Kontakt integriert.
+- ➕ Zeitstempel: letzter Voll‑ und Leer‑Stand pro Tank.
+
+### Added
+- Textsensoren: `Tankregelung RDWC Version`, `Tankregelung Haupttank Version`.
+- Zeitstempel‑Sensoren: `Haupttank Zuletzt Voll/Leer`, `RDWC Zuletzt Voll/Leer`.
+
+### Changed
+- Versionswerte in HA mit `v`‑Prefix.
+
+### Fixed
+- Keine dokumentierten Änderungen.
 
 ## v2.7 (experimentell) – Dosierungsknoten (Datum: nicht dokumentiert)
 Verglichen mit Version: v2.6  
@@ -36,10 +64,12 @@ Entwicklungsstatus: experimentell, nicht kalibriert.
 ### Added
 - Tag/Nacht‑Statusanzeige (Quelle: Zeltlampe).
 - Blockgrund‑Texte für Nachtphase (EC/pH).
+- Textsensoren: `Dosierung Version`, `pH Regelung Version`.
 
 ### Changed
 - Automatik startet Dosierungen nur in Tagphase.
 - EC‑ und pH‑Dosierung stoppen in der Nachtphase.
+- Versionswerte in HA mit `v`‑Prefix.
 
 ### Fixed
 - Keine dokumentierten Änderungen.
@@ -106,6 +136,19 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 
 ### Nicht geändert
 - Entitäten, IDs und Pumpen‑Zuordnung bleiben unverändert.
+
+## v2.5 (beta) – Hydroknoten (Datum: nicht dokumentiert)
+Verglichen mit Version: v2.4  
+Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
+
+### Added
+- `Hydroknoten Temperatur Offset` (korrigiert die Wassertemperatur).
+
+### Changed
+- Versionswerte in HA mit `v`‑Prefix.
+
+### Fixed
+- Keine dokumentierten Änderungen.
 
 ## v2.3 (experimentell) – Hydroknoten (Datum: nicht dokumentiert)
 Verglichen mit Version: v2.2  

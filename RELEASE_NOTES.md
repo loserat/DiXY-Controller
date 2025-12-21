@@ -4,16 +4,32 @@
   - Autarke Lichtsteuerung mit State-Machine und SA/SU-Rampen weiter optimiert
   - Health-Monitoring für I2C-Sensoren vorbereitet
   - Web-Dashboard für lokale Sensoranzeige ergänzt
+  - CO2-Automatik (Sollwert/Hysterese) mit Schaltausgang
+  - CO2-Differenz-Textsensor
 - **Changed:**
   - Home Assistant-Integration für alle Lichtparameter und Moduswahl
   - Versionierung und Diagnose-Entität für Firmwarestatus
+  - CO2-Simulation reagiert auf Dosierung (mit Ausklingen; später Hardware-Ersatz)
 
 **Hydroknoten**
 - **Added:**
   - Logger und Boot-Meldung integriert
+  - Temperatur-Offset für Wassertemperatur
 - **Changed:**
   - WiFi/OTA/Logger/Projekt-Metadaten konsolidiert
   - API-Verschlüsselung und Fallback-AP verbessert
+
+**Tankknoten**
+- **Added:**
+  - Manuelle Level-Eingänge (1–6) als Schalter
+  - Befüll-Taster (Start/Stop) für Haupttank und RDWC
+  - Zeitstempel: letzter Voll/Leer-Stand pro Tank
+- **Changed:**
+  - Füllstand in L/% aus Level-Eingängen
+
+**Dosierknoten**
+- **Added:**
+  - Versions-Textsensoren für Dosierung und pH-Regelung
 
 ---
 

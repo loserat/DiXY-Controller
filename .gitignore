@@ -46,6 +46,16 @@ secrets_sim_local.yaml
 *.orig
 backups_*/
 
+# Nur aktuelle Knoten-Versionen in Git behalten
+ESP32-Knoten/tankknoten/tankknoten_v*.yaml
+!ESP32-Knoten/tankknoten/tankknoten_v1.3.yaml
+ESP32-Knoten/zeltsensor/v2/zeltsensor_v*.yaml
+!ESP32-Knoten/zeltsensor/v2/zeltsensor_v2.8.yaml
+ESP32-Knoten/hydroknoten/hydroknoten_v*.yaml
+!ESP32-Knoten/hydroknoten/hydroknoten_v2.5.yaml
+ESP32-Knoten/dosierung/dosierung_*.yaml
+!ESP32-Knoten/dosierung/dosierung_2.7.yaml
+
 # OS-spezifisch
 Thumbs.db
 *.tmp
