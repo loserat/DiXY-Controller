@@ -1,10 +1,34 @@
-echo "Verfügbare ESPHome YAMLs:"
-
 #!/bin/bash
 # Interaktives Flash-Script für DiXY ESPHome-Knoten (Ordner- und YAML-Auswahl)
 set -e
 
 cd "$(dirname "$0")/.."
+
+# secrets.yaml in alle ESP-Knoten-Ordner kopieren
+SECRETS_SRC="secrets.yaml"
+if [ ! -f "$SECRETS_SRC" ]; then
+  echo "secrets.yaml nicht gefunden: $SECRETS_SRC"
+  exit 1
+fi
+
+mapfile -t SECRET_DIRS < <(
+  find ESP32-Knoten -type f -name "*.yaml" \
+    ! -name "secrets.yaml" \
+    ! -name "secrets.yaml.example" \
+    ! -path "*/.esphome/*" \
+    -printf "%h\n" | sort -u
+)
+if [ "${#SECRET_DIRS[@]}" -eq 0 ]; then
+  echo "Keine ESP-Knoten-Ordner mit YAMLs gefunden!"
+  exit 1
+fi
+
+for dir in "${SECRET_DIRS[@]}"; do
+  cp "$SECRETS_SRC" "$dir/secrets.yaml"
+done
+
+echo "secrets.yaml kopiert nach ${#SECRET_DIRS[@]} Ordnern."
+echo "Verfügbare ESPHome YAMLs:"
 
 # Knoten-Ordner finden
 KNOTEN_DIRS=$(find ESP32-Knoten -mindepth 1 -maxdepth 1 -type d | sort)
