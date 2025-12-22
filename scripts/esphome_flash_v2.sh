@@ -11,23 +11,28 @@ if [ ! -f "$SECRETS_SRC" ]; then
   exit 1
 fi
 
-mapfile -t SECRET_DIRS < <(
+SECRET_DIRS=$(
   find ESP32-Knoten -type f -name "*.yaml" \
     ! -name "secrets.yaml" \
     ! -name "secrets.yaml.example" \
     ! -path "*/.esphome/*" \
-    -printf "%h\n" | sort -u
+    -print | sed 's|/[^/]*$||' | sort -u
 )
-if [ "${#SECRET_DIRS[@]}" -eq 0 ]; then
+if [ -z "$SECRET_DIRS" ]; then
   echo "Keine ESP-Knoten-Ordner mit YAMLs gefunden!"
   exit 1
 fi
 
-for dir in "${SECRET_DIRS[@]}"; do
+COUNT=0
+while IFS= read -r dir; do
+  [ -z "$dir" ] && continue
   cp "$SECRETS_SRC" "$dir/secrets.yaml"
-done
+  COUNT=$((COUNT + 1))
+done <<EOF
+$SECRET_DIRS
+EOF
 
-echo "secrets.yaml kopiert nach ${#SECRET_DIRS[@]} Ordnern."
+echo "secrets.yaml kopiert nach $COUNT Ordnern."
 echo "Verfügbare ESPHome YAMLs:"
 
 # Knoten-Ordner finden
