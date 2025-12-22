@@ -83,10 +83,18 @@ globals:
     type: uint32_t
     restore_value: no
     initial_value: '0'
-  - id: co2_last_dose_check_ms
+  - id: co2_pulse_start_ms
     type: uint32_t
     restore_value: no
     initial_value: '0'
+  - id: co2_last_pulse_end_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: co2_boot_initialized
+    type: bool
+    restore_value: no
+    initial_value: 'false'
 
 # MCU target and framework.
 esp32:
@@ -257,18 +265,29 @@ sensor:
     unit_of_measurement: "ppm"
     accuracy_decimals: 0
     state_class: measurement
-    update_interval: 30s
+    update_interval: 10s
     lambda: |-
       // CO2-SIMULATION (ENTFERNEN, sobald echte CO2-Hardware aktiv ist).
-      const float min_val = 400.0f;
+      const float min_val = 0.0f;
       const float max_val = 2000.0f;
-      const float mid = (min_val + max_val) * 0.5f;
-      const float amp = (max_val - min_val) * 0.5f;
+      const float base_min = 0.0f;
+      const float base_max = 600.0f;
+      const float mid = (base_min + base_max) * 0.5f;
+      const float amp = (base_max - base_min) * 0.5f;
       const uint32_t period_ms = 900000UL;  // 15 min, schneller als andere Sensoren
       float phase = (float)(millis() % period_ms) / (float)period_ms;
-      float base = mid + amp * sinf(phase * 2.0f * 3.1415926f);
+      // Start bei ~400 ppm und fallend, danach sinus zwischen 0..600.
+      const float start_phase = 3.1415926f - asinf(1.0f / 3.0f);
+      float base = mid + amp * sinf(phase * 2.0f * 3.1415926f + start_phase);
 
       uint32_t now = millis();
+      if (!id(co2_boot_initialized)) {
+        // Startwert nach Neustart auf ~400 ppm setzen.
+        float offset = id(co2_offset_enabled).state ? id(co2_offset_ppm).state : 0.0f;
+        id(co2_dose_offset) = 400.0f - base - offset;
+        id(co2_offset_last_ms) = now;
+        id(co2_boot_initialized) = true;
+      }
       if (id(co2_offset_last_ms) == 0) {
         id(co2_offset_last_ms) = now;
       } else {
@@ -279,10 +298,39 @@ sensor:
         id(co2_offset_last_ms) = now;
       }
 
-      float co2 = base + id(co2_dose_offset);
+      float offset = id(co2_offset_ppm).state;
+      float co2 = base + id(co2_dose_offset) + offset;
       if (co2 < min_val) co2 = min_val;
       if (co2 > max_val) co2 = max_val;
+      // Auf Zehner runden (immer 0 als letzte Ziffer).
+      co2 = roundf(co2 / 10.0f) * 10.0f;
       return co2;
+  - platform: template
+    name: "CO2 Wartezeit bis naechste Dosierung"
+    id: co2_wait_seconds
+    unit_of_measurement: "s"
+    accuracy_decimals: 0
+    state_class: measurement
+    update_interval: 1s
+    lambda: |-
+      if (!id(co2_auto).state) {
+        return 0.0f;
+      }
+      if (id(co2_dose_output).state) {
+        return 0.0f;
+      }
+      if (id(co2_last_pulse_end_ms) == 0) {
+        return 0.0f;
+      }
+      float pulse_s = id(co2_pulse_seconds).state;
+      if (pulse_s <= 0.0f) {
+        return 0.0f;
+      }
+      uint32_t now = millis();
+      float elapsed = (now - id(co2_last_pulse_end_ms)) / 1000.0f;
+      float remaining = pulse_s - elapsed;
+      if (remaining < 0.0f) remaining = 0.0f;
+      return remaining;
 
   - platform: template
     name: "VPD"
@@ -610,7 +658,7 @@ text_sensor:
     icon: "mdi:tag"
     entity_category: diagnostic
     lambda: |-
-      return {"v0.1"};
+      return {"v0.4"};
     update_interval: 3600s
   - platform: template
     name: "Lichtsteuerung Version"
@@ -630,8 +678,77 @@ text_sensor:
         return {"unavailable"};
       }
       float diff = co2 - target;
+      diff = roundf(diff / 10.0f) * 10.0f;
       char buffer[16];
       snprintf(buffer, sizeof(buffer), "%+.0f ppm", diff);
+      return {buffer};
+    update_interval: 10s
+  - platform: template
+    name: "CO2 Wert Roh"
+    icon: "mdi:cloud-outline"
+    entity_category: diagnostic
+    lambda: |-
+      float co2 = id(co2_dummy).state;
+      if (isnan(co2)) {
+        return {"unavailable"};
+      }
+      float offset = id(co2_offset_enabled).state ? id(co2_offset_ppm).state : 0.0f;
+      float raw = co2 - offset;
+      raw = roundf(raw / 10.0f) * 10.0f;
+      char buffer[16];
+      snprintf(buffer, sizeof(buffer), "%.0f ppm", raw);
+      return {buffer};
+    update_interval: 10s
+  - platform: template
+    name: "CO2 Wert Kalibriert"
+    icon: "mdi:cloud-check-outline"
+    entity_category: diagnostic
+    lambda: |-
+      float co2 = id(co2_dummy).state;
+      if (isnan(co2)) {
+        return {"unavailable"};
+      }
+      co2 = roundf(co2 / 10.0f) * 10.0f;
+      char buffer[16];
+      snprintf(buffer, sizeof(buffer), "%.0f ppm", co2);
+      return {buffer};
+    update_interval: 10s
+  - platform: template
+    name: "CO2 Debug Bedarf"
+    icon: "mdi:alert-circle-outline"
+    entity_category: diagnostic
+    lambda: |-
+      float co2 = id(co2_dummy).state;
+      float target = id(co2_target_ppm).state;
+      float hysteresis = id(co2_hysteresis_ppm).state;
+      if (isnan(co2) || isnan(target) || isnan(hysteresis)) {
+        return {"unavailable"};
+      }
+      float diff = co2 - target;
+      diff = roundf(diff / 10.0f) * 10.0f;
+      bool needed = diff < -hysteresis;
+      char buffer[96];
+      snprintf(buffer, sizeof(buffer),
+        "%s, weil Differenz=%.0f ppm",
+        needed ? "Dosierung notwendig" : "Dosierung nicht notwendig",
+        diff
+      );
+      return {buffer};
+    update_interval: 10s
+  - platform: template
+    name: "CO2 Debug Letzte Dosierung"
+    icon: "mdi:clock-outline"
+    entity_category: diagnostic
+    lambda: |-
+      if (id(co2_dose_output).state) {
+        return {"laeuft"};
+      }
+      if (id(co2_last_pulse_end_ms) == 0) {
+        return {"keine"};
+      }
+      float seconds = (millis() - id(co2_last_pulse_end_ms)) / 1000.0f;
+      char buffer[32];
+      snprintf(buffer, sizeof(buffer), "vor %.0f s", seconds);
       return {buffer};
     update_interval: 10s
   - platform: wifi_info
@@ -732,6 +849,11 @@ switch:
     turn_off_action:
       - switch.turn_off: co2_dose_output
   - platform: template
+    name: "CO2 Offset Aktiv"
+    id: co2_offset_enabled
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+  - platform: template
     name: "CO2 Dosierung"
     id: co2_dose_output
     restore_mode: RESTORE_DEFAULT_OFF
@@ -739,8 +861,17 @@ switch:
     turn_on_action:
       - lambda: |-
           // CO2-SIMULATION (ENTFERNEN, sobald echte CO2-Hardware aktiv ist).
-          id(co2_dose_offset) += 60.0f;
-          if (id(co2_dose_offset) > 400.0f) id(co2_dose_offset) = 400.0f;
+          float current = id(co2_dummy).state;
+          if (isnan(current)) {
+            current = 0.0f;
+          }
+          float next = (floorf(current / 100.0f) + 1.0f) * 100.0f;
+          float delta = next - current;
+          if (delta < 0.0f) delta = 0.0f;
+          id(co2_dose_offset) += delta;
+          if (id(co2_dose_offset) > 2000.0f) id(co2_dose_offset) = 2000.0f;
+          id(co2_pulse_start_ms) = millis();
+      - component.update: co2_dummy
 
 # User-adjustable parameters (brightness and timings).
 number:
@@ -855,10 +986,30 @@ number:
     id: co2_hysteresis_ppm
     unit_of_measurement: "ppm"
     optimistic: true
-    min_value: 100
+    min_value: 50
     max_value: 500
+    step: 50
+    initial_value: 50
+    restore_value: true
+  - platform: template
+    name: "CO2 Offset"
+    id: co2_offset_ppm
+    unit_of_measurement: "ppm"
+    optimistic: true
+    min_value: -600
+    max_value: 600
     step: 100
-    initial_value: 100
+    initial_value: 0
+    restore_value: true
+  - platform: template
+    name: "CO2 Dosierstoßdauer"
+    id: co2_pulse_seconds
+    unit_of_measurement: "s"
+    optimistic: true
+    min_value: 10
+    max_value: 60
+    step: 5
+    initial_value: 20
     restore_value: true
 
 # Main control loop for light logic.
@@ -980,35 +1131,47 @@ interval:
     then:
       - lambda: |-
           if (!id(co2_auto).state) {
+            if (id(co2_dose_output).state) {
+              id(co2_dose_output).turn_off();
+            }
             return;
           }
+
           float co2 = id(co2_dummy).state;
           if (isnan(co2)) {
             return;
           }
+
           float target = id(co2_target_ppm).state;
           float hysteresis = id(co2_hysteresis_ppm).state;
+          uint32_t now = millis();
+          uint32_t pulse_ms = (uint32_t)(id(co2_pulse_seconds).state * 1000.0f);
+          if (pulse_ms < 10000UL) pulse_ms = 10000UL;
+
+          if (id(co2_dose_output).state) {
+            // CO2-SIMULATION (ENTFERNEN, sobald echte CO2-Hardware aktiv ist).
+            if (id(co2_pulse_start_ms) == 0) {
+              id(co2_pulse_start_ms) = now;
+            }
+            if (now - id(co2_pulse_start_ms) >= pulse_ms) {
+              id(co2_dose_output).turn_off();
+              id(co2_last_pulse_end_ms) = now;
+              id(co2_pulse_start_ms) = 0;
+              id(co2_dummy).update();
+            }
+            return;
+          }
+
+          // Wartezeit nach einem Stoß = gleiche Dauer.
+          if (id(co2_last_pulse_end_ms) != 0 && (now - id(co2_last_pulse_end_ms) < pulse_ms)) {
+            return;
+          }
+
           if (co2 < target - hysteresis) {
             id(co2_dose_output).turn_on();
+            id(co2_pulse_start_ms) = now;
           } else if (co2 > target + hysteresis) {
             id(co2_dose_output).turn_off();
-          }
-  - interval: 10min
-    then:
-      - lambda: |-
-          // CO2-SIMULATION (ENTFERNEN, sobald echte CO2-Hardware aktiv ist).
-          uint32_t now = millis();
-          if (id(co2_last_dose_check_ms) == 0) {
-            id(co2_last_dose_check_ms) = now;
-            return;
-          }
-          if (now - id(co2_last_dose_check_ms) < 600000UL) {
-            return;
-          }
-          id(co2_last_dose_check_ms) = now;
-          if (id(co2_dose_output).state) {
-            id(co2_dose_offset) += 80.0f;
-            if (id(co2_dose_offset) > 500.0f) id(co2_dose_offset) = 500.0f;
           }
 
 # Serial/logger configuration.

@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v2.8 (beta) – Zeltsensor (Datum: nicht dokumentiert)
+## v2.8 (beta) – Zeltsensor (Datum: 2025-12-22)
 Verglichen mit Version: v2.7  
 Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 
@@ -14,6 +14,7 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 - ➕ CO2‑Differenz‑Textsensor (Sollwert‑Abweichung).
 - 🔄 CO2‑Simulation reagiert auf Dosierung (mit Ausklingen; später Hardware‑Ersatz).
 - 🔧 Logger auf INFO gesetzt.
+- 🔄 CO2‑Dosierung jetzt in einstellbaren Stößen (Stoßdauer = Wartezeit).
 
 ### Added
 - Textsensoren: `AUTO Einschaltzeit`, `AUTO Ausschaltzeit`, `Geraetename`,
@@ -23,6 +24,7 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 - Interne HA‑Zeit‑Eingänge (hour/minute) zur Minutenbasis‑Übernahme.
 - CO2‑Automatik: `CO2 Automatik`, `CO2 Dosierung`, `CO2 Sollwert`, `CO2 Hysterese`.
 - Textsensor: `CO2 Differenz Sollwert`.
+- Number: `CO2 Dosierstoßdauer`.
 
 ### Changed
 - SA/SU‑Startzeiten werden nur noch angezeigt (Automatik‑Status), keine Eingabe‑Slider.
@@ -36,7 +38,7 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 ### Nicht geändert
 - Licht‑Entität, AUTO/MANUELL‑Schalter und SA/SU‑Dauer‑Slider bleiben erhalten.
 
-## v1.2 (beta) – Tankknoten (Datum: nicht dokumentiert)
+## v1.2 (beta) – Tankknoten (Datum: 2025-12-22)
 Verglichen mit Version: v1.1  
 Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 
@@ -57,7 +59,7 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 ### Fixed
 - Keine dokumentierten Änderungen.
 
-## v2.7 (experimentell) – Dosierungsknoten (Datum: nicht dokumentiert)
+## v2.7 (experimentell) – Dosierungsknoten (Datum: 2025-12-22)
 Verglichen mit Version: v2.6  
 Entwicklungsstatus: experimentell, nicht kalibriert.
 
@@ -112,7 +114,7 @@ Entwicklungsstatus: experimentell, nicht kalibriert.
 ### Notes
 - Zwischenstände v2.2–v2.5 sind in den Release Notes nur zusammengefasst dokumentiert.
 
-## v2.4 (beta) – Dosierungsknoten (Datum: nicht dokumentiert)
+## v2.4 (beta) – Dosierungsknoten (Datum: 2025-12-22)
 Verglichen mit Version: v2.3  
 Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 
@@ -137,7 +139,7 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 ### Nicht geändert
 - Entitäten, IDs und Pumpen‑Zuordnung bleiben unverändert.
 
-## v2.5 (beta) – Hydroknoten (Datum: nicht dokumentiert)
+## v2.5 (beta) – Hydroknoten (Datum: 2025-12-22)
 Verglichen mit Version: v2.4  
 Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 
@@ -150,7 +152,7 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 ### Fixed
 - Keine dokumentierten Änderungen.
 
-## v2.3 (experimentell) – Hydroknoten (Datum: nicht dokumentiert)
+## v2.3 (experimentell) – Hydroknoten (Datum: 2025-12-22)
 Verglichen mit Version: v2.2  
 Entwicklungsstatus: experimentell, nicht kalibriert.
 
@@ -176,7 +178,7 @@ Entwicklungsstatus: experimentell, nicht kalibriert.
 ### Notes
 - Simulation ist ein Debug‑/Visualisierungswerkzeug und kein Ersatz für echte Sensorik.
 
-## v2.2 (beta) – Hydroknoten (Datum: nicht dokumentiert)
+## v2.2 (beta) – Hydroknoten (Datum: 2025-12-22)
 Verglichen mit Version: v2.1  
 Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 

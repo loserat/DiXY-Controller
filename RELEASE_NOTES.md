@@ -1,4 +1,4 @@
-### v2.8 (Release Date: 2025-12-20)
+### v2.8 (Release Date: 2025-12-22)
 **Zeltsensor**
 - **Added:**
   - Autarke Lichtsteuerung mit State-Machine und SA/SU-Rampen weiter optimiert

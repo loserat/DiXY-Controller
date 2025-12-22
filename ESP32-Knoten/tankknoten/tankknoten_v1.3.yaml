@@ -3,11 +3,11 @@ esphome:
   comment: "Tankknoten: Haupttank + RDWC-Level (6 Stufen je Tank), manuelle Aktoren."
   project:
     name: "loserat.dixy_tankknoten"
-    version: "1.3"
+    version: "1.4"
   on_boot:
     priority: -100.0
     then:
-      - logger.log: "Tankknoten gestartet. Version 1.3"
+      - logger.log: "Tankknoten gestartet. Version 1.4"
 esp32:
   board: esp32dev
   framework:
@@ -82,7 +82,6 @@ binary_sensor:
     lambda: |-
       return id(main_lvl_6_sim).state;
     on_press:
-      - switch.turn_off: main_fill_relay
       - lambda: |-
           auto now = id(ha_time).now();
           if (now.is_valid()) {
@@ -126,7 +125,6 @@ binary_sensor:
     lambda: |-
       return id(rdwc_lvl_6_sim).state;
     on_press:
-      - switch.turn_off: rdwc_fill_relay
       - lambda: |-
           auto now = id(ha_time).now();
           if (now.is_valid()) {
@@ -144,7 +142,8 @@ binary_sensor:
       - delayed_on: 50ms
       - delayed_off: 500ms
     on_press:
-      - switch.turn_on: emergency_stop
+      - switch.turn_off: main_fill_relay
+      - switch.turn_off: rdwc_fill_relay
     on_release:
       - logger.log: "Leckage Kontakt frei"
   - platform: template
@@ -152,7 +151,7 @@ binary_sensor:
     id: leak_guard
     device_class: safety
     lambda: |-
-      return id(emergency_stop).state;
+      return id(leak_contact).state;
   - platform: template
     name: "Haupttank Ventil Status"
     device_class: opening
@@ -174,7 +173,6 @@ switch:
       - if:
           condition:
             or:
-              - binary_sensor.is_on: main_lvl_6
               - switch.is_on: emergency_stop
           then:
             - switch.turn_off: main_fill_relay
@@ -187,7 +185,6 @@ switch:
       - if:
           condition:
             or:
-              - binary_sensor.is_on: rdwc_lvl_6
               - switch.is_on: emergency_stop
           then:
             - switch.turn_off: rdwc_fill_relay
@@ -239,8 +236,6 @@ switch:
     id: main_lvl_6_sim
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
-    on_turn_on:
-      - switch.turn_off: main_fill_relay
 
   - platform: template
     name: "RDWC Level 1 Eingang"
@@ -272,8 +267,6 @@ switch:
     id: rdwc_lvl_6_sim
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
-    on_turn_on:
-      - switch.turn_off: rdwc_fill_relay
 
   - platform: template
     name: "EC Temperaturkompensation"
@@ -577,17 +570,17 @@ text_sensor:
     name: "Tankknoten Version"
     entity_category: diagnostic
     lambda: |-
-      return {"v1.3"};
+      return {"v1.4"};
     update_interval: 3600s
   - platform: template
     name: "Tankregelung RDWC Version"
     entity_category: diagnostic
     lambda: |-
-      return {"v0.3"};
+      return {"v0.4"};
     update_interval: 3600s
   - platform: template
     name: "Tankregelung Haupttank Version"
     entity_category: diagnostic
     lambda: |-
-      return {"v0.3"};
+      return {"v0.4"};
     update_interval: 3600s
