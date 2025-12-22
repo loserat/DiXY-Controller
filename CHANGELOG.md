@@ -69,15 +69,51 @@ Verglichen mit Version: v1.3
 Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 
 ### Änderungen & Erweiterungen
-- 🔄 Befüllen bleibt manuell schaltbar (Level 6 erzwingt kein Auto‑Aus mehr).
-- 🔄 Leckage‑Kontakt schaltet nur Ventil/Pumpe aus (kein Not‑Aus‑Latch).
+- 🔄 Leckage‑Kontakt als Simulation (Schalter) statt GPIO; schaltet nur Ventil/Pumpe.
+- 🔄 Spülautomatik als Button (Trigger) mit Ablauf:
+  Haupttank bis Level 4 → Wartezeit → RDWC bis Level 4.
+- 🔄 Spülautomatik prüft RDWC‑Start: nur wenn RDWC unter Level 2 ist.
+- 🔄 Spülautomatik nutzt ausschließlich Level‑Eingangsschalter (`*_sim`) als Quelle.
+- 🔄 Spülautomatik: wenn Haupttank Level 4 bereits erreicht ist, startet RDWC ohne Wartezeit.
+- 🔄 Spülautomatik stoppt bei Not‑Aus oder Leckage.
+- 🔄 Trockenlaufschutz: RDWC‑Pumpe aus, wenn Haupttank Level 1 abfällt.
+- 🔄 Simulation: Level‑Eingänge steigen in der Spülautomatik automatisch bis Level 4.
+- 🔄 Haupttank‑Simulation wird beim Start der Spülautomatik zurückgesetzt (RDWC bleibt).
+- 🔄 Log‑Spam reduziert (Schalten nur bei Zustandswechsel).
 - 🔄 Versionswerte aktualisiert.
+- ➕ Automatik 1 (Spülen): Tank bis Level 4, Wartezeit, RDWC bis Level 4.
+- 🔄 Trockenlaufschutz: RDWC‑Pumpe stoppt, wenn Haupttank Level 1 abfällt.
+
+### Ablauf (ASCII)
+Automatik 1 (Spülen):
+  [Start: Befuellungsautomatik ON]
+          |
+          v
+  Haupttank füllen -> bis Level 4
+          |
+          v
+  Wartezeit (Slider)
+          |
+          v
+  RDWC pumpen -> bis Level 4
+          |
+          v
+        Ende
+
+Sicherheiten:
+  Leckage Kontakt -> Ventil + Pumpe AUS
+  Not-Aus -> Ventil + Pumpe AUS
+  Haupttank Level 1 fällt ab -> RDWC Pumpe AUS
 
 ### Added
-- Keine neuen Entitäten.
+- Button: `Spuelautomatik` (Start/Trigger).
+- Number: `Spuelautomatik Wartezeit (s)` (10–60 s).
+- Button: `Test Reset` (setzt Simulation/Automatik auf 0).
+- Textsensor: `Spuelautomatik Version` (v0.1).
+- Switch: `Leckage Kontakt Eingang` (Simulation).
 
 ### Changed
-- Keine weiteren Änderungen.
+- Umbenennung `Befuellungsautomatik` → `Spuelautomatik`.
 
 ### Fixed
 - Keine dokumentierten Änderungen.

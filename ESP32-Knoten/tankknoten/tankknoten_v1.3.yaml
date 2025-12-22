@@ -14,7 +14,7 @@ esp32:
     type: arduino
 
 logger:
-  level: info
+  level: Debug
 
 wifi:
   ssid: !secret wifi_ssid
@@ -51,6 +51,7 @@ binary_sensor:
     lambda: |-
       return id(main_lvl_1_sim).state;
     on_release:
+      - switch.turn_off: rdwc_fill_relay
       - lambda: |-
           auto now = id(ha_time).now();
           if (now.is_valid()) {
@@ -132,17 +133,12 @@ binary_sensor:
           if (now.is_valid()) {
             id(rdwc_last_full_ts) = now.timestamp;
           }
-  - platform: gpio
+  - platform: template
     name: "Leckage Kontakt"
     id: leak_contact
     device_class: moisture
-    pin:
-      number: ${leak_guard_pin}
-      mode: INPUT
-      inverted: true
-    filters:
-      - delayed_on: 50ms
-      - delayed_off: 500ms
+    lambda: |-
+      return id(leak_contact_sim).state;
     on_press:
       - switch.turn_off: main_fill_relay
       - switch.turn_off: rdwc_fill_relay
@@ -156,9 +152,8 @@ binary_sensor:
       return id(leak_contact).state;
   - platform: template
     name: "Haupttank Ventil Status"
-    device_class: opening
     lambda: |-
-      return id(main_fill_relay).state;
+      return id(main_fill_relay).state ? "geoeffnet" : "geschlossen";
   - platform: template
     name: "RDWC Pumpe Status"
     device_class: running
@@ -205,13 +200,12 @@ switch:
       - switch.turn_off: main_fill_relay
       - switch.turn_off: rdwc_fill_relay
     turn_off_action:
-      - logger.log: "Not-Aus aufgehoben. Automatik darf wieder schalten."
+      - logger.log: "Not-Aus aufgehoben. Spuelautomatik darf wieder schalten."
   - platform: template
-    name: "Befuellungsautomatik"
-    id: fill_automation_enabled
+    name: "Leckage Kontakt Eingang"
+    id: leak_contact_sim
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
-
   - platform: template
     name: "Haupttank Level 1 Eingang"
     id: main_lvl_1_sim
@@ -244,7 +238,6 @@ switch:
     optimistic: true
     on_turn_on:
       - switch.turn_off: main_fill_relay
-
   - platform: template
     name: "RDWC Level 1 Eingang"
     id: rdwc_lvl_1_sim
@@ -277,12 +270,90 @@ switch:
     optimistic: true
     on_turn_on:
       - switch.turn_off: rdwc_fill_relay
-
   - platform: template
     name: "EC Temperaturkompensation"
     id: ec_temp_comp_enabled
     restore_mode: RESTORE_DEFAULT_ON
     optimistic: true
+button:
+  - platform: template
+    name: "Spuelautomatik"
+    id: spuel_automation_trigger
+    on_press:
+      - lambda: |-
+          if (id(automation_phase) == 0) {
+            id(automation_phase) = 1;
+            id(automation_wait_start_ms) = 0;
+            id(spuel_rdwc_started) = false;
+            id(spuel_main_sim_level) = 0;
+            id(spuel_rdwc_sim_level) = 0;
+            id(spuel_main_sim_last_ms) = 0;
+            id(spuel_rdwc_sim_last_ms) = 0;
+            int target = (int) id(spuel_main_target_level).state;
+            if (target < 2) target = 2;
+            if (target > 5) target = 5;
+            bool reached = false;
+            if (target <= 2) reached = id(main_lvl_2_sim).state;
+            else if (target == 3) reached = id(main_lvl_3_sim).state;
+            else if (target == 4) reached = id(main_lvl_4_sim).state;
+            else reached = id(main_lvl_5_sim).state;
+            id(spuel_skip_wait) = reached;
+          }
+      - if:
+          condition:
+            and:
+              - lambda: 'return !(id(main_lvl_4).state || id(main_lvl_4_sim).state);'
+              - switch.is_off: emergency_stop
+              - binary_sensor.is_off: leak_contact
+          then:
+            - switch.turn_on: main_fill_relay
+  - platform: template
+    name: "Test Reset"
+    id: test_reset
+    on_press:
+      - switch.turn_off: main_fill_relay
+      - switch.turn_off: rdwc_fill_relay
+      - switch.turn_off: emergency_stop
+      - switch.turn_off: leak_contact_sim
+      - switch.turn_off: main_lvl_1_sim
+      - switch.turn_off: main_lvl_2_sim
+      - switch.turn_off: main_lvl_3_sim
+      - switch.turn_off: main_lvl_4_sim
+      - switch.turn_off: main_lvl_5_sim
+      - switch.turn_off: main_lvl_6_sim
+      - switch.turn_off: rdwc_lvl_1_sim
+      - switch.turn_off: rdwc_lvl_2_sim
+      - switch.turn_off: rdwc_lvl_3_sim
+      - switch.turn_off: rdwc_lvl_4_sim
+      - switch.turn_off: rdwc_lvl_5_sim
+      - switch.turn_off: rdwc_lvl_6_sim
+      - lambda: |-
+          id(automation_phase) = 0;
+          id(automation_wait_start_ms) = 0;
+          id(spuel_rdwc_started) = false;
+          id(spuel_skip_wait) = false;
+          id(spuel_main_sim_level) = 0;
+          id(spuel_rdwc_sim_level) = 0;
+          id(spuel_main_sim_last_ms) = 0;
+          id(spuel_rdwc_sim_last_ms) = 0;
+          id(main_last_full_ts) = 0;
+          id(main_last_low_ts) = 0;
+          id(rdwc_last_full_ts) = 0;
+          id(rdwc_last_low_ts) = 0;
+  - platform: template
+    name: "RDWC Reset"
+    id: rdwc_reset
+    on_press:
+      - switch.turn_off: rdwc_lvl_1_sim
+      - switch.turn_off: rdwc_lvl_2_sim
+      - switch.turn_off: rdwc_lvl_3_sim
+      - switch.turn_off: rdwc_lvl_4_sim
+      - switch.turn_off: rdwc_lvl_5_sim
+      - switch.turn_off: rdwc_lvl_6_sim
+      - lambda: |-
+          id(spuel_rdwc_started) = false;
+          id(spuel_rdwc_sim_level) = 0;
+          id(spuel_rdwc_sim_last_ms) = 0;
 
 globals:
   - id: main_last_full_ts
@@ -300,6 +371,42 @@ globals:
   - id: rdwc_last_low_ts
     type: uint32_t
     restore_value: true
+    initial_value: '0'
+  - id: automation_phase
+    type: int
+    restore_value: false
+    initial_value: '0'
+  - id: automation_wait_start_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: spuel_rdwc_started
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: spuel_main_sim_level
+    type: int
+    restore_value: false
+    initial_value: '0'
+  - id: spuel_rdwc_sim_level
+    type: int
+    restore_value: false
+    initial_value: '0'
+  - id: spuel_main_sim_last_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: spuel_rdwc_sim_last_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: spuel_skip_wait
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: spuel_last_result
+    type: int
+    restore_value: false
     initial_value: '0'
 
 number:
@@ -335,6 +442,34 @@ number:
     step: 0.1
     initial_value: 0.0
     restore_value: true
+  - platform: template
+    name: "Spuelautomatik Ziellevel Haupttank"
+    id: spuel_main_target_level
+    optimistic: true
+    min_value: 2
+    max_value: 5
+    step: 1
+    initial_value: 4
+    restore_value: true
+  - platform: template
+    name: "Spuelautomatik Ziellevel RDWC"
+    id: spuel_rdwc_target_level
+    optimistic: true
+    min_value: 2
+    max_value: 5
+    step: 1
+    initial_value: 4
+    restore_value: true
+  - platform: template
+    name: "Spuelautomatik Wartezeit (s)"
+    id: spuel_automation_wait_seconds
+    unit_of_measurement: "s"
+    optimistic: true
+    min_value: 10
+    max_value: 60
+    step: 10
+    initial_value: 10
+    restore_value: true
 
 interval:
   - interval: 1s
@@ -353,6 +488,190 @@ interval:
               - switch.is_on: rdwc_lvl_6_sim
           then:
             - switch.turn_off: rdwc_fill_relay
+      - lambda: |-
+          // Spuelautomatik: Haupttank bis Ziellevel -> warten -> RDWC bis Ziellevel.
+          if (id(automation_phase) == 0) {
+            return;
+          }
+          if (id(emergency_stop).state || id(leak_contact).state) {
+            id(main_fill_relay).turn_off();
+            id(rdwc_fill_relay).turn_off();
+            id(automation_phase) = 0;
+            id(automation_wait_start_ms) = 0;
+            id(spuel_main_sim_last_ms) = 0;
+            id(spuel_rdwc_sim_last_ms) = 0;
+            return;
+          }
+
+          int main_target = (int) id(spuel_main_target_level).state;
+          if (main_target < 2) main_target = 2;
+          if (main_target > 5) main_target = 5;
+          int rdwc_target = (int) id(spuel_rdwc_target_level).state;
+          if (rdwc_target < 2) rdwc_target = 2;
+          if (rdwc_target > 5) rdwc_target = 5;
+
+          auto level_reached = [&](int target, bool is_main) -> bool {
+            if (is_main) {
+              if (target <= 2) return id(main_lvl_2_sim).state;
+              if (target == 3) return id(main_lvl_3_sim).state;
+              if (target == 4) return id(main_lvl_4_sim).state;
+              return id(main_lvl_5_sim).state;
+            }
+            if (target <= 2) return id(rdwc_lvl_2_sim).state;
+            if (target == 3) return id(rdwc_lvl_3_sim).state;
+            if (target == 4) return id(rdwc_lvl_4_sim).state;
+            return id(rdwc_lvl_5_sim).state;
+          };
+
+          const bool main_lvl_reached = level_reached(main_target, true);
+          const bool rdwc_lvl_reached = level_reached(rdwc_target, false);
+          const uint32_t now = millis();
+          const uint32_t step_ms = 5000;
+
+          auto get_sim_level = [&](bool is_main) -> int {
+            if (is_main) {
+              if (id(main_lvl_6_sim).state) return 6;
+              if (id(main_lvl_5_sim).state) return 5;
+              if (id(main_lvl_4_sim).state) return 4;
+              if (id(main_lvl_3_sim).state) return 3;
+              if (id(main_lvl_2_sim).state) return 2;
+              if (id(main_lvl_1_sim).state) return 1;
+              return 0;
+            }
+            if (id(rdwc_lvl_6_sim).state) return 6;
+            if (id(rdwc_lvl_5_sim).state) return 5;
+            if (id(rdwc_lvl_4_sim).state) return 4;
+            if (id(rdwc_lvl_3_sim).state) return 3;
+            if (id(rdwc_lvl_2_sim).state) return 2;
+            if (id(rdwc_lvl_1_sim).state) return 1;
+            return 0;
+          };
+
+          auto set_sim_level = [&](int level, bool is_main) {
+            if (level < 1) return;
+            if (is_main) {
+              if (level >= 1) id(main_lvl_1_sim).turn_on();
+              if (level >= 2) id(main_lvl_2_sim).turn_on();
+              if (level >= 3) id(main_lvl_3_sim).turn_on();
+              if (level >= 4) id(main_lvl_4_sim).turn_on();
+              if (level >= 5) id(main_lvl_5_sim).turn_on();
+              if (level >= 6) id(main_lvl_6_sim).turn_on();
+            } else {
+              if (level >= 1) id(rdwc_lvl_1_sim).turn_on();
+              if (level >= 2) id(rdwc_lvl_2_sim).turn_on();
+              if (level >= 3) id(rdwc_lvl_3_sim).turn_on();
+              if (level >= 4) id(rdwc_lvl_4_sim).turn_on();
+              if (level >= 5) id(rdwc_lvl_5_sim).turn_on();
+              if (level >= 6) id(rdwc_lvl_6_sim).turn_on();
+            }
+          };
+
+          if (id(automation_phase) == 0) {
+            id(automation_phase) = 1;
+          }
+
+          if (id(automation_phase) == 1) {
+            if (id(rdwc_fill_relay).state) {
+              id(rdwc_fill_relay).turn_off();
+            }
+            if (!main_lvl_reached) {
+              if (!id(main_fill_relay).state) {
+                id(main_fill_relay).turn_on();
+              }
+              int current = get_sim_level(true);
+              if (id(spuel_main_sim_level) < current) {
+                id(spuel_main_sim_level) = current;
+              }
+              if (id(main_fill_relay).state) {
+                if (id(spuel_main_sim_last_ms) == 0) id(spuel_main_sim_last_ms) = now;
+                if (now - id(spuel_main_sim_last_ms) >= step_ms) {
+                  int next = id(spuel_main_sim_level) + 1;
+                  if (next <= main_target) {
+                    set_sim_level(next, true);
+                    id(spuel_main_sim_level) = next;
+                  }
+                  id(spuel_main_sim_last_ms) = now;
+                }
+              }
+            } else {
+              id(main_fill_relay).turn_off();
+              if (id(spuel_skip_wait)) {
+                id(automation_phase) = 3;
+                id(automation_wait_start_ms) = 0;
+              } else {
+                id(automation_phase) = 2;
+                id(automation_wait_start_ms) = now;
+              }
+              id(spuel_rdwc_started) = false;
+            }
+            return;
+          }
+
+          if (id(automation_phase) == 2) {
+            if (id(main_fill_relay).state) {
+              id(main_fill_relay).turn_off();
+            }
+            if (id(rdwc_fill_relay).state) {
+              id(rdwc_fill_relay).turn_off();
+            }
+            uint32_t wait_ms = (uint32_t)(id(spuel_automation_wait_seconds).state * 1000.0f);
+            if (wait_ms == 0 || (now - id(automation_wait_start_ms)) >= wait_ms) {
+              id(automation_phase) = 3;
+              id(spuel_rdwc_started) = false;
+            }
+            return;
+          }
+
+          if (id(automation_phase) == 3) {
+            if (id(main_fill_relay).state) {
+              id(main_fill_relay).turn_off();
+            }
+            const bool rdwc_lvl2 = id(rdwc_lvl_2_sim).state;
+            if (!id(spuel_rdwc_started)) {
+              if (rdwc_lvl2) {
+                if (id(rdwc_fill_relay).state) {
+                  id(rdwc_fill_relay).turn_off();
+                }
+                id(automation_phase) = 0;
+                id(automation_wait_start_ms) = 0;
+                id(spuel_main_sim_last_ms) = 0;
+                id(spuel_rdwc_sim_last_ms) = 0;
+                id(spuel_last_result) = 2;
+                return;
+              }
+              id(spuel_rdwc_started) = true;
+            }
+            if (!rdwc_lvl_reached) {
+              if (!id(rdwc_fill_relay).state) {
+                id(rdwc_fill_relay).turn_on();
+              }
+              int current = get_sim_level(false);
+              if (id(spuel_rdwc_sim_level) < current) {
+                id(spuel_rdwc_sim_level) = current;
+              }
+              if (id(rdwc_fill_relay).state) {
+                if (id(spuel_rdwc_sim_last_ms) == 0) id(spuel_rdwc_sim_last_ms) = now;
+                if (now - id(spuel_rdwc_sim_last_ms) >= step_ms) {
+                  int next = id(spuel_rdwc_sim_level) + 1;
+                  if (next <= rdwc_target) {
+                    set_sim_level(next, false);
+                    id(spuel_rdwc_sim_level) = next;
+                  }
+                  id(spuel_rdwc_sim_last_ms) = now;
+                }
+              }
+            } else {
+              if (id(rdwc_fill_relay).state) {
+                id(rdwc_fill_relay).turn_off();
+              }
+              id(automation_phase) = 0;
+              id(automation_wait_start_ms) = 0;
+              id(spuel_rdwc_started) = false;
+              id(spuel_main_sim_last_ms) = 0;
+              id(spuel_rdwc_sim_last_ms) = 0;
+              id(spuel_last_result) = 1;
+            }
+          }
 
 sensor:
   - platform: wifi_signal
@@ -477,7 +796,7 @@ sensor:
       float pct = id(main_tank_level_pct).state;
       if (id(main_tank_volume_l).state <= 0.0f) return 0.0f;
       return id(main_tank_volume_l).state * (pct / 100.0f);
-    update_interval: 30s
+    update_interval: 5s
 
   - platform: template
     name: "Haupttank Fuellstand Prozent"
@@ -492,7 +811,7 @@ sensor:
       if (id(main_lvl_2).state) return 33.3f;
       if (id(main_lvl_1).state) return 16.6f;
       return 0.0f;
-    update_interval: 30s
+    update_interval: 5s
 
   - platform: template
     name: "RDWC Fuellstand"
@@ -503,7 +822,7 @@ sensor:
       float pct = id(rdwc_tank_level_pct).state;
       if (id(rdwc_tank_volume_l).state <= 0.0f) return 0.0f;
       return id(rdwc_tank_volume_l).state * (pct / 100.0f);
-    update_interval: 30s
+    update_interval: 5s
 
   - platform: template
     name: "RDWC Fuellstand Prozent"
@@ -518,7 +837,7 @@ sensor:
       if (id(rdwc_lvl_2).state) return 33.3f;
       if (id(rdwc_lvl_1).state) return 16.6f;
       return 0.0f;
-    update_interval: 30s
+    update_interval: 5s
 
   - platform: template
     name: "Haupttank Status"
@@ -611,4 +930,23 @@ text_sensor:
     entity_category: diagnostic
     lambda: |-
       return {"v0.4"};
+    update_interval: 3600s
+  - platform: template
+    name: "Spuelautomatik Ergebnis"
+    entity_category: diagnostic
+    lambda: |-
+      switch (id(spuel_last_result)) {
+        case 1:
+          return {"Spuelvorgang abgeschlossen"};
+        case 2:
+          return {"Spuelvorgang abgebrochen (RDWC >= Level 2)"};
+        default:
+          return {"Kein Ergebnis"};
+      }
+    update_interval: 5s
+  - platform: template
+    name: "Spuelautomatik Version"
+    entity_category: diagnostic
+    lambda: |-
+      return {"v0.2"};
     update_interval: 3600s
