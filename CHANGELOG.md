@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Unreleased – Tankknoten
+### Added
+- RDWC Auto Ziellevel Slider.
+- RDWC Auto Zuletzt Befuellt (text + timestamp).
+- RDWC Auto Status (Aus/Ein/Laeuft/Beendet).
+- RDWC Automatik Version (v0.2).
+
+### Changed
+- RDWC Auto Befuellen startet erst bei Ziellevel - 2 und stoppt bei Ziellevel.
+- RDWC Auto Befuellen stoppt, wenn Haupttank Level 1 nicht anliegt.
+- Sim-Fuellstaende steigen beim manuellen Pumpen (5 s pro Level).
+
 ## v2.8 (beta) – Zeltsensor (Datum: 2025-12-22)
 Verglichen mit Version: v2.7  
 Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
@@ -70,23 +82,23 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 
 ### Änderungen & Erweiterungen
 - 🔄 Leckage‑Kontakt als Simulation (Schalter) statt GPIO; schaltet nur Ventil/Pumpe.
-- 🔄 Spülautomatik als Button (Trigger) mit Ablauf:
+- 🔄 Befüllautomatik als Button (Trigger) mit Ablauf:
   Haupttank bis Level 4 → Wartezeit → RDWC bis Level 4.
-- 🔄 Spülautomatik prüft RDWC‑Start: nur wenn RDWC unter Level 2 ist.
-- 🔄 Spülautomatik nutzt ausschließlich Level‑Eingangsschalter (`*_sim`) als Quelle.
-- 🔄 Spülautomatik: wenn Haupttank Level 4 bereits erreicht ist, startet RDWC ohne Wartezeit.
-- 🔄 Spülautomatik stoppt bei Not‑Aus oder Leckage.
+- 🔄 Befüllautomatik prüft RDWC‑Start: nur wenn RDWC unter Level 2 ist.
+- 🔄 Befüllautomatik nutzt ausschließlich Level‑Eingangsschalter (`*_sim`) als Quelle.
+- 🔄 Befüllautomatik: wenn Haupttank Level 4 bereits erreicht ist, startet RDWC ohne Wartezeit.
+- 🔄 Befüllautomatik stoppt bei Not‑Aus oder Leckage.
 - 🔄 Trockenlaufschutz: RDWC‑Pumpe aus, wenn Haupttank Level 1 abfällt.
-- 🔄 Simulation: Level‑Eingänge steigen in der Spülautomatik automatisch bis Level 4.
-- 🔄 Haupttank‑Simulation wird beim Start der Spülautomatik zurückgesetzt (RDWC bleibt).
+- 🔄 Simulation: Level‑Eingänge steigen in der Befüllautomatik automatisch bis Level 4.
+- 🔄 Haupttank‑Simulation wird beim Start der Befüllautomatik zurückgesetzt (RDWC bleibt).
 - 🔄 Log‑Spam reduziert (Schalten nur bei Zustandswechsel).
 - 🔄 Versionswerte aktualisiert.
-- ➕ Automatik 1 (Spülen): Tank bis Level 4, Wartezeit, RDWC bis Level 4.
+- ➕ Automatik 1 (Befüllen): Tank bis Level 4, Wartezeit, RDWC bis Level 4.
 - 🔄 Trockenlaufschutz: RDWC‑Pumpe stoppt, wenn Haupttank Level 1 abfällt.
 
 ### Ablauf (ASCII)
-Automatik 1 (Spülen):
-  [Start: Befuellungsautomatik ON]
+Automatik 1 (Befüllen):
+  [Start: Befuellautomatik System ON]
           |
           v
   Haupttank füllen -> bis Level 4
@@ -106,14 +118,14 @@ Sicherheiten:
   Haupttank Level 1 fällt ab -> RDWC Pumpe AUS
 
 ### Added
-- Button: `Spuelautomatik` (Start/Trigger).
-- Number: `Spuelautomatik Wartezeit (s)` (10–60 s).
+- Button: `Befuellautomatik System` (Start/Trigger).
+- Number: `Befuellautomatik System Wartezeit (s)` (10–60 s).
 - Button: `Test Reset` (setzt Simulation/Automatik auf 0).
-- Textsensor: `Spuelautomatik Version` (v0.1).
+- Textsensor: `Befuellautomatik System Version` (v0.1).
 - Switch: `Leckage Kontakt Eingang` (Simulation).
 
 ### Changed
-- Umbenennung `Befuellungsautomatik` → `Spuelautomatik`.
+- Umbenennung `Spuelautomatik` → `Befuellautomatik System`.
 
 ### Fixed
 - Keine dokumentierten Änderungen.

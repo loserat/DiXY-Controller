@@ -212,7 +212,7 @@ views:
           - type: gauge
             entity: sensor.ventilknoten_wasserstand_system
           - type: tile
-            entity: binary_sensor.ventilknoten_button_system_spulen
+            entity: binary_sensor.ventilknoten_button_system_befuellen
           - type: tile
             entity: binary_sensor.ventilknoten_button_system_leeren
           - type: tile
@@ -230,7 +230,7 @@ views:
           - type: tile
             entity: switch.ventilknoten_ventil_system_leeren
           - type: tile
-            entity: switch.ventilknoten_ventil_system_spulen
+            entity: switch.ventilknoten_ventil_system_befuellen
           - type: tile
             entity: switch.ventilknoten_ventil_tank_fullen
           - type: gauge
@@ -268,7 +268,7 @@ views:
           - type: tile
             entity: binary_sensor.ventilknoten_button_system_leeren
           - type: tile
-            entity: binary_sensor.ventilknoten_button_system_spulen
+            entity: binary_sensor.ventilknoten_button_system_befuellen
           - type: tile
             entity: binary_sensor.ventilknoten_button_tank_fullen
           - type: tile
@@ -296,7 +296,7 @@ views:
           - type: tile
             entity: switch.ventilknoten_ventil_system_leeren
           - type: tile
-            entity: switch.ventilknoten_ventil_system_spulen
+            entity: switch.ventilknoten_ventil_system_befuellen
           - type: tile
             entity: switch.ventilknoten_ventil_tank_fullen
           - type: tile
