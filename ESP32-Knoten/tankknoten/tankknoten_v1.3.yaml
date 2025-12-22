@@ -82,6 +82,7 @@ binary_sensor:
     lambda: |-
       return id(main_lvl_6_sim).state;
     on_press:
+      - switch.turn_off: main_fill_relay
       - lambda: |-
           auto now = id(ha_time).now();
           if (now.is_valid()) {
@@ -125,6 +126,7 @@ binary_sensor:
     lambda: |-
       return id(rdwc_lvl_6_sim).state;
     on_press:
+      - switch.turn_off: rdwc_fill_relay
       - lambda: |-
           auto now = id(ha_time).now();
           if (now.is_valid()) {
@@ -173,6 +175,8 @@ switch:
       - if:
           condition:
             or:
+              - binary_sensor.is_on: main_lvl_6
+              - switch.is_on: main_lvl_6_sim
               - switch.is_on: emergency_stop
           then:
             - switch.turn_off: main_fill_relay
@@ -185,6 +189,8 @@ switch:
       - if:
           condition:
             or:
+              - binary_sensor.is_on: rdwc_lvl_6
+              - switch.is_on: rdwc_lvl_6_sim
               - switch.is_on: emergency_stop
           then:
             - switch.turn_off: rdwc_fill_relay
@@ -236,6 +242,8 @@ switch:
     id: main_lvl_6_sim
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
+    on_turn_on:
+      - switch.turn_off: main_fill_relay
 
   - platform: template
     name: "RDWC Level 1 Eingang"
@@ -267,6 +275,8 @@ switch:
     id: rdwc_lvl_6_sim
     restore_mode: RESTORE_DEFAULT_OFF
     optimistic: true
+    on_turn_on:
+      - switch.turn_off: rdwc_fill_relay
 
   - platform: template
     name: "EC Temperaturkompensation"
@@ -325,6 +335,24 @@ number:
     step: 0.1
     initial_value: 0.0
     restore_value: true
+
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            or:
+              - binary_sensor.is_on: main_lvl_6
+              - switch.is_on: main_lvl_6_sim
+          then:
+            - switch.turn_off: main_fill_relay
+      - if:
+          condition:
+            or:
+              - binary_sensor.is_on: rdwc_lvl_6
+              - switch.is_on: rdwc_lvl_6_sim
+          then:
+            - switch.turn_off: rdwc_fill_relay
 
 sensor:
   - platform: wifi_signal

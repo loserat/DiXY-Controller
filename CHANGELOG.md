@@ -15,6 +15,11 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 - 🔄 CO2‑Simulation reagiert auf Dosierung (mit Ausklingen; später Hardware‑Ersatz).
 - 🔧 Logger auf INFO gesetzt.
 - 🔄 CO2‑Dosierung jetzt in einstellbaren Stößen (Stoßdauer = Wartezeit).
+- 🔄 CO2‑Simulation: Basis 0–600 ppm, Dosierung bis 2000 ppm, Start bei ~400 ppm.
+- 🔄 CO2‑Werte gerundet auf Zehner (keine Nachkommastellen).
+- 🔄 CO2‑Update‑Intervall auf 10 s gesetzt.
+- 🔄 CO2‑Hysterese min 50 ppm (Schritt 50).
+- 🔄 CO2‑Rohwert zeigt Wert ohne Offset auch bei aktivem Offset.
 
 ### Added
 - Textsensoren: `AUTO Einschaltzeit`, `AUTO Ausschaltzeit`, `Geraetename`,
@@ -55,6 +60,24 @@ Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
 
 ### Changed
 - Versionswerte in HA mit `v`‑Prefix.
+
+### Fixed
+- Keine dokumentierten Änderungen.
+
+## v1.4 (beta) – Tankknoten (Datum: 2025-12-22)
+Verglichen mit Version: v1.3  
+Entwicklungsstatus: aktiv (beta), keine Stabilitätsgarantie.
+
+### Änderungen & Erweiterungen
+- 🔄 Befüllen bleibt manuell schaltbar (Level 6 erzwingt kein Auto‑Aus mehr).
+- 🔄 Leckage‑Kontakt schaltet nur Ventil/Pumpe aus (kein Not‑Aus‑Latch).
+- 🔄 Versionswerte aktualisiert.
+
+### Added
+- Keine neuen Entitäten.
+
+### Changed
+- Keine weiteren Änderungen.
 
 ### Fixed
 - Keine dokumentierten Änderungen.
