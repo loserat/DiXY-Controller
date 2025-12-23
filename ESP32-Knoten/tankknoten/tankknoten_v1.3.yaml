@@ -152,10 +152,6 @@ binary_sensor:
     lambda: |-
       return id(leak_contact).state;
   - platform: template
-    name: "Haupttank Ventil Status"
-    lambda: |-
-      return id(main_fill_relay).state ? "geoeffnet" : "geschlossen";
-  - platform: template
     name: "RDWC Pumpe Status"
     device_class: running
     lambda: |-
@@ -1056,6 +1052,12 @@ text_sensor:
     lambda: |-
       return {"v0.4"};
     update_interval: 3600s
+  - platform: template
+    name: "Haupttank Ventil Status"
+    entity_category: diagnostic
+    lambda: |-
+      return id(main_fill_relay).state ? "geoeffnet" : "geschlossen";
+    update_interval: 5s
   - platform: template
     name: "Befuellautomatik System Ergebnis"
     entity_category: diagnostic

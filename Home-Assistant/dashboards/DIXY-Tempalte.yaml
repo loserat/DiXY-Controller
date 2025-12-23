@@ -21,185 +21,329 @@ views:
             color: '#ce4234'
           - value: 2.2
             color: '#8b1e14'
-      - type: custom:ha-vpd-chart
-        vpd_phases:
-          - upper: 0
-            className: gray-danger-zone
-            color: '#999999'
-          - lower: 0
-            upper: 0.4
-            className: under-transpiration
-            color: '#1a6c9c'
-          - lower: 0.4
-            upper: 0.8
-            className: early-veg
-            color: '#22ab9c'
-          - lower: 0.8
-            upper: 1.2
-            className: late-veg
-            color: '#9cc55b'
-          - lower: 1.2
-            upper: 1.6
-            className: mid-late-flower
-            color: '#e7c12b'
-          - lower: 1.6
-            className: danger-zone
-            color: '#ce4234'
-        rooms:
-          - humidity: sensor.zeltsensor_relative_luftfeuchte
-            name: Zelt 1
-            temperature: sensor.zeltsensor_bmp280_temperatur
-            leaf_temperature: sensor.zeltsensor_bmp280_temperatur
-        is_bar_view: false
-        min_temperature: 5
-        max_temperature: 35
-        min_humidity: 10
-        max_humidity: 90
-        min_height: 200
-        leaf_temperature_offset: 2
-        enable_tooltip: false
-        leaf_text: Blatt
-        rh_text: RLF
-        kpa_text: kPa
-        enable_axes: true
-        enable_ghostclick: true
-        enable_ghostmap: false
-        enable_triangle: false
-        enable_crosshair: true
-        enable_zoom: true
-        enable_show_always_informations: false
-        enable_legend: false
-        ghostmap_hours: 24
-        antialiasing: 5
-        unit_temperature: °C
-        air_text: Luft
-      - type: custom:mini-graph-card
-        name: EC-Wert Verlauf
-        entities:
-          - entity: sensor.hydroknoten_hydroknoten_ec_sensor
-        hours_to_show: 4
-        points_per_hour: 8
-        show:
-          labels: true
-        color_thresholds:
-          - value: 0.3
-            color: '#0f172a'
-          - value: 0.6
-            color: '#1e3a8a'
-          - value: 0.9
-            color: '#2563eb'
-          - value: 1.2
-            color: '#06b6d4'
-          - value: 1.5
-            color: '#16a34a'
-          - value: 1.8
-            color: '#22c55e'
-          - value: 2.1
-            color: '#84cc16'
-          - value: 2.4
-            color: '#facc15'
-          - value: 2.8
-            color: '#f97316'
-          - value: 3.2
-            color: '#dc2626'
-          - value: 3.6
-            color: '#7f1d1d'
-      - type: custom:mini-graph-card
-        name: PH-Wert Verlauf
-        entities:
-          - entity: sensor.hydroknoten_hydroknoten_ph_sensor
-            name: PH-IST
-        hours_to_show: 2
-        points_per_hour: 10
-        show:
-          labels: true
-        color_thresholds:
-          - value: 4.5
-            color: '#7f1d1d'
-          - value: 5
-            color: '#dc2626'
-          - value: 5.5
-            color: '#f97316'
-          - value: 5.8
-            color: '#16a34a'
-          - value: 6.2
-            color: '#84cc16'
-          - value: 6.6
-            color: '#facc15'
-          - value: 7
-            color: '#2563eb'
-          - value: 7.5
-            color: '#1e3a8a'
-      - type: custom:mini-graph-card
-        name: Temperatur-Verlauf Zelt (48h)
-        entities:
-          - entity: sensor.zeltsensor_bmp280_temperatur
-            name: IST
-        hours_to_show: 12
-        points_per_hour: 4
-        show:
-          labels: true
-      - type: custom:mini-graph-card
-        name: CO2-Verlauf SOLL/IST
-        entities:
-          - entity: sensor.zeltsensor_co2_dummy
-            name: IST
-        hours_to_show: 48
-        points_per_hour: 8
-        color_thresholds:
-          - value: 380
-            color: '#2f6fa3'
-          - value: 600
-            color: '#4fa3b6'
-          - value: 800
-            color: '#22ab9c'
-          - value: 1000
-            color: '#00cd00'
-          - value: 1200
-            color: '#19b57c'
-          - value: 1400
-            color: '#e7c12b'
-          - value: 1600
-            color: '#f29f05'
-          - value: 1800
-            color: '#ce4234'
-          - value: 2200
-            color: '#8b1e14'
-        show:
-          labels: true
-      - type: custom:mini-graph-card
-        name: Temperatur Growroom
-        entities:
-          - entity: sensor.hydroknoten_sim_sim_zelttemperatur_aussen
-            name: Growroom
-        hours_to_show: 48
-        points_per_hour: 2
-      - type: custom:mini-graph-card
-        name: Beleuchtungsverlauf (24h)
-        entities:
-          - entity: sensor.zeltsensor_zeltlampe_helligkeit
-            name: Helligkeit %
-          - entity: input_number.helligkeit_manuell
-            name: Helligkeit manuell
-        hours_to_show: 24
-        points_per_hour: 8
-        show:
-          labels: true
-      - type: custom:mini-graph-card
-        name: EC-Verlauf Dosierungssteuerung
-        entities:
-          - entity: sensor.hydroknoten_hydroknoten_ec_sensor
-            name: EC-IST
-            color: green
-          - entity: number.dosierung_ec_zielwert
-            name: EC-Zielwert
-            color: lightgreen
-        hours_to_show: 12
-        points_per_hour: 8
-        show:
-          labels: true
-    type: masonry
+    type: sections
     badges: []
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: RDWC Kreislaufsystem Zelt
+            heading_style: title
+          - type: custom:mini-graph-card
+            name: EC-Wert Verlauf
+            entities:
+              - entity: sensor.hydroknoten_hydroknoten_ec_sensor
+            hours_to_show: 4
+            points_per_hour: 8
+            show:
+              labels: true
+            color_thresholds:
+              - value: 0.3
+                color: '#0f172a'
+              - value: 0.6
+                color: '#1e3a8a'
+              - value: 0.9
+                color: '#2563eb'
+              - value: 1.2
+                color: '#06b6d4'
+              - value: 1.5
+                color: '#16a34a'
+              - value: 1.8
+                color: '#22c55e'
+              - value: 2.1
+                color: '#84cc16'
+              - value: 2.4
+                color: '#facc15'
+              - value: 2.8
+                color: '#f97316'
+              - value: 3.2
+                color: '#dc2626'
+              - value: 3.6
+                color: '#7f1d1d'
+          - type: custom:mini-graph-card
+            name: PH-Wert Verlauf
+            entities:
+              - entity: sensor.hydroknoten_hydroknoten_ph_sensor
+                name: PH-IST
+            hours_to_show: 2
+            points_per_hour: 10
+            show:
+              labels: true
+            color_thresholds:
+              - value: 4.5
+                color: '#7f1d1d'
+              - value: 5
+                color: '#dc2626'
+              - value: 5.5
+                color: '#f97316'
+              - value: 5.8
+                color: '#16a34a'
+              - value: 6.2
+                color: '#84cc16'
+              - value: 6.6
+                color: '#facc15'
+              - value: 7
+                color: '#2563eb'
+              - value: 7.5
+                color: '#1e3a8a'
+          - type: custom:mini-graph-card
+            name: EC-Verlauf Dosierungssteuerung
+            entities:
+              - entity: sensor.hydroknoten_hydroknoten_ec_sensor
+                name: EC-IST
+                color: green
+              - entity: number.dosierung_ec_zielwert
+                name: EC-Zielwert
+                color: lightgreen
+            hours_to_show: 12
+            points_per_hour: 8
+            show:
+              labels: true
+      - type: grid
+        cards:
+          - type: heading
+            heading: Sensoren im Zelt
+            heading_style: title
+          - type: custom:mini-graph-card
+            name: VPD-Wert Verlauf (48h)
+            entities:
+              - entity: sensor.vpd_ist
+                name: IST
+                icon: gauge
+            hours_to_show: 24
+            points_per_hour: 6
+            color_thresholds:
+              - value: 0.4
+                color: '#2f6fa3'
+              - value: 0.8
+                color: '#22ab9c'
+              - value: 1.2
+                color: '#00cd00'
+              - value: 1.5
+                color: '#e7c12b'
+              - value: 1.8
+                color: '#ce4234'
+              - value: 2.2
+                color: '#8b1e14'
+          - type: custom:mini-graph-card
+            name: Temperatur-Verlauf Zelt (48h)
+            entities:
+              - entity: sensor.zeltsensor_bmp280_temperatur
+                name: IST
+            hours_to_show: 12
+            points_per_hour: 4
+            show:
+              labels: true
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_relative_luftfeuchte
+            grid_options:
+              columns: full
+            detail: 1
+            limits: {}
+            hours_to_show: 48
+            name: Zelt-Luftfeuchtigkeit (48h)
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_bmp280_temperatur
+            grid_options:
+              columns: full
+            detail: 1
+            limits: {}
+            hours_to_show: 48
+            name: Zelt-Innentemperatur (48h)
+          - type: custom:ha-vpd-chart
+            vpd_phases:
+              - upper: 0
+                className: gray-danger-zone
+                color: '#999999'
+              - lower: 0
+                upper: 0.4
+                className: under-transpiration
+                color: '#1a6c9c'
+              - lower: 0.4
+                upper: 0.8
+                className: early-veg
+                color: '#22ab9c'
+              - lower: 0.8
+                upper: 1.2
+                className: late-veg
+                color: '#9cc55b'
+              - lower: 1.2
+                upper: 1.6
+                className: mid-late-flower
+                color: '#e7c12b'
+              - lower: 1.6
+                className: danger-zone
+                color: '#ce4234'
+            rooms:
+              - humidity: sensor.zeltsensor_relative_luftfeuchte
+                name: Zelt 1
+                temperature: sensor.zeltsensor_bmp280_temperatur
+                leaf_temperature: sensor.zeltsensor_bmp280_temperatur
+            is_bar_view: false
+            min_temperature: 5
+            max_temperature: 35
+            min_humidity: 10
+            max_humidity: 90
+            min_height: 200
+            leaf_temperature_offset: 2
+            enable_tooltip: false
+            leaf_text: Blatt
+            rh_text: RLF
+            kpa_text: kPa
+            enable_axes: true
+            enable_ghostclick: true
+            enable_ghostmap: false
+            enable_triangle: false
+            enable_crosshair: true
+            enable_zoom: true
+            enable_show_always_informations: false
+            enable_legend: false
+            ghostmap_hours: 24
+            antialiasing: 5
+            unit_temperature: °C
+            air_text: Luft
+          - type: custom:mini-graph-card
+            name: Beleuchtungsverlauf (24h)
+            entities:
+              - entity: sensor.zeltsensor_bmp280_temperatur
+                name: Zelttemp. IN
+                color: orange
+              - entity: sensor.hydroknoten_hydroknoten_temperatur
+                name: Zeltemp. OUT
+            hours_to_show: 48
+            points_per_hour: 2
+            show:
+              labels: true
+      - type: grid
+        cards:
+          - type: heading
+            heading_style: title
+            heading: Wasservolumen
+          - type: custom:mini-graph-card
+            name: RDWC Volumen
+            entities:
+              - entity: sensor.tankknoten_rdwc_fuellstand
+                name: Istwert
+            color_thresholds:
+              - value: 0
+                color: '#8b1e14'
+              - value: 10
+                color: '#ce4234'
+              - value: 20
+                color: '#e7c12b'
+              - value: 30
+                color: '#19b57c'
+              - value: 45
+                color: '#00cd00'
+              - value: 60
+                color: '#22ab9c'
+              - value: 70
+                color: '#4fa3b6'
+              - value: 80
+                color: '#2f6fa3'
+            hours_to_show: 1
+            points_per_hour: 24
+            show:
+              labels: true
+          - type: custom:mini-graph-card
+            name: Haupttank Volumen
+            entities:
+              - entity: sensor.tankknoten_haupttank_fuellstand
+                name: Istwert
+            color_thresholds:
+              - value: 0
+                color: '#8b1e14'
+              - value: 15
+                color: '#ce4234'
+              - value: 40
+                color: '#e7c12b'
+              - value: 80
+                color: '#19b57c'
+              - value: 120
+                color: '#00cd00'
+              - value: 160
+                color: '#22ab9c'
+              - value: 200
+                color: '#4fa3b6'
+              - value: 300
+                color: '#2f6fa3'
+            hours_to_show: 1
+            points_per_hour: 24
+            show:
+              labels: true
+          - type: custom:mini-graph-card
+            name: RDWC-System pH
+            entities:
+              - entity: sensor.hydroknoten_hydroknoten_ph_sensor
+                name: PH-IST
+            hours_to_show: 2
+            points_per_hour: 8
+            show:
+              labels: true
+            color_thresholds:
+              - value: 5.3
+                color: '#2f6fa3'
+              - value: 5.6
+                color: '#22ab9c'
+              - value: 6
+                color: '#00cd00'
+              - value: 6.3
+                color: '#e7c12b'
+              - value: 6.6
+                color: '#ce4234'
+              - value: 7
+                color: '#8b1e14'
+          - type: custom:mini-graph-card
+            name: Haupttank pH
+            entities:
+              - entity: sensor.tankknoten_tankknoten_ph
+                name: PH-IST
+            hours_to_show: 2
+            points_per_hour: 8
+            show:
+              labels: true
+            color_thresholds:
+              - value: 5.3
+                color: '#2f6fa3'
+              - value: 5.6
+                color: '#22ab9c'
+              - value: 6
+                color: '#00cd00'
+              - value: 6.3
+                color: '#e7c12b'
+              - value: 6.6
+                color: '#ce4234'
+              - value: 7
+                color: '#8b1e14'
+          - type: custom:mini-graph-card
+            name: RDWC-System EC
+            entities:
+              - entity: sensor.hydroknoten_hydroknoten_ec_sensor
+                name: Istwert
+            color_thresholds:
+              - value: 0.6
+                color: '#2f6fa3'
+              - value: 1
+                color: '#4fa3b6'
+              - value: 1.4
+                color: '#22ab9c'
+              - value: 1.8
+                color: '#00cd00'
+              - value: 2.2
+                color: '#19b57c'
+              - value: 2.4
+                color: '#e7c12b'
+              - value: 2.5
+                color: '#ce4234'
+              - value: 2.6
+                color: '#8b1e14'
+            hours_to_show: 2
+            points_per_hour: 12
+            show:
+              labels: true
+        column_span: 2
   - type: sections
     max_columns: 4
     title: Beleuchtung
@@ -213,7 +357,7 @@ views:
               - entity: input_number.lichtwert_zeitschaltuhr
                 name: Automatik
               - entity: input_number.helligkeit_manuell
-                name: Manueller
+                name: Manuell
                 color: red
               - entity: sensor.zeltsensor_zeltlampe_helligkeit
                 name: IST
@@ -267,6 +411,12 @@ views:
             heading: Zeitschaltuhrbetrieb
             heading_style: subtitle
             icon: mdi:sun-clock
+          - type: tile
+            entity: sensor.zeltsensor_lichtsteuerung_version
+            name: 'Zeitschaltuhr-Version:'
+            icon: mdi:diversify
+            vertical: false
+            features_position: bottom
           - show_name: true
             show_icon: false
             type: button
@@ -296,7 +446,7 @@ views:
                 entity: switch.zeltsensor_auto
                 state: 'on'
           - type: custom:time-picker-card
-            entity: input_datetime.ausschaltzeit
+            entity: input_datetime.auschaltzeit
             hour_mode: 24
             hour_step: 1
             minute_step: 5
@@ -348,8 +498,9 @@ views:
                 entity: switch.zeltsensor_auto
                 state: 'on'
           - type: custom:mushroom-number-card
-            entity: input_number.sonnenaufgangszeit
+            entity: number.zeltsensor_sonnenaufgang_dauer
             layout: horizontal
+            name: Sonnenaufganszeit
             visibility:
               - condition: state
                 entity: switch.zeltsensor_zeltlampe_sa_su_aktiv
@@ -432,7 +583,15 @@ views:
         show_state: true
         show_icon: true
         entity: sensor.zeltsensor_zeltsensor_version
-        name: 'Zeltversion:'
+        name: 'ZELT:'
+        icon: mdi:paperclip
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.zeltsensor_lichtsteuerung_version
+        name: 'BEL:'
+        icon: mdi:diversify
     header:
       layout: center
       badges_position: top
@@ -444,6 +603,10 @@ views:
     sections:
       - type: grid
         cards:
+          - type: heading
+            heading: Sensordaten Zelt Innen
+            heading_style: title
+            icon: mdi:sprout
           - type: custom:mini-graph-card
             name: VPD-Wert Verlauf (48h)
             entities:
@@ -550,14 +713,203 @@ views:
                 name: VPD-SOLL
           - graph: line
             type: sensor
-            entity: sensor.zeltsensor_co2_dummy
+            entity: sensor.zeltsensor_co2
             detail: 1
             name: CO2-Verlauf (24h)
             grid_options:
               columns: 12
               rows: 2
             icon: mdi:molecule-co2
+            hours_to_show: 24
+      - type: grid
+        cards:
+          - type: heading
+            heading: Co2-Sensordaten
+            heading_style: title
+            icon: mdi:molecule-co2
+          - type: custom:mini-graph-card
+            name: CO2-Verlauf
+            entities:
+              - entity: sensor.zeltsensor_co2
+                name: IST
+            hours_to_show: 12
+            points_per_hour: 30
+            color_thresholds:
+              - value: 380
+                color: '#2f6fa3'
+              - value: 600
+                color: '#4fa3b6'
+              - value: 800
+                color: '#22ab9c'
+              - value: 1000
+                color: '#00cd00'
+              - value: 1200
+                color: '#19b57c'
+              - value: 1400
+                color: '#e7c12b'
+              - value: 1600
+                color: '#f29f05'
+              - value: 1800
+                color: '#ce4234'
+              - value: 2200
+                color: '#8b1e14'
+            show:
+              labels: true
+            icon: mdi:molecule-co2
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: switch.zeltsensor_co2_offset_aktiv
+            grid_options:
+              rows: 1
+              columns: full
+            name: Co2-Offset aktivieren
+            icon: mdi:molecule-co2
+            show_state: true
+          - type: custom:mushroom-number-card
+            entity: number.zeltsensor_co2_offset
+            icon_color: blue-grey
+            icon: mdi:molecule-co2
+            name: Co2- Offsetwert
+            layout: horizontal
+            display_mode: buttons
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_co2_offset_aktiv
+                state: 'on'
+          - type: entities
+            entities:
+              - entity: sensor.zeltsensor_co2_wert_roh
+                name: Co2-Wert unkalibriert
+                icon: mdi:molecule-co2
+              - entity: sensor.zeltsensor_co2
+                name: Co2-Wert  Sensor (Wirk)
+                icon: mdi:molecule-co2
+              - entity: sensor.zeltsensor_co2_wert_kalibriert
+                name: 'Co2-Wert kalibriert '
+                icon: mdi:molecule-co2
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_co2_offset_aktiv
+                state: 'on'
+          - type: custom:timer-bar-card
+            entities: sensor.zeltsensor
+            bar_direction: rtl
+            invert: true
+          - type: custom:fluid-level-background-card
+      - type: grid
+        cards:
+          - type: heading
+            heading: Co2-Dosierung
+            heading_style: title
+            icon: mdi:molecule-co2
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: switch.zeltsensor_co2_automatik
+            grid_options:
+              rows: 1
+              columns: full
+            name: Co2-Dosierung aktivieren
+            icon: mdi:molecule-co2
+            show_state: true
+          - type: custom:mushroom-number-card
+            entity: number.zeltsensor_co2_sollwert
+            icon_color: blue-grey
+            icon: mdi:molecule-co2
+            name: Co2 Sollwert
+            layout: horizontal
+            display_mode: buttons
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_co2_automatik
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: number.zeltsensor_co2_dosierstossdauer
+            icon_color: blue-grey
+            icon: mdi:molecule-co2
+            name: Dosierstoßdauer
+            layout: horizontal
+            display_mode: buttons
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_co2_automatik
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: number.zeltsensor_co2_hysterese
+            icon_color: blue-grey
+            icon: mdi:molecule-co2
+            name: Co2 Hysterese (+/-)
+            layout: horizontal
+            display_mode: buttons
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_co2_automatik
+                state: 'on'
+          - type: tile
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_co2_automatik
+                state: 'on'
+            entity: switch.zeltsensor_co2_dosierung
+            name: Co2-Ventil
+            icon: mdi:molecule-co2
+            show_entity_picture: false
+            vertical: true
+            features_position: bottom
+            grid_options:
+              columns: 3
+              rows: 2
+          - type: tile
+            grid_options:
+              columns: 3
+              rows: 2
+            entity: sensor.zeltsensor_co2_differenz_sollwert
+            name: Co2-Differenz
+            icon: mdi:alert-decagram-outline
+            vertical: true
+            features_position: bottom
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_co2_automatik
+                state: 'on'
+          - type: tile
+            grid_options:
+              columns: 6
+              rows: 1
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_co2_automatik
+                state: 'on'
+            entity: sensor.zeltsensor_co2_debug_letzte_dosierung
+            name: 'Letze Dosierung:'
+            icon: ''
+            show_entity_picture: false
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.zeltsensor_co2_dosierung_version
+            name: 'Co2-Dosierung Version:'
+            icon: mdi:diversify
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.zeltsensor_co2_differenz_sollwert
+            name: Co2-Differenz (zu SOLL)
+            icon: mdi:alert-decagram-outline
+            vertical: false
+            features_position: bottom
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_co2_automatik
+                state: 'off'
     badges:
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.zeltsensor_zeltsensor_version
+        name: 'ZELT:'
       - type: entity
         show_name: false
         show_state: true
@@ -565,6 +917,8 @@ views:
         entity: sensor.zeltsensor_bmp280_temperatur
       - type: entity
         entity: sensor.zeltsensor_relative_luftfeuchte
+      - type: entity
+        entity: sensor.zeltsensor_co2
       - type: entity
         show_name: false
         show_state: true
@@ -587,6 +941,13 @@ views:
         entity: sensor.zeltsensor_zeltlampe_modus
       - type: entity
         entity: sensor.zeltsensor_zeltlampe_helligkeit
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.zeltsensor_co2_dosierung_version
+        name: 'Co2:'
+        icon: mdi:diversify
     cards: []
   - type: sections
     max_columns: 4
@@ -596,29 +957,8 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: VPD-Dosierungssteuerung
-            heading_style: subtitle
-          - type: custom:mini-graph-card
-            name: VPD-Wert Verlauf (48h)
-            entities:
-              - entity: sensor.vpd_ist
-                name: IST
-                icon: gauge
-            hours_to_show: 48
-            points_per_hour: 2
-            color_thresholds:
-              - value: 0.4
-                color: '#2f6fa3'
-              - value: 0.8
-                color: '#22ab9c'
-              - value: 1.2
-                color: '#00cd00'
-              - value: 1.5
-                color: '#e7c12b'
-              - value: 1.8
-                color: '#ce4234'
-              - value: 2.2
-                color: '#8b1e14'
+            heading: Sensorwerte für VPD
+            heading_style: title
           - type: custom:ha-vpd-chart
             vpd_phases:
               - upper: 0
@@ -670,22 +1010,45 @@ views:
             ghostmap_hours: 24
             antialiasing: 5
             unit_temperature: °C
-          - show_name: true
-            show_icon: false
-            type: button
-            entity: input_boolean.vpd_regelung
+          - type: custom:mini-graph-card
+            name: VPD-Wert Verlauf (48h)
+            entities:
+              - entity: sensor.vpd_ist
+                name: IST
+                icon: gauge
+            hours_to_show: 24
+            points_per_hour: 6
+            color_thresholds:
+              - value: 0.4
+                color: '#2f6fa3'
+              - value: 0.8
+                color: '#22ab9c'
+              - value: 1.2
+                color: '#00cd00'
+              - value: 1.5
+                color: '#e7c12b'
+              - value: 1.8
+                color: '#ce4234'
+              - value: 2.2
+                color: '#8b1e14'
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_bmp280_temperatur
             grid_options:
-              columns: 12
-              rows: 1
-            name: VPD Reglegung aktivieren
-          - type: custom:mushroom-number-card
-            entity: input_number.vpd_soll
-            layout: horizontal
-            icon_color: light-blue
-            visibility:
-              - condition: state
-                entity: input_boolean.vpd_regelung
-                state: 'on'
+              columns: full
+            detail: 1
+            limits: {}
+            hours_to_show: 48
+            name: Zelt-Innentemperatur (48h)
+          - graph: line
+            type: sensor
+            entity: sensor.zeltsensor_relative_luftfeuchte
+            grid_options:
+              columns: full
+            detail: 1
+            limits: {}
+            hours_to_show: 48
+            name: Zelt-Luftfeuchtigkeit (48h)
           - type: custom:mini-graph-card
             name: Luftdruck (72h)
             entities:
@@ -714,28 +1077,139 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: Sensorwerte für VPD
-            heading_style: subtitle
-          - graph: line
-            type: sensor
-            entity: sensor.zeltsensor_bmp280_temperatur
+            icon: mdi:fridge
+            heading: VPD Regelung
+            heading_style: title
+            grid_options:
+              columns: 6
+              rows: 1
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: switch.zeltsensor_vpd_automatik
+            grid_options:
+              columns: 12
+              rows: 1
+            name: VPD Reglegung aktivieren
+            show_state: true
+          - type: custom:mushroom-number-card
+            entity: number.zeltsensor_vpd_sollwert
+            name: VPD SOLL
+            layout: horizontal
+            icon_color: light-blue
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_vpd_automatik
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: number.zeltsensor_vpd_hysterese
+            name: VPD Hysterese
+            layout: horizontal
+            icon_color: light-blue
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_vpd_automatik
+                state: 'on'
+          - type: custom:mushroom-number-card
+            entity: number.zeltsensor_inline_fan_standby
+            name: Inline Fan Standby
+            layout: horizontal
+            icon_color: light-blue
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_vpd_automatik
+                state: 'on'
+          - type: tile
+            grid_options:
+              rows: 1
+              columns: 15
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_vpd_automatik
+                state: 'on'
+            entity: sensor.zeltsensor_vpd_auto_debug_1
+            name: 'VPD Debug:'
+            icon: mdi:fan
+            vertical: false
+            features_position: bottom
+          - type: tile
+            grid_options:
+              rows: 1
+              columns: full
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_vpd_automatik
+                state: 'on'
+            entity: sensor.zeltsensor_vpd_auto_debug_2
+            name: 'VPD Debug:'
+            icon: mdi:fan
+            vertical: false
+            features_position: bottom
+          - type: tile
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_vpd_automatik
+                state: 'on'
+            entity: sensor.zeltsensor_inline_fan_ziel
+            name: 'Inline Fan Ziel: '
+            icon: mdi:fan
+            vertical: false
+            features_position: bottom
+          - type: custom:mini-graph-card
+            name: Lüfterdrehzahl Automatik
+            entities:
+              - entity: sensor.zeltsensor_inline_fan_ziel
+                icon: gauge
+            hours_to_show: 72
+            points_per_hour: 8
+            color_thresholds:
+              - value: 995
+                color: '#5c6bc0'
+              - value: 1000
+                color: '#42a5f5'
+              - value: 1005
+                color: '#4dd0e1'
+              - value: 1010
+                color: '#66bb6a'
+              - value: 1015
+                color: '#43a047'
+              - value: 1020
+                color: '#c0ca33'
+              - value: 1025
+                color: '#fbc02d'
+              - value: 1030
+                color: '#f57c00'
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_vpd_automatik
+                state: 'on'
+          - type: entities
+            entities:
+              - entity: sensor.zeltsensor_vpd_auto_debug_1
+              - entity: sensor.zeltsensor_vpd_auto_debug_2
+              - entity: sensor.backup_letztes_erfolgreiches_automatisches_backup
+              - entity: sensor.zeltsensor_vpd_auto_debug_3
             grid_options:
               columns: full
-            detail: 1
-            limits: {}
-            hours_to_show: 48
-            name: Zelt-Innentemperatur (48h)
-          - graph: line
-            type: sensor
-            entity: sensor.zeltsensor_relative_luftfeuchte
-            grid_options:
-              columns: full
-            detail: 1
-            limits: {}
-            hours_to_show: 48
-            name: Zelt-Luftfeuchtigkeit (48h)
+            visibility:
+              - condition: state
+                entity: switch.zeltsensor_vpd_automatik
+                state: 'on'
     dense_section_placement: true
     cards: []
+    badges:
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.zeltsensor_zeltsensor_version
+        name: 'ZELT:'
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.zeltsensor_vpd_automatik_version
+        name: 'VPD:'
   - type: sections
     max_columns: 4
     title: EC-Regelung
@@ -744,21 +1218,32 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: Statusübersicht Düngerdosierung V_0.1
-            heading_style: subtitle
+            heading: Systemübersicht  RDWC
+            heading_style: title
           - type: custom:mini-graph-card
-            name: Düngerdosierung
+            name: Wassertemperatur
             entities:
-              - entity: sensor.dosierung_micro_ml_heute
-                name: Micro
-                color: purple
-              - entity: sensor.dosierung_grow_ml_heute
-                name: GROW
-                color: green
-              - entity: sensor.dosierung_bloom_ml_heute
-                name: Bloom
-            hours_to_show: 4
-            points_per_hour: 40
+              - entity: sensor.hydroknoten_hydroknoten_temperatur
+                name: Istwert
+            color_thresholds:
+              - value: 14
+                color: '#2f6fa3'
+              - value: 16
+                color: '#4fa3b6'
+              - value: 18
+                color: '#22ab9c'
+              - value: 19
+                color: '#00cd00'
+              - value: 21
+                color: '#19b57c'
+              - value: 22.5
+                color: '#e7c12b'
+              - value: 24
+                color: '#ce4234'
+              - value: 26
+                color: '#8b1e14'
+            hours_to_show: 2
+            points_per_hour: 12
             show:
               labels: true
           - type: custom:mini-graph-card
@@ -784,25 +1269,51 @@ views:
               - value: 2.6
                 color: '#8b1e14'
             hours_to_show: 2
-            points_per_hour: 40
+            points_per_hour: 12
             show:
               labels: true
           - type: custom:mini-graph-card
-            name: EC-Wert Verlauf
+            name: PH-Wert Verlauf
             entities:
-              - entity: sensor.hydroknoten_hydroknoten_ec_sensor
-                name: Istwert
-              - entity: number.dosierung_ec_zielwert
-                name: Sollwert
+              - entity: sensor.hydroknoten_hydroknoten_ph_sensor
+                name: PH-IST
+            hours_to_show: 2
+            points_per_hour: 8
+            show:
+              labels: true
+            color_thresholds:
+              - value: 5.3
+                color: '#2f6fa3'
+              - value: 5.6
+                color: '#22ab9c'
+              - value: 6
+                color: '#00cd00'
+              - value: 6.3
+                color: '#e7c12b'
+              - value: 6.6
+                color: '#ce4234'
+              - value: 7
+                color: '#8b1e14'
+      - type: grid
+        cards:
+          - type: heading
+            heading: EC-Düngerdosierung V_0.1
+            heading_style: title
+          - type: custom:mini-graph-card
+            name: Düngerdosierung
+            entities:
+              - entity: sensor.dosierung_micro_ml_heute
+                name: Micro
                 color: purple
-            hours_to_show: 6
+              - entity: sensor.dosierung_grow_ml_heute
+                name: Grow
+                color: green
+              - entity: sensor.dosierung_bloom_ml_heute
+                name: Bloom
+            hours_to_show: 2
             points_per_hour: 4
             show:
               labels: true
-          - type: logbook
-            target:
-              device_id: 5481106cca16d619b30e782622e3d8ee
-            hours_to_show: 1
           - type: entities
             entities:
               - entity: sensor.dosierung_dosierung_pumpen_status
@@ -812,10 +1323,46 @@ views:
               - entity: sensor.dosierung_dosierung_aktive_dosierung
               - entity: sensor.dosierung_ec_ist_empfangen
               - entity: sensor.dosierung_ph_ist_empfangen
+          - type: custom:timer-bar-card
+            entities:
+              - sensor.dosierung_dosierung_wartezeit_s
+            bar_height: 20px
+            bar_background: '#222'
+            bar_foreground: >-
+              linear-gradient(to right, red, orange, yellow, green, cyan, blue,
+              violet)
+            text_width: 6em
+            bar_width: 40%
       - type: grid
         cards:
           - type: heading
             heading: EC-Düngerdosierung V_0.1
+            heading_style: title
+          - type: heading
+            icon: mdi:fridge
+            heading: 'Systemweite Einstellungen:'
+            heading_style: subtitle
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_system_volumen_gesamt
+            layout: horizontal
+            icon_color: light-blue
+            icon: mdi:cup-water
+            name: Systemvolumen
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_ruhrmotor_dauer_sekunden
+            layout: horizontal
+            icon_color: light-blue
+            icon: mdi:timeline-clock
+            name: Dauer Rührvorgang
+          - type: custom:mushroom-number-card
+            entity: number.dosierung_min_ruhrzeit_zwischen_dosierungen
+            layout: horizontal
+            icon_color: light-blue
+            icon: mdi:timeline-clock
+            name: Rührzeit zw. Dosierungen
+          - type: heading
+            icon: mdi:fridge
+            heading: Düngerdosierung V0.1
             heading_style: subtitle
           - show_name: true
             show_icon: false
@@ -825,7 +1372,7 @@ views:
               columns: full
               rows: 1
             theme: Mushroom
-            name: Dosierung aktivieren
+            name: Düngerdosierung aktivieren
             show_state: true
           - type: tile
             entity: sensor.dosierung_dosierung_pumpen_status
@@ -833,6 +1380,10 @@ views:
             features_position: bottom
             grid_options:
               columns: full
+            visibility:
+              - condition: state
+                entity: switch.dosierung_dosierung_automatik
+                state: 'on'
           - type: tile
             grid_options:
               columns: full
@@ -840,39 +1391,38 @@ views:
             entity: sensor.dosierung_dosierung_status_zusammenfassung
             vertical: false
             features_position: bottom
-          - type: custom:mushroom-number-card
-            entity: number.dosierung_system_volumen_gesamt
-            layout: horizontal
-            icon_color: light-blue
-            icon: mdi:cup-water
-            name: Systemvolumen
-          - type: custom:mushroom-number-card
-            entity: number.dosierung_durchmischungs_dauer_system_zyklus
-            layout: horizontal
-            icon_color: light-blue
-            icon: mdi:timeline-clock
-            name: Systemzyklus
-          - type: custom:mushroom-number-card
-            entity: number.dosierung_min_ruhrzeit_zwischen_dosierungen
-            layout: horizontal
-            icon_color: light-blue
-            icon: mdi:timeline-clock
-            name: Rührzeit zw. Dosierungen
+            visibility:
+              - condition: state
+                entity: switch.dosierung_dosierung_automatik
+                state: 'on'
           - type: custom:mushroom-number-card
             entity: number.dosierung_ec_zielwert
             icon_color: purple
             name: EC Zielwert
             layout: horizontal
+            icon: mdi:atom
+            visibility:
+              - condition: state
+                entity: switch.dosierung_dosierung_automatik
+                state: 'on'
           - type: custom:mushroom-number-card
             entity: number.dosierung_ec_toleranzbereich_ms_cm
             icon_color: purple
             name: EC Toleranzbereich
             layout: horizontal
+            visibility:
+              - condition: state
+                entity: switch.dosierung_dosierung_automatik
+                state: 'on'
           - type: custom:mushroom-number-card
             entity: number.dosierung_dosiervolumen_ec_pumpe_ml_min
             icon_color: purple
             name: Pumpenleistung ???
             layout: horizontal
+            visibility:
+              - condition: state
+                entity: switch.dosierung_dosierung_automatik
+                state: 'on'
           - show_name: true
             show_icon: false
             type: button
@@ -882,6 +1432,10 @@ views:
               rows: 1
             name: Reset Tageszähler
             theme: Mushroom
+            visibility:
+              - condition: state
+                entity: switch.dosierung_dosierung_automatik
+                state: 'on'
           - show_name: true
             show_icon: false
             type: button
@@ -890,6 +1444,10 @@ views:
               columns: 6
               rows: 1
             name: Reset Lifetimezähler
+            visibility:
+              - condition: state
+                entity: switch.dosierung_dosierung_automatik
+                state: 'on'
           - show_name: true
             show_icon: false
             type: button
@@ -898,12 +1456,16 @@ views:
               columns: 6
               rows: 1
             name: Reset Dosierzyklen
+            visibility:
+              - condition: state
+                entity: switch.dosierung_dosierung_automatik
+                state: 'on'
         column_span: 1
       - type: grid
         cards:
           - type: heading
-            heading: Tera Aquatica - TriPart - Micro
-            heading_style: subtitle
+            heading: 'Dosierung: Tera Aquatica - TriPart - Micro'
+            heading_style: title
           - show_name: true
             show_icon: false
             type: button
@@ -961,11 +1523,12 @@ views:
                 entity: switch.dosierung_micro_steuerung
                 state: 'on'
             icon: mdi:car-speed-limiter
+        column_span: 1
       - type: grid
         cards:
           - type: heading
-            heading: Tera Aquatica - TriPart - Grow
-            heading_style: subtitle
+            heading: 'Dosierung: Tera Aquatica - TriPart - Grow'
+            heading_style: title
           - show_name: true
             show_icon: false
             type: button
@@ -1024,8 +1587,8 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: Tera Aquatica - TriPart - Bloom
-            heading_style: subtitle
+            heading: 'Dosierung: Tera Aquatica - TriPart - Bloom'
+            heading_style: title
           - show_name: true
             show_icon: false
             type: button
@@ -1090,18 +1653,14 @@ views:
         show_icon: true
         entity: sensor.hydroknoten_hydroknoten_version
         name: 'Hydro: '
+        icon: mdi:paperclip
       - type: entity
         show_name: true
         show_state: true
         show_icon: true
         entity: sensor.ventilknoten_projekt_version
-        name: 'Dosierung:: '
-      - type: entity
-        show_name: true
-        show_state: true
-        show_icon: true
-        entity: sensor.zeltsensor_zeltsensor_version
-        name: 'Zeltversion:'
+        icon: mdi:paperclip
+        name: Dosier-Knoten
       - type: entity
         show_name: false
         show_state: true
@@ -1118,7 +1677,7 @@ views:
         show_icon: true
         entity: sensor.dosierung_debug_dosierung_gesamtstatus
     header:
-      layout: center
+      layout: responsive
       badges_position: top
       badges_wrap: scroll
   - type: sections
@@ -1130,7 +1689,7 @@ views:
         cards:
           - type: heading
             icon: mdi:ph
-            heading: PH-Dosierungssteuerung
+            heading: RDWC-System - PH Sensorwerte
             heading_style: subtitle
           - type: custom:mini-graph-card
             name: PH-Dosierungsteuerung
@@ -1138,13 +1697,13 @@ views:
               - entity: sensor.hydroknoten_hydroknoten_ph_sensor
                 name: PH-IST
                 y_axis: secondary
-              - entity: sensor.hydroknoten_hydroknoten_ec_sensor
-                name: EC
+              - entity: sensor.dosierung_ph_down_ml_heute
+                name: ml heute
                 color: green
               - entity: number.dosierung_ph_zielwert
                 name: PH-SOLL
                 color: purple
-            hours_to_show: 4
+            hours_to_show: 2
             points_per_hour: 8
             show:
               labels: true
@@ -1180,6 +1739,13 @@ views:
                 color: '#ce4234'
               - value: 7
                 color: '#8b1e14'
+        column_span: 1
+      - type: grid
+        cards:
+          - type: heading
+            icon: mdi:ph
+            heading: RDWC-System - PH-Dosierungssteuerung
+            heading_style: subtitle
           - show_name: true
             show_icon: false
             type: button
@@ -1189,7 +1755,8 @@ views:
               columns: full
           - type: custom:mushroom-number-card
             entity: number.dosierung_ph_zielwert
-            icon_color: purple
+            icon_color: blue-grey
+            icon: mdi:atom
             name: pH SOLLWERT
             layout: horizontal
             display_mode: buttons
@@ -1198,63 +1765,48 @@ views:
                 entity: switch.dosierung_ph_down_steuerung
                 state: 'on'
           - type: custom:mushroom-number-card
-            entity: input_number.ph_max_stoesse_tag
+            entity: number.dosierung_ph_down_max_ml_tag
             layout: horizontal
-            fill_container: false
-            secondary_info: state
-            icon: max
-            name: Maximale Dosierstöße
-            display_mode: buttons
+            icon_color: blue-grey
             visibility:
               - condition: state
                 entity: switch.dosierung_ph_down_steuerung
                 state: 'on'
-            icon_color: purple
           - type: custom:mushroom-number-card
-            entity: input_number.ph_je_liter_hersteller
+            entity: number.dosierung_ph_down_anderung_pro_ml_100l
             layout: horizontal
-            fill_container: false
-            secondary_info: state
-            display_mode: buttons
-            name: Dosierung PH-Minus
+            icon_color: blue-grey
             visibility:
               - condition: state
                 entity: switch.dosierung_ph_down_steuerung
                 state: 'on'
-            icon_color: purple
           - type: custom:mushroom-number-card
-            entity: input_number.rdwc_ruehrzeit
+            entity: number.dosierung_ph_down_ec_pro_ml_100l
             layout: horizontal
-            fill_container: false
-            secondary_info: state
-            display_mode: buttons
-            icon: ml
-            name: Wartezeit Dosierungen
+            icon_color: blue-grey
             visibility:
               - condition: state
                 entity: switch.dosierung_ph_down_steuerung
                 state: 'on'
-            icon_color: purple
           - type: custom:mushroom-number-card
-            entity: input_number.rdwc_ruehrzeit
+            entity: number.dosierung_ph_down_ec_pro_ml_100l
             layout: horizontal
-            fill_container: false
-            secondary_info: state
-            display_mode: buttons
-            name: Rührzeit
+            icon_color: blue-grey
             visibility:
               - condition: state
                 entity: switch.dosierung_ph_down_steuerung
                 state: 'on'
-            icon_color: purple
-          - type: custom:mushroom-number-card
-            entity: input_number.rdwc_ruehrzeit
-        column_span: 1
+          - type: tile
+            entity: sensor.dosierung_ph_regelung_version
+            name: 'PH-Dosierung-Version:'
+            icon: mdi:diversify
+            vertical: false
+            features_position: bottom
       - type: grid
         cards:
           - type: heading
             icon: mdi:molecule-co2
-            heading: Co2-Dosierungssteuerung
+            heading: Zelt - Co2-Dosierungssteuerung
             heading_style: subtitle
           - type: custom:mini-graph-card
             name: CO2-Verlauf SOLL/IST
@@ -1282,38 +1834,27 @@ views:
                 color: '#ce4234'
               - value: 2200
                 color: '#8b1e14'
-          - type: custom:mini-graph-card
-            name: CO2-Verlauf SOLL/IST
-            entities:
-              - entity: sensor.zeltsensor_co2_dummy
-                name: IST
-              - entity: input_number.co2_soll
-                name: SOLL
-            hours_to_show: 48
-            points_per_hour: 6
-            show:
-              labels: true
-          - show_name: true
-            show_icon: false
-            type: button
-            entity: input_boolean.co2_dosierung_aktivieren
-            grid_options:
-              rows: 1
-              columns: full
-          - type: custom:mushroom-number-card
-            entity: input_number.co2_soll
-            layout: horizontal
-            fill_container: false
-            secondary_info: state
-            display_mode: buttons
-            icon: mdi:molecule-co2
-            name: CO2-SOLLWERT
-            visibility:
-              - condition: state
-                entity: input_boolean.co2_dosierung_aktivieren
-                state: 'on'
         column_span: 1
     badges:
+      - type: entity
+        show_name: false
+        show_state: true
+        show_icon: true
+        entity: binary_sensor.dosierung_status_verbunden
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.ventilknoten_projekt_version
+        icon: mdi:paperclip
+        name: 'Dosierung:'
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.hydroknoten_hydroknoten_version
+        name: 'Hydro:'
+        icon: mdi:paperclip
       - type: entity
         show_name: false
         show_state: true
@@ -1324,61 +1865,69 @@ views:
         show_state: true
         show_icon: true
         entity: sensor.dosierung_debug_dosierung_gesamtstatus
-      - type: entity
-        show_name: false
-        show_state: true
-        show_icon: true
-        entity: binary_sensor.dosierung_status_verbunden
-      - type: entity
-        show_name: true
-        show_state: true
-        show_icon: true
-        entity: sensor.hydroknoten_hydroknoten_version
-        name: 'Hydronoten: '
+    header:
+      layout: center
+      badges_position: top
+      badges_wrap: scroll
   - type: sections
     max_columns: 4
-    title: RDWC
+    title: RDWC-System
     path: wassertank
     sections:
       - type: grid
         cards:
           - type: heading
-            heading: RDWC-Systemeinstellungen
+            heading: Systemeinstellungen (Systemweit)
             heading_style: title
           - type: custom:mini-graph-card
-            name: Systemvolumen
+            name: RDWC-System
             entities:
-              - entity: sensor.vpd_ist
-                name: IST
-              - entity: input_number.vpd_soll
-                name: SOLL
-            hours_to_show: 24
-            points_per_hour: 2
+              - entity: sensor.hydroknoten_hydroknoten_temperatur
+                name: Istwert
+            color_thresholds:
+              - value: 14
+                color: '#2f6fa3'
+              - value: 16
+                color: '#4fa3b6'
+              - value: 18
+                color: '#22ab9c'
+              - value: 19
+                color: '#00cd00'
+              - value: 21
+                color: '#19b57c'
+              - value: 22.5
+                color: '#e7c12b'
+              - value: 24
+                color: '#ce4234'
+              - value: 26
+                color: '#8b1e14'
+            hours_to_show: 2
+            points_per_hour: 12
+            show:
+              labels: true
+          - type: heading
+            icon: mdi:fridge
+            heading: 'Für EC- und PH-Dosierungen: '
+            heading_style: subtitle
           - type: custom:mushroom-number-card
-            entity: input_number.rdwc_liter
+            entity: number.dosierung_system_volumen_gesamt
             layout: horizontal
             icon_color: light-blue
             icon: mdi:cup-water
             name: Systemvolumen
           - type: custom:mushroom-number-card
-            entity: number.dosierung_ruhrmotor_dauer_sekunden
-            layout: horizontal
-            icon_color: light-blue
-            icon: mdi:timeline-clock
-            name: Dauer Rührvorgang
-          - type: custom:mushroom-number-card
             entity: number.dosierung_ruhrmotor_pwm_speed
             layout: horizontal
             icon_color: light-blue
             name: Pumpenleistung
-            icon: mdi:waves-arrow-right
+            icon: mdi:water-pump
           - graph: line
             type: sensor
             entity: sensor.zeltsensor_ds18b20_dummy
             grid_options:
               columns: full
             detail: 1
-            name: Wassertemperatur Tank
+            name: RDWC (Zelt Innen)
             icon: mdi:temperature-celsius
             hours_to_show: 12
           - graph: line
@@ -1387,16 +1936,406 @@ views:
             grid_options:
               columns: full
             detail: 1
-            name: Wassertemperatur Zelt
+            name: RDWC (Systemtank)
             icon: mdi:temperature-celsius
             hours_to_show: 12
+      - type: grid
+        cards:
+          - type: heading
+            heading: RDWC-System Einstellungen (Hydroknoten)
+            heading_style: title
+          - type: custom:mini-graph-card
+            name: RWDC System Volumen
+            entities:
+              - entity: sensor.tankknoten_rdwc_fuellstand
+                name: Istwert
+            color_thresholds:
+              - value: 0
+                color: '#8b1e14'
+              - value: 10
+                color: '#ce4234'
+              - value: 20
+                color: '#e7c12b'
+              - value: 30
+                color: '#19b57c'
+              - value: 45
+                color: '#00cd00'
+              - value: 60
+                color: '#22ab9c'
+              - value: 70
+                color: '#4fa3b6'
+              - value: 80
+                color: '#2f6fa3'
+            hours_to_show: 1
+            points_per_hour: 24
+            show:
+              labels: true
+          - type: custom:mini-graph-card
+            name: RDWC-System EC
+            entities:
+              - entity: sensor.hydroknoten_hydroknoten_ec_sensor
+                name: Istwert
+            color_thresholds:
+              - value: 0.6
+                color: '#2f6fa3'
+              - value: 1
+                color: '#4fa3b6'
+              - value: 1.4
+                color: '#22ab9c'
+              - value: 1.8
+                color: '#00cd00'
+              - value: 2.2
+                color: '#19b57c'
+              - value: 2.4
+                color: '#e7c12b'
+              - value: 2.5
+                color: '#ce4234'
+              - value: 2.6
+                color: '#8b1e14'
+            hours_to_show: 2
+            points_per_hour: 12
+            show:
+              labels: true
+          - type: custom:mini-graph-card
+            name: RDWC-System pH
+            entities:
+              - entity: sensor.hydroknoten_hydroknoten_ph_sensor
+                name: PH-IST
+            hours_to_show: 2
+            points_per_hour: 8
+            show:
+              labels: true
+            color_thresholds:
+              - value: 5.3
+                color: '#2f6fa3'
+              - value: 5.6
+                color: '#22ab9c'
+              - value: 6
+                color: '#00cd00'
+              - value: 6.3
+                color: '#e7c12b'
+              - value: 6.6
+                color: '#ce4234'
+              - value: 7
+                color: '#8b1e14'
+          - type: custom:mushroom-number-card
+            entity: number.tankknoten_rdwc_volumen
+            layout: horizontal
+            icon_color: light-blue
+            icon: mdi:cup-water
+            name: RDWC Systemvolumen
+            display_mode: buttons
+          - type: custom:mushroom-number-card
+            entity: number.hydroknoten_hydroknoten_temperatur_offset
+            layout: horizontal
+            icon_color: light-blue
+            icon: mdi:coolant-temperature
+            name: 'RDWC Temp Offset '
+            display_mode: buttons
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: switch.hydroknoten_ec_temperaturkompensation
+            grid_options:
+              rows: 1
+              columns: full
+            name: RDWC  /  EC-Kompensation
+            show_state: true
+          - type: entities
+            entities:
+              - entity: sensor.hydroknoten_hydroknoten_ec_unkalibriert
+                name: Hydrokonten EC  unkalibiert
+              - entity: sensor.hydroknoten_hydroknoten_ec_sensor
+                name: Hydrokonten EC  Sensor
+              - entity: sensor.hydroknoten_hydroknoten_ec_kompensiert
+                name: Hydrokonten EC  kompensiert
+                secondary_info: none
+              - entity: sensor.hydroknoten_hydroknoten_temperatur
+                name: Hydroknoten Wassertemperatur
+                icon: mdi:coolant-temperature
+            visibility:
+              - condition: state
+                entity: switch.hydroknoten_ec_temperaturkompensation
+                state: 'on'
+      - type: grid
+        cards:
+          - type: heading
+            heading: Wasserreservoir Einstellungen (Tankknoten)
+            heading_style: title
+          - type: custom:mini-graph-card
+            name: Haupttank Volumen
+            entities:
+              - entity: sensor.tankknoten_haupttank_fuellstand
+                name: Istwert
+            color_thresholds:
+              - value: 0
+                color: '#8b1e14'
+              - value: 15
+                color: '#ce4234'
+              - value: 40
+                color: '#e7c12b'
+              - value: 80
+                color: '#19b57c'
+              - value: 120
+                color: '#00cd00'
+              - value: 160
+                color: '#22ab9c'
+              - value: 200
+                color: '#4fa3b6'
+              - value: 300
+                color: '#2f6fa3'
+            hours_to_show: 1
+            points_per_hour: 24
+            show:
+              labels: true
+          - type: custom:mini-graph-card
+            name: Haupttank EC
+            entities:
+              - entity: sensor.tankknoten_tankknoten_ec
+                name: Istwert
+            color_thresholds:
+              - value: 0.6
+                color: '#2f6fa3'
+              - value: 1
+                color: '#4fa3b6'
+              - value: 1.4
+                color: '#22ab9c'
+              - value: 1.8
+                color: '#00cd00'
+              - value: 2.2
+                color: '#19b57c'
+              - value: 2.4
+                color: '#e7c12b'
+              - value: 2.5
+                color: '#ce4234'
+              - value: 2.6
+                color: '#8b1e14'
+            hours_to_show: 2
+            points_per_hour: 12
+            show:
+              labels: true
+          - type: custom:mini-graph-card
+            name: Haupttank pH
+            entities:
+              - entity: sensor.tankknoten_tankknoten_ph
+                name: PH-IST
+            hours_to_show: 2
+            points_per_hour: 8
+            show:
+              labels: true
+            color_thresholds:
+              - value: 5.3
+                color: '#2f6fa3'
+              - value: 5.6
+                color: '#22ab9c'
+              - value: 6
+                color: '#00cd00'
+              - value: 6.3
+                color: '#e7c12b'
+              - value: 6.6
+                color: '#ce4234'
+              - value: 7
+                color: '#8b1e14'
+          - type: custom:mushroom-number-card
+            entity: number.tankknoten_haupttank_volumen
+            layout: horizontal
+            name: Haupttank Volumen
+            display_mode: buttons
+            icon: mdi:cup-water
+          - type: custom:mushroom-number-card
+            entity: number.tankknoten_tanktemperatur_offset
+            layout: horizontal
+            icon_color: light-blue
+            icon: mdi:coolant-temperature
+            name: 'Temp Offset '
+            display_mode: buttons
+          - show_name: true
+            show_icon: false
+            type: button
+            entity: switch.tankknoten_ec_temperaturkompensation
+            grid_options:
+              rows: 1
+              columns: full
+            name: Wasserrtank /  EC-Kompensation
+            show_state: true
+          - type: entities
+            entities:
+              - entity: sensor.tankknoten_tankknoten_ec_roh
+                name: Tankknoten EC unkalibriert
+              - entity: sensor.tankknoten_tankknoten_ec
+                name: Tankknoten EC Sensor
+              - entity: sensor.tankknoten_tankknoten_ec_kompensiert
+                name: Tankknoten EC kompensiert
+              - entity: sensor.tankknoten_tankknoten_wassertemperatur
+                name: Tankknoten Wassertemperatur
+                icon: mdi:coolant-temperature
+            visibility:
+              - condition: state
+                entity: switch.tankknoten_ec_temperaturkompensation
+                state: 'on'
+      - type: grid
+        cards:
+          - type: heading
+            heading: Tankknoten
+          - type: entities
+            entities:
+              - entity: sensor.tankknoten_haupttank_zuletzt_voll
+                secondary_info: state
+                name: Haupttank zuletzt voll
+              - entity: sensor.tankknoten_haupttank_zuletzt_leer
+                secondary_info: state
+                name: Haupttank zuletzt leer
+              - entity: sensor.tankknoten_rdwc_zuletzt_voll
+                secondary_info: state
+                name: RDWC zuletzt voll
+              - entity: sensor.tankknoten_rdwc_zuletzt_leer
+                secondary_info: state
+                name: RDWC zuletzt leer
+          - type: tile
+            entity: sensor.tankknoten_tankregelung_rdwc_version
+            name: 'RDWC-Befüll-Version:'
+            icon: mdi:diversify
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.tankknoten_tankregelung_haupttank_version
+            name: 'Tank-Befüll-Version:'
+            icon: mdi:diversify
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.tankknoten_rdwc_automatik_version
+            name: 'RDWC-Auto:'
+            icon: mdi:diversify
+            vertical: false
+            features_position: bottom
+          - type: tile
+            grid_options:
+              columns: 6
+              rows: 1
+            entity: sensor.tankknoten_rdwc_auto_zuletzt_befuellt
+            name: RDWC zuletzt gefüllt
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.tankknoten_haupttank_ventil_status
+            name: 'Haupttank Ventil:'
+            icon: mdi:pipe-valve
+            hide_state: false
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: binary_sensor.tankknoten_rdwc_pumpe_status
+            name: 'Füllpumpe RDWC:'
+            icon: mdi:water-pump
+            vertical: false
+            features_position: bottom
+          - type: heading
+            icon: mdi:fridge
+            heading: 'Gesamtsystem befüllen (mit Wartezeit zur Beruhigung pH-Wert) '
+            heading_style: subtitle
+          - type: tile
+            grid_options:
+              columns: 4
+              rows: 2
+            entity: button.tankknoten_befuellautomatik_system
+            name: System befüllen
+            hide_state: true
+            vertical: true
+            features_position: bottom
+          - type: tile
+            grid_options:
+              columns: 8
+              rows: 1
+            entity: sensor.tankknoten_befuellautomatik_system_ergebnis
+            name: Rückmeldung
+            vertical: false
+            features_position: bottom
+          - type: tile
+            grid_options:
+              columns: 8
+              rows: 1
+            entity: number.tankknoten_befuellautomatik_system_wartezeit_s
+            name: Wartezeit bis RDWC-Pumpe startet
+            icon: mdi:av-timer
+            vertical: false
+            features_position: bottom
+          - type: custom:mushroom-number-card
+            entity: number.tankknoten_befuellautomatik_system_wartezeit_s
+            layout: horizontal
+            name: Rührzeit Haupttank
+            display_mode: buttons
+          - type: custom:mushroom-number-card
+            entity: number.tankknoten_befuellautomatik_system_ziellevel_haupttank
+            layout: horizontal
+            name: Max Level Haupttank
+            display_mode: buttons
+          - type: custom:mushroom-number-card
+            entity: number.tankknoten_befuellautomatik_system_ziellevel_rdwc
+            layout: horizontal
+            name: Max Level RDWC
+            display_mode: buttons
+          - type: heading
+            icon: mdi:fridge
+            heading: RDWC Automatisch befüllen (bis Haupttank < Level 2)
+            heading_style: subtitle
+          - type: tile
+            grid_options:
+              columns: 4
+              rows: 2
+            entity: switch.tankknoten_rdwc_auto_befuellen
+            name: RDWC Automatik
+            hide_state: false
+            vertical: true
+            features_position: bottom
+          - type: tile
+            grid_options:
+              columns: 8
+              rows: 1
+            entity: sensor.tankknoten_rdwc_auto_zuletzt_befuellt
+            name: Zuletzt gefüllt
+            vertical: false
+            features_position: bottom
+          - type: tile
+            entity: sensor.tankknoten_rdwc_automatik_version
+            name: 'RDWC-Auto Version:'
+            icon: mdi:diversify
+            vertical: false
+            features_position: bottom
+            grid_options:
+              columns: 8
+              rows: 1
+          - type: custom:mushroom-number-card
+            entity: number.tankknoten_rdwc_auto_ziellevel
+            layout: horizontal
+            name: Max Level
+            display_mode: buttons
     header:
       layout: center
       badges_position: top
       badges_wrap: scroll
     badges:
       - type: entity
-        entity: sensor.ventilknoten_projekt_version
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.hydroknoten_hydroknoten_version
+        name: 'Hydro:'
+        icon: mdi:paperclip
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.tankknoten_tankknoten_version
+        name: 'Tank:'
+        icon: mdi:paperclip
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.tankknoten_spuelautomatik_version
+        icon: mdi:diversify
+        name: 'Spül:'
     cards: []
   - type: sections
     max_columns: 4
@@ -1404,7 +2343,24 @@ views:
     path: status
     sections:
       - type: grid
+        cards: []
+        column_span: 4
+      - type: grid
         cards:
+          - type: entities
+            entities:
+              - entity: binary_sensor.tankknoten_notfall_wasserwachter
+                name: 'Wasserschalter:'
+              - entity: sensor.tankknoten_tankknoten_wlan_ssid
+                name: 'Verbunden mit:'
+                icon: mdi:wifi
+              - entity: sensor.tankknoten_tankknoten_version
+                name: 'Firmware-Version: '
+              - entity: sensor.tankknoten_tankknoten_ip
+                name: 'IP-Adresse:'
+            show_header_toggle: false
+            title: ESP-Tankknoten
+            state_color: true
           - type: entities
             entities:
               - entity: binary_sensor.zeltsensor_esp_status
@@ -1443,25 +2399,66 @@ views:
             entities:
               - entity: binary_sensor.dosierung_status_verbunden
                 name: 'Status:'
-              - entity: sensor.hydroknoten_esp_wifi_ssid
+              - entity: sensor.dosierung_dosierung_wlan_ssid
                 name: 'Verbunden mit:'
                 icon: mdi:wifi
-              - entity: sensor.hydroknoten_hydroknoten_version
+              - entity: sensor.ventilknoten_projekt_version
                 name: 'Firmware-Version: '
               - entity: sensor.dosierung_dosierung_uptime
                 secondary_info: none
                 name: 'Online seit: '
-              - entity: sensor.hydroknoten_esp_ip_adresse
+              - entity: sensor.dosierung_dosierung_ip
                 name: 'IP-Adresse:'
             show_header_toggle: false
-            title: ESP-Hydroknoten
+            title: ESP-Dosierungsknoten
             state_color: true
+        column_span: 2
+      - type: grid
+        cards:
+          - type: logbook
+            target:
+              entity_id:
+                - number.dosierung_min_ruhrzeit_zwischen_dosierungen
+                - number.dosierung_durchmischungs_dauer_system_zyklus
+                - number.dosierung_ec_toleranzbereich_ms_cm
+                - number.dosierung_dosiervolumen_ec_pumpe_ml_min
+                - number.dosierung_ruhrmotor_dauer_sekunden
+                - number.dosierung_ruhrmotor_pwm_speed
+                - number.dosierung_ph_zielwert
+                - number.dosierung_micro_ec_pro_ml_100l
+                - number.dosierung_grow_ec_pro_ml_100l
+                - number.dosierung_bloom_ec_pro_ml_100l
+                - number.dosierung_ph_down_ec_pro_ml_100l
+                - number.dosierung_micro_flow_rate
+                - number.dosierung_grow_flow_rate
+                - number.dosierung_bloom_flow_rate
+                - number.dosierung_ph_down_flow_rate
+                - number.dosierung_micro_max_ml_tag
+                - number.dosierung_grow_max_ml_tag
+                - number.dosierung_bloom_max_ml_tag
+                - number.dosierung_ph_down_max_ml_tag
+                - number.dosierung_micro_drehzahl
+                - number.dosierung_grow_drehzahl
+                - number.dosierung_bloom_drehzahl
+                - number.dosierung_ph_down_drehzahl
+                - switch.dosierung_micro_steuerung
+                - switch.dosierung_grow_steuerung
+                - switch.dosierung_bloom_steuerung
+                - switch.dosierung_ph_down_steuerung
+                - number.dosierung_system_volumen_gesamt
+                - switch.dosierung_dosierung_automatik
+                - sensor.dosierung_dosierung_blockgrund
+                - sensor.dosierung_ph_dosierung_blockgrund
+            title: Dosierpumpensteuerung
+            hours_to_show: 1
+          - type: logbook
+            target:
+              entity_id:
+                - sensor.dosierung_dosierung_letzte_menge
+            title: Letzte Menge
+        column_span: 2
   - type: sections
     max_columns: 4
     title: Menü
     path: menu
-    sections:
-      - type: grid
-        cards:
-          - type: heading
-            heading: Neuer Abschnitt
+    sections: []
